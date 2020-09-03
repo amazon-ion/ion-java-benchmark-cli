@@ -1,0 +1,159 @@
+<!--
+  ~ Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License").
+  ~ You may not use this file except in compliance with the License.
+  ~ A copy of the License is located at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ or in the "license" file accompanying this file. This file is distributed
+  ~ on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+  ~ express or implied. See the License for the specific language governing
+  ~ permissions and limitations under the License.
+  -->
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.amazon.ion.benchmark</groupId>
+    <artifactId>ion-java-benchmark-cli</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>
+        Benchmarking tool for ion-java (https://github.com/amzn/ion-java/).
+    </description>
+    <url>https://github.com/amzn/ion-java-benchmark-cli/</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Amazon Ion Team</name>
+            <email>ion-team@amazon.com</email>
+            <organization>Amazon</organization>
+            <organizationUrl>https://github.com/amzn</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:amzn/ion-java-benchmark-cli.git</connection>
+        <developerConnection>scm:git:git@github.com:amzn/ion-java-benchmark-cli.git</developerConnection>
+        <url>git@github.com:amzn/ion-java-benchmark-cli.git</url>
+    </scm>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.build.timestamp.format>yyyy</maven.build.timestamp.format>
+        <build.year>${maven.build.timestamp}</build.year>
+        <jdkVersion>1.8</jdkVersion>
+    </properties>
+
+    <dependencies>
+        <!-- ion-java. Note: this can be overridden by addding a jar to the local repository. -->
+        <dependency>
+            <groupId>com.amazon.ion</groupId>
+            <artifactId>ion-java</artifactId>
+            <!-- Take the latest version that is at least 1.6.1. -->
+            <version>[1.6.1,)</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.openjdk.jmh/jmh-core -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>1.23</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.openjdk.jmh/jmh-generator-annprocess -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>1.23</version>
+        </dependency>
+        <dependency>
+            <groupId>com.offbytwo</groupId>
+            <artifactId>docopt</artifactId>
+            <version>0.6.0.20150202</version>
+        </dependency>
+        <!-- test dependencies -->
+        <!--
+        <dependency>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+          <version>4.12</version>
+          <scope>test</scope>
+        </dependency>
+        -->
+    </dependencies>
+
+    <build>
+        <sourceDirectory>src</sourceDirectory>
+        <!-- <testSourceDirectory>test</testSourceDirectory> -->
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!--
+                Since the format of maven.build.timestamp cannot be changed
+                during the build, define the build.time property here.
+                -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <exportAntProperties>true</exportAntProperties>
+                            <target>
+                                <tstamp>
+                                    <format property="build.time" pattern="yyyy-MM-dd'T'HH:mm:ssXXX"/>
+                                </tstamp>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <Main-Class>com.amazon.ion.benchmark.Main</Main-Class>
+                        </manifest>
+                        <manifestEntries>
+                            <!-- Add these properties to the manifest so they may be retrieved at runtime. -->
+                            <Ion-Java-Benchmark-Build-Time>${build.time}</Ion-Java-Benchmark-Build-Time>
+                            <Ion-Java-Benchmark-Project-Version>${project.version}</Ion-Java-Benchmark-Project-Version>
+                        </manifestEntries>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id> <!-- this is used for inheritance merges -->
+                        <phase>package</phase> <!-- bind to the packaging phase -->
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
