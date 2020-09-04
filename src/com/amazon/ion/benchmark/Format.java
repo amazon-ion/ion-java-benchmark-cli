@@ -9,6 +9,9 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 
+/**
+ * Data formats, e.g. Ion binary and Ion text.
+ */
 enum Format {
     ION_BINARY() {
         @Override
@@ -88,14 +91,47 @@ enum Format {
         }
     };
 
+    /**
+     * Convert the input data using the given options.
+     * @param input the input data.
+     * @param output the destination for the converted data.
+     * @param options the options to use for the conversion.
+     * @return the path to the converted data. This will be `input` if no conversion was required, or `output` if
+     *   conversion was required.
+     * @throws IOException if thrown during conversion.
+     */
     abstract Path convert(Path input, Path output, OptionsCombinationBase options) throws IOException;
 
+    /**
+     * @return the file suffix associated with this format.
+     */
     abstract String getSuffix();
 
+    /**
+     * Create a MeasurableReadTask with the given input and options for this format.
+     * @param inputPath the data to be read.
+     * @param options the options to use when reading.
+     * @return a new MeasurableReadTask.
+     * @throws IOException if thrown while handling options.
+     */
     abstract MeasurableReadTask createReadTask(Path inputPath, ReadOptionsCombination options) throws IOException;
 
+    /**
+     * Create a MeasurableWriteTask with the given input and options for this format.
+     * @param inputPath the data to be written.
+     * @param options the options to use when writing.
+     * @return a new MeasurableWriteTask.
+     * @throws IOException if thrown while handling options.
+     */
     abstract MeasurableWriteTask createWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException;
 
+    /**
+     * Determine which Format the data at the given path represents.
+     * @param path the path to the data to be classified.
+     * @return the Format of the data.
+     * @throws IOException if thrown while reading the data.
+     * @throws IllegalArgumentException if the data does not match a known Format.
+     */
     private static Format classify(Path path) throws IOException {
         File file = path.toFile();
         // TODO use the length of the longest format header.

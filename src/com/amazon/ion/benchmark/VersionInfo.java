@@ -15,6 +15,9 @@ import java.util.Properties;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+/**
+ * Collects version info from the JAR manifest and properties files.
+ */
 public class VersionInfo {
 
     private static final String MANIFEST_FILE = "META-INF/MANIFEST.MF";
@@ -31,44 +34,34 @@ public class VersionInfo {
     private Timestamp cliBuildTime;
 
     /**
-     * Constructs a new instance that can provide build information about this
-     * library.
+     * Constructs a new instance that can provide build information about this library and its dependencies.
      *
-     * @throws IonException
-     *         if there's a problem loading the build info.
+     * @throws IonException if there's a problem loading the build info.
      */
-    public VersionInfo() throws IonException
-    {
+    public VersionInfo() throws IonException {
         Enumeration<URL> manifestUrls;
-        try
-        {
+        try {
             manifestUrls = getClass().getClassLoader().getResources(MANIFEST_FILE);
         }
-        catch (IOException e)
-        {
+        catch (IOException e) {
             throw new IonException("Unable to load manifests.", e);
         }
         List<Manifest> manifests = new ArrayList<>();
-        while (manifestUrls.hasMoreElements())
-        {
-            try
-            {
+        while (manifestUrls.hasMoreElements()) {
+            try {
                 manifests.add(new Manifest(manifestUrls.nextElement().openStream()));
             }
-            catch (IOException e)
-            {
+            catch (IOException e) {
                 // try the next manifest
             }
         }
         loadBuildProperties(manifests);
 
         Enumeration<URL> ionJavaPropertiesUrls;
-        try
-        {
+        try {
             ionJavaPropertiesUrls = getClass().getClassLoader().getResources(ION_JAVA_PROPERTIES_FILE);
         }
-        catch (IOException e)
-        {
+        catch (IOException e) {
             throw new IonException("Unable to load ion-java properties.", e);
         }
         while (ionJavaPropertiesUrls.hasMoreElements()) {
@@ -86,6 +79,46 @@ public class VersionInfo {
                 // try the next properties file
             }
         }
+    }
+
+    /**
+     * Retrieves the build properties from the manifests, if present.
+     * @param manifests the manifests to check for build properties.
+     * @throws RuntimeException if the build properties are present in multiple manifests.
+     */
+    private void loadBuildProperties(List<Manifest> manifests) throws IonException {
+        boolean cliPropertiesLoaded = false;
+        for(Manifest manifest : manifests) {
+            boolean success = tryToLoadCliBuildProperties(manifest);
+            if(success && cliPropertiesLoaded) {
+                // In the event of conflicting manifests, fail instead of risking returning incorrect version info.
+                throw new RuntimeException("Found multiple manifests with CLI version info on the classpath.");
+            }
+            cliPropertiesLoaded |= success;
+        }
+    }
+
+    /**
+     * Returns true if the CLI properties were loaded, otherwise false.
+     */
+    private boolean tryToLoadCliBuildProperties(Manifest manifest) {
+        Attributes mainAttributes = manifest.getMainAttributes();
+        String projectVersion = mainAttributes.getValue(CLI_PROJECT_VERSION_ATTRIBUTE);
+        String time = mainAttributes.getValue(CLI_BUILD_TIME_ATTRIBUTE);
+
+        if (projectVersion == null || time == null) {
+            return false;
+        }
+
+        cliProjectVersion = projectVersion;
+
+        try {
+            cliBuildTime = Timestamp.valueOf(time);
+        }
+        catch (IllegalArgumentException e) {
+            // Badly formatted timestamp. Ignore it.
+        }
+        return true;
     }
 
     @Override
@@ -106,46 +139,5 @@ public class VersionInfo {
             throw new RuntimeException(e);
         }
         return sb.toString();
-    }
-
-    // ========================================================================
-
-    private void loadBuildProperties(List<Manifest> manifests) throws IonException {
-        boolean cliPropertiesLoaded = false;
-        for(Manifest manifest : manifests) {
-            boolean success = tryLoadCliBuildProperties(manifest);
-            if(success && cliPropertiesLoaded) {
-                // In the event of conflicting manifests, fail instead of risking returning incorrect version info.
-                throw new IonException("Found multiple manifests with CLI version info on the classpath.");
-            }
-            cliPropertiesLoaded |= success;
-        }
-    }
-
-    /*
-     * Returns true if the CLI properties were loaded, otherwise false.
-     */
-    private boolean tryLoadCliBuildProperties(Manifest manifest)
-    {
-        Attributes mainAttributes = manifest.getMainAttributes();
-        String projectVersion = mainAttributes.getValue(CLI_PROJECT_VERSION_ATTRIBUTE);
-        String time = mainAttributes.getValue(CLI_BUILD_TIME_ATTRIBUTE);
-
-        if (projectVersion == null || time == null)
-        {
-            return false;
-        }
-
-        cliProjectVersion = projectVersion;
-
-        try
-        {
-            cliBuildTime = Timestamp.valueOf(time);
-        }
-        catch (IllegalArgumentException e)
-        {
-            // Badly formatted timestamp. Ignore it.
-        }
-        return true;
     }
 }

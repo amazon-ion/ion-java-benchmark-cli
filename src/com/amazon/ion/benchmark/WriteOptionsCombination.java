@@ -4,12 +4,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 /**
- * Represents a single combination of read command options that corresponds to a single read benchmark trial.
+ * Represents a combination of write command options that corresponds to a single write benchmark trial.
  */
 class WriteOptionsCombination extends OptionsCombinationBase {
 
-    WriteOptionsCombination(String parameters) {
-        super(parameters);
+    /**
+     * @param serializedOptionsCombination text Ion representation of the options combination.
+     */
+    WriteOptionsCombination(String serializedOptionsCombination) {
+        super(serializedOptionsCombination);
     }
 
     @Override
