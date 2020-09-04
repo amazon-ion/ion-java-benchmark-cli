@@ -11,22 +11,31 @@ import org.openjdk.jmh.annotations.TearDown;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
+/**
+ * JMH benchmark for a single options combination.
+ */
 @State(Scope.Benchmark)
 public class Bench {
 
+    /**
+     * Name of the input file.
+     */
     @Param({""})
     private String input;
 
+    /**
+     * Serialized options combination.
+     */
     @Param({"{}"})
-    private String parameters;
+    private String options;
 
     MeasurableTask measurableTask = null;
     Callable<Void> taskToMeasure = null;
 
     @Setup(Level.Trial)
     public void setUpTrial() throws Exception {
-        OptionsCombinationBase options = OptionsCombinationBase.from(parameters);
-        measurableTask = options.createMeasurableTask(input);
+        OptionsCombinationBase optionsCombination = OptionsCombinationBase.from(options);
+        measurableTask = optionsCombination.createMeasurableTask(input);
         measurableTask.setUpTrial();
         taskToMeasure = measurableTask.getTask();
     }

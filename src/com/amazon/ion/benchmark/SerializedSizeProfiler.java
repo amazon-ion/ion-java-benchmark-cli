@@ -11,10 +11,17 @@ import org.openjdk.jmh.results.ScalarResult;
 import java.util.ArrayList;
 import java.util.Collection;
 
+/**
+ * JMH Profiler plugin to measure the size of either the input data (for read benchmarks) or the output data (for write
+ * benchmarks).
+ */
 public class SerializedSizeProfiler implements InternalProfiler {
 
     private static long size;
 
+    /**
+     * @param size sets the size to be reported by the SerializedSizeProfiler.
+     */
     static void setSize(long size) {
         SerializedSizeProfiler.size = size;
     }

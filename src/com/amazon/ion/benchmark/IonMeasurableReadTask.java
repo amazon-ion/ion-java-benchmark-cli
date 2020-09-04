@@ -12,6 +12,9 @@ import java.util.List;
 
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 
+/**
+ * A MeasurableReadTask for reading data in the Ion format (either text or binary).
+ */
 class IonMeasurableReadTask extends MeasurableReadTask {
 
     private static final int DEFAULT_NON_BLOCKING_BUFFER_SIZE = 64 * 1024;
@@ -19,14 +22,24 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     private IonReader reader;
     private IonLoader loader;
 
+    /**
+     * Returns the next power of two greater than or equal to the given value.
+     * @param value the start value.
+     * @return the next power of two.
+     */
     private static int nextPowerOfTwo(int value) {
         return (int) Math.pow(2, Math.ceil(Math.log10(value) / Math.log10(2)));
     }
 
-    IonMeasurableReadTask(Path inputPath, ReadOptionsCombination parameters) throws IOException {
-        super(inputPath, parameters);
-        readerBuilder = IonUtilities.newReaderBuilder(parameters).
-            withNonBlockingEnabled(parameters.readerType == IonReaderType.NON_BLOCKING);
+    /**
+     * @param inputPath the Ion data to read.
+     * @param options the options to use when reading.
+     * @throws IOException if thrown when handling the options.
+     */
+    IonMeasurableReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
+        super(inputPath, options);
+        readerBuilder = IonUtilities.newReaderBuilder(options).
+            withNonBlockingEnabled(options.readerType == IonReaderType.NON_BLOCKING);
         if (readerBuilder.isNonBlockingEnabled()) {
             // TODO configurable initial buffer size for non-blocking to take precedence over the auto-tuned value.
             long inputSize = inputPath.toFile().length();
@@ -41,13 +54,13 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     // TODO make it configurable to perform reader/loader setup/teardown within the timed block.
     @Override
     public void setUpIteration() throws IOException {
-        if (parameters.api == IonAPI.STREAMING) {
+        if (options.api == IonAPI.STREAMING) {
             if (buffer != null) {
                 reader = readerBuilder.build(buffer);
             } else {
-                reader = readerBuilder.build(parameters.newInputStream(inputPath.toFile()));
+                reader = readerBuilder.build(options.newInputStream(inputPath.toFile()));
             }
-            if (parameters.paths != null) {
+            if (options.paths != null) {
                 // TODO create path extractor.
             }
             loader = null;

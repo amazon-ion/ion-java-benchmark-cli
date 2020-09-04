@@ -16,10 +16,18 @@ import java.util.function.Consumer;
 
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 
+/**
+ * A MeasurableWriteTask for writing data in the Ion format (either text or binary).
+ */
 class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
 
     private final IonUtilities.IonWriterSupplier writerBuilder;
 
+    /**
+     * @param inputPath path to the data to re-write.
+     * @param options options to use when writing.
+     * @throws IOException
+     */
     IonMeasurableWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
         super(inputPath, options);
         if (options.format == Format.ION_TEXT) {
@@ -31,6 +39,11 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
         }
     }
 
+    /**
+     * Generate WriteInstructions by fully traversing the input data.
+     * @param reader IonReader over the input data.
+     * @param instructionsSink sink for the generated WriteInstructions.
+     */
     private void fullyTraverse(IonReader reader, Consumer<WriteInstruction<IonWriter>> instructionsSink) {
         int numberOfTopLevelValues = 0;
         while (reader.next() != null) {

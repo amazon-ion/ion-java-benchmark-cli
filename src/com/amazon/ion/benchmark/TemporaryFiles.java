@@ -7,6 +7,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Utilities for managing temporary files.
+ */
 final class TemporaryFiles {
 
     private static final Path tempDirectory;
@@ -24,6 +27,10 @@ final class TemporaryFiles {
         // Do not instantiate.
     }
 
+    /**
+     * Delete all files within the temporary directory, then delete the temporary directory itself.
+     * @throws IOException if thrown while trying to delete any file or directory.
+     */
     static void cleanUpTempDirectory() throws IOException {
         if (tempDirectory.toFile().isDirectory()) {
             List<Path> files = Files.list(tempDirectory).collect(Collectors.toList());
@@ -34,6 +41,10 @@ final class TemporaryFiles {
         Files.deleteIfExists(tempDirectory);
     }
 
+    /**
+     * Delete the existing temporary directory (if necessary), then re-create it.
+     * @throws IOException
+     */
     static void prepareTempDirectory() throws IOException {
         cleanUpTempDirectory();
         if (!tempDirectory.toFile().exists()) {
@@ -41,6 +52,13 @@ final class TemporaryFiles {
         }
     }
 
+    /**
+     * Create a new temporary file inside the temporary directory.
+     * @param prefix name prefix for the new temporary file.
+     * @param suffix file suffix for the new temporary file.
+     * @return Path to the new temporary file.
+     * @throws IOException if thrown while trying to create the file.
+     */
     static Path newTempFile(String prefix, String suffix) throws IOException {
         return Files.createTempFile(tempDirectory, prefix, suffix);
     }

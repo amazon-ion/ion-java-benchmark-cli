@@ -198,7 +198,7 @@ public class Main {
             printHelpAndExit();
         }
         try {
-            OptionsCombinationsBase options = OptionsCombinationsBase.from(optionsMap);
+            OptionsMatrixBase options = OptionsMatrixBase.from(optionsMap);
             options.executeBenchmark();
         } catch (Exception e) {
             System.err.println(e.getMessage());

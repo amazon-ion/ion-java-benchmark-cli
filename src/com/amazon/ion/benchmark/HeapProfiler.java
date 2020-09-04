@@ -12,6 +12,9 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 
+/**
+ * JMH Profiler plugin to measure heap memory usage.
+ */
 public class HeapProfiler implements InternalProfiler {
 
     @Override

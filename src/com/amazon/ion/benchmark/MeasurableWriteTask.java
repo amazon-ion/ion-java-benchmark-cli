@@ -10,8 +10,15 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
+/**
+ * A MeasurableTask for write benchmarks.
+ */
 abstract class MeasurableWriteTask<T> implements MeasurableTask {
 
+    /**
+     * A single instruction to execute. The measurable task is composed of a sequence of instructions.
+     * @param <T> type of the context needed by the WriteInstruction. For IonJava, this is an IonWriter.
+     */
     @FunctionalInterface
     interface WriteInstruction<T> {
         void execute(T writer) throws IOException;
@@ -24,16 +31,48 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
     private Path currentFile = null;
     private ByteArrayOutputStream currentBuffer = null;
 
+    /**
+     * @param inputPath path to the data to write.
+     * @param options options to use while writing.
+     */
     MeasurableWriteTask(Path inputPath, WriteOptionsCombination options) {
         this.inputPath = inputPath;
         this.options = options;
     }
 
+    /**
+     * Generate a sequence of WriteInstructions that re-write the input file with the configured options using a DOM
+     * API.
+     * @param instructionsSink the sink for the sequence of generated WriteInstructions.
+     * @throws IOException if thrown when generating WriteInstructions.
+     */
     abstract void generateWriteInstructionsDom(Consumer<WriteInstruction<T>> instructionsSink) throws IOException;
+
+    /**
+     * Generate a sequence of WriteInstructions that re-write the input file with the configured options using a
+     * streaming API.
+     * @param instructionsSink the sink for the sequence of generated WriteInstructions.
+     * @throws IOException if thrown when generating WriteInstructions.
+     */
     abstract void generateWriteInstructionsStreaming(Consumer<WriteInstruction<T>> instructionsSink) throws IOException;
+
+    /**
+     * @return a new writer context instance.
+     * @throws IOException if thrown during construction of the context.
+     */
     abstract T newWriter() throws IOException;
+
+    /**
+     * Close a given writer context instance.
+     * @param writer the context to be closed.
+     * @throws IOException if thrown while closing the context.
+     */
     abstract void closeWriter(T writer) throws IOException;
 
+    /**
+     * @return a new OutputStream for the configured options.
+     * @throws IOException if thrown while constructing the OutputStream.
+     */
     OutputStream newOutputStream() throws IOException {
         OutputStream out = null;
         switch (options.ioType) {
