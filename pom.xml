@@ -54,7 +54,6 @@
     </properties>
 
     <dependencies>
-        <!-- ion-java. Note: this can be overridden by addding a jar to the local repository. -->
         <dependency>
             <groupId>com.amazon.ion</groupId>
             <artifactId>ion-java</artifactId>
@@ -77,6 +76,11 @@
             <groupId>com.offbytwo</groupId>
             <artifactId>docopt</artifactId>
             <version>0.6.0.20150202</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazon.ion</groupId>
+            <artifactId>ion-java-path-extraction</artifactId>
+            <version>1.2.0</version>
         </dependency>
         <!-- test dependencies -->
         <!--

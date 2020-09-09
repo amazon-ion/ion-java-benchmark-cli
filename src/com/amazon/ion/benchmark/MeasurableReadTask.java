@@ -25,33 +25,27 @@ abstract class MeasurableReadTask implements MeasurableTask {
         this.options = options;
     }
 
-    @Override
-    public void setUpIteration() throws IOException {
-        // Reader initialization is performed in the timed block, so there will be no per-iteration setup for most
-        // MeasurableReadTask implementations.
-    }
-
-    @Override
-    public void tearDownIteration() throws IOException {
-        // Reader initialization is performed in the timed block, so there will be no per-iteration teardown for most
-        // MeasurableReadTask implementations.
-    }
-
     /**
-     * Initialize the reader and perform a fully-materialized deep read of the data from a byte buffer.
+     * Initialize the reader and perform a fully-materialized deep read of the data from a byte buffer. The "reader"
+     * is defined as any context that is tied to a single stream. Context that is reused across arbitrarily-many streams
+     * may be initialized outside of the timed block in {@link #setUpIteration()}.
      * @throws IOException if thrown during reading.
      */
     abstract void fullyTraverseFromBuffer() throws IOException;
 
     /**
-     * Initialize the reader and perform a fully-materialized deep read of the data from a file.
+     * Initialize the reader and perform a fully-materialized deep read of the data from a file. The "reader"
+     * is defined as any context that is tied to a single stream. Context that is reused across arbitrarily-many streams
+     * may be initialized outside of the timed block in {@link #setUpIteration()}.
      * @throws IOException if thrown during reading.
      */
     abstract void fullyTraverseFromFile() throws IOException;
 
     /**
      * Initialize the reader and perform a sparse read of the data from a byte buffer, only materializing the values at
-     * the specified paths.
+     * the specified paths. The "reader" is defined as any context that is tied to a single stream. Context that is
+     * reused across arbitrarily-many streams may be initialized outside of the timed block in
+     * {@link #setUpIteration()}.
      * @param paths the paths of values to materialize.
      * @throws IOException if thrown during reading.
      */
@@ -59,7 +53,8 @@ abstract class MeasurableReadTask implements MeasurableTask {
 
     /**
      * Initialize the reader and perform a sparse read of the data from a file, only materializing the values at the
-     * specified paths.
+     * specified paths. The "reader" is defined as any context that is tied to a single stream. Context that is reused
+     * across arbitrarily-many streams may be initialized outside of the timed block in {@link #setUpIteration()}.
      * @param paths the paths of values to materialize.
      * @throws IOException if thrown during reading.
      */
@@ -67,14 +62,16 @@ abstract class MeasurableReadTask implements MeasurableTask {
 
     /**
      * Initialize the loader and perform a fully-materialized deep read of the data from a byte buffer into a DOM
-     * representation.
+     * representation. The "loader" is defined as any context that is tied to a single stream. Context that is reused
+     * across arbitrarily-many streams may be initialized outside of the timed block in {@link #setUpIteration()}.
      * @throws IOException if thrown during reading.
      */
     abstract void fullyReadDomFromBuffer() throws IOException;
 
     /**
      * Initialize the loader and perform a fully-materialized deep read of the data from a file into a DOM
-     * representation.
+     * representation. The "loader" is defined as any context that is tied to a single stream. Context that is reused
+     * across arbitrarily-many streams may be initialized outside of the timed block in {@link #setUpIteration()}.
      * @throws IOException if thrown during reading.
      */
     abstract void fullyReadDomFromFile() throws IOException;
