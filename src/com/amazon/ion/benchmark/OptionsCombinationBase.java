@@ -133,14 +133,14 @@ abstract class OptionsCombinationBase {
     }
 
     /**
-     * Creates a new OutputStream over the given file.
+     * Creates a new OutputStream over the given file. If the file already exists, it will be overwritten.
      * @param file the file to be written.
      * @return a new OutputStream matching the options.
      * @throws IOException if thrown when constructing the OutputStream.
      */
     OutputStream newOutputStream(File file) throws IOException {
         // TODO configurable buffer size?
-        return new BufferedOutputStream(new FileOutputStream(file));
+        return new BufferedOutputStream(new FileOutputStream(file, false));
     }
 
 }

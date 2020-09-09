@@ -25,30 +25,37 @@ public class Main {
         + "  ion-java-benchmark write [--profile] [--io-type <type>] [--ion-api <api>]... [--format <type>]... "
                 + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
                 + "[--results-file <file] [--ion-imports <file>] [--ion-flush-period <int>]... "
-                + "[--ion-length-preallocation <int>]... <input_file>\n"
+                + "[--ion-length-preallocation <int>]... [--mode <mode>] [--time-unit <unit>] <input_file>\n"
         + "  ion-java-benchmark read [--profile] [--io-type <type>] [--ion-api <api>]... [--format <type>]... "
                 + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
                 + "[--results-file <file>] [--ion-imports <file>] [--ion-flush-period <int>]... "
-                + "[--ion-length-preallocation <int>]... [--ion-reader <type>]... [--paths <file>] <input_file>\n"
+                + "[--ion-length-preallocation <int>]... [--ion-reader <type>]... [--paths <file>] [--mode <mode>] "
+                + "[--time-unit <unit>] <input_file>\n"
         + "  ion-java-benchmark --help\n"
         + "  ion-java-benchmark --version\n"
         + "\n";
 
     private static final String COMMANDS =
         "Commands:\n"
-        + "  write    Benchmark writing the given input file to the given output format(s) . In order to isolate "
+        + "  write    Benchmark writing the given input file to the given output format(s). In order to isolate "
                 + "writing from reading, during the setup phase write instructions are generated from the input file "
                 + "and stored in memory. For large inputs, this can consume a lot of resources and take a long time "
                 + "to execute. This may be reduced by using the --limit option to limit the number of entries that "
-                + "are written.\n"
+                + "are written. The cost of initializing the writer is included in each timed benchmark invocation. "
+                + "Therefore, it is important to provide data that closely matches the size of the data written by a "
+                + "single writer instance in the real world to ensure the initialization cost is properly amortized.\n"
         + "  read     First, re-write the given input file to the given output format(s) (if necessary), then "
                 + "benchmark reading the resulting log files. If this takes too long to complete, consider using "
                 + "the --limit option to limit the number of entries that are read. Specifying non-default settings "
                 + "for certain options will cause the input data to be re-encoded even if the requested format is the "
                 + "same as the format of the provided input. These options are --ion-length-preallocation and "
-                + "--ion-flush-period for input in the ion binary format.\n"
+                + "--ion-flush-period for input in the ion binary format. The cost of initializing the reader or "
+                + "DOM loader is included in each timed benchmark invocation. Therefore, it is important to provide "
+                + "data that closely matches the size of data read by a single reader/loader instance in the real "
+                + "world to ensure the initialization cost is properly amortized.\n"
         + "\n";
 
+    // TODO add options for the following:
     // TODO IO buffer size (for buffered input/output streams)
     // TODO ion float 32 support
     // TODO read symbols as SymbolToken instead of String
@@ -112,6 +119,15 @@ public class Main {
                 + "formats, the most efficient known API for performing sparse reads will be used. Ignored unless "
                 + "--ion-api streaming is specified. By default, no search paths will be used, meaning the input data "
                 + "will be fully traversed and materialized.)\n"
+        + "  -m --mode <mode>                      The JMH benchmark mode to use, from the set (SingleShotTime | "
+                + "SampleTime | AverageTime | Throughput). SingleShotTime, in which each benchmark iteration writes "
+                + "or reads the data exactly once, is usually sufficient for medium and large streams. SampleTime, "
+                + "AverageTime, and Throughput all attempt to perform multiple reads or writes per iteration, which "
+                + "works best for smaller streams. If variance is high between iterations when using SingleShotTime, "
+                + "consider trying a different mode. [default: SingleShotTime]\n"
+        + "  -u --time-unit <unit>                 The TimeUnit in which benchmark results will be reported, from the "
+                + "set (microseconds | milliseconds | seconds). For small streams a more precise unit may be "
+                + "necessary, as JMH rounds to three digits after the decimal point. [default: milliseconds]"
         + "\n";
 
     private static final String EXAMPLES =
@@ -133,11 +149,11 @@ public class Main {
                 "comparison of both settings.\n" +
         "\n" +
         "  ion-java-benchmark write --io-type buffer \\ \n" +
-        "                         --limit 1000 \\\n" +
-        "                         --ion-flush-period 100 \\\n" +
-        "                         --ion-length-preallocation 0 \\\n" +
-        "                         --ion-length-preallocation 2 \\ \n" +
-        "                         example.10n\n" +
+        "                           --limit 1000 \\\n" +
+        "                           --ion-flush-period 100 \\\n" +
+        "                           --ion-length-preallocation 0 \\\n" +
+        "                           --ion-length-preallocation 2 \\ \n" +
+        "                           example.10n\n" +
         "\n" +
         "  Profile a sparse read of example.10n from file, materializing only the values that match the paths " +
                 "specified in paths.ion,  using ion-java-path-extraction. This process will repetitively execute " +
@@ -156,29 +172,29 @@ public class Main {
                 "resolve shared symbol table imports encountered in the input data.\n" +
         "\n" +
         "  ion-java-benchmark read --ion-imports tables.ion \\\n" +
-        "                        --ion-api dom \\\n" +
-        "                        --ion-api streaming \\\n" +
-        "                        example.10n\n" +
+        "                          --ion-api dom \\\n" +
+        "                          --ion-api streaming \\\n" +
+        "                          example.10n\n" +
         "\n" +
         "  Benchmark a fully-buffered write of data equivalent to example.10n to file, producing results for both " +
                 "binary Ion and CBOR output. Write the benchmark results to results.ion in the text Ion format.\n" +
         "\n" +
         "  ion-java-benchmark write --format ion_binary \\\n" +
-        "                         --format cbor \\\n" +
-        "                         --results-format ion \\\n" +
-        "                         --results-file results.ion \\\n" +
-        "                         example.10n\n" +
+        "                           --format cbor \\\n" +
+        "                           --results-format ion \\\n" +
+        "                           --results-file results.ion \\\n" +
+        "                           example.10n\n" +
         "\n" +
         "  Benchmark a full-traversal read of data equivalent to the first 1,000 top-level values in example.10n " +
                 "from both binary Ion and Protobuf files, using 20 warmups, 5 iterations, and 2 forks.\n" +
         "\n" +
         "  ion-java-benchmark read --limit 1000 \\\n" +
-        "                        --format ion_binary \\\n" +
-        "                        --format protobuf \\\n" +
-        "                        --warmups 20 \\\n" +
-        "                        --iterations 5 \\\n" +
-        "                        --forks 2 \\\n" +
-        "                        example.10n\n" +
+        "                          --format ion_binary \\\n" +
+        "                          --format protobuf \\\n" +
+        "                          --warmups 20 \\\n" +
+        "                          --iterations 5 \\\n" +
+        "                          --forks 2 \\\n" +
+        "                          example.10n\n" +
         "\n";
 
     private static void printHelpAndExit(String... messages) {

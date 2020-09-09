@@ -1,6 +1,7 @@
 package com.amazon.ion.benchmark;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -25,10 +26,9 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
     }
 
     private final List<WriteInstruction<T>> writeInstructions = new ArrayList<>();
-    final Path inputPath;
+    final File inputFile;
     final WriteOptionsCombination options;
-    private T writer = null;
-    private Path currentFile = null;
+    private File currentFile = null;
     private ByteArrayOutputStream currentBuffer = null;
 
     /**
@@ -36,7 +36,7 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
      * @param options options to use while writing.
      */
     MeasurableWriteTask(Path inputPath, WriteOptionsCombination options) {
-        this.inputPath = inputPath;
+        this.inputFile = inputPath.toFile();
         this.options = options;
     }
 
@@ -58,35 +58,17 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
 
     /**
      * @return a new writer context instance.
+     * @param outputStream the OutputStream to which the new writer will write.
      * @throws IOException if thrown during construction of the context.
      */
-    abstract T newWriter() throws IOException;
+    abstract T newWriter(OutputStream outputStream) throws IOException;
 
     /**
-     * Close a given writer context instance.
+     * Close a given writer context instance and its underlying OutputStream.
      * @param writer the context to be closed.
      * @throws IOException if thrown while closing the context.
      */
     abstract void closeWriter(T writer) throws IOException;
-
-    /**
-     * @return a new OutputStream for the configured options.
-     * @throws IOException if thrown while constructing the OutputStream.
-     */
-    OutputStream newOutputStream() throws IOException {
-        OutputStream out = null;
-        switch (options.ioType) {
-            case BUFFER:
-                currentBuffer = new ByteArrayOutputStream();
-                out = currentBuffer;
-                break;
-            case FILE:
-                currentFile = TemporaryFiles.newTempFile(inputPath.toFile().getName(), options.format.getSuffix());
-                out = options.newOutputStream(currentFile.toFile());
-                break;
-        }
-        return out;
-    }
 
     @Override
     public void setUpTrial() throws IOException {
@@ -103,16 +85,17 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
 
     @Override
     public void setUpIteration() throws IOException {
-        writer = newWriter();
+        if (options.ioType == IoType.FILE) {
+            currentFile = TemporaryFiles.newTempFile(inputFile.getName(), options.format.getSuffix()).toFile();
+        }
     }
 
     @Override
     public void tearDownIteration() throws IOException {
-        closeWriter(writer);
         long serializedSize = 0;
         if (currentFile != null) {
-            serializedSize = currentFile.toFile().length();
-            Files.delete(currentFile);
+            serializedSize = currentFile.length();
+            Files.delete(currentFile.toPath());
             currentFile = null;
         } else if (currentBuffer != null) {
             serializedSize = currentBuffer.size();
@@ -123,11 +106,28 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
 
     @Override
     public final Callable<Void> getTask() {
-        return () -> {
-            for (WriteInstruction<T> instruction : writeInstructions) {
-                instruction.execute(writer);
-            }
-            return null;
-        };
+        switch (options.ioType) {
+            case BUFFER:
+                return () -> {
+                    currentBuffer = new ByteArrayOutputStream();
+                    T writer = newWriter(currentBuffer);
+                    for (WriteInstruction<T> instruction : writeInstructions) {
+                        instruction.execute(writer);
+                    }
+                    closeWriter(writer);
+                    return null;
+                };
+            case FILE:
+                return () -> {
+                    T writer = newWriter(options.newOutputStream(currentFile));
+                    for (WriteInstruction<T> instruction : writeInstructions) {
+                        instruction.execute(writer);
+                    }
+                    closeWriter(writer);
+                    return null;
+                };
+            default:
+                throw new IllegalStateException("Write support missing for IO type " + options.ioType);
+        }
     }
 }
