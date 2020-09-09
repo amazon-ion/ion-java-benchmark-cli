@@ -247,7 +247,7 @@ abstract class OptionsMatrixBase {
                 .include(Bench.class.getSimpleName())
                 .param("input", inputFile)
                 .param("options", serializedOptionsCombinations)
-                .mode(Mode.SingleShotTime) // TODO make configurable. Single shot is good for large files, but SampleTime is good for really small files.
+                .mode(Mode.valueOf(optionsMatrix.get("--mode").toString()))
                 .measurementIterations(Integer.parseInt(optionsMatrix.get("--iterations").toString()))
                 .warmupIterations(Integer.parseInt(optionsMatrix.get("--warmups").toString()))
                 .forks(Integer.parseInt(optionsMatrix.get("--forks").toString()))
@@ -255,7 +255,7 @@ abstract class OptionsMatrixBase {
                 .addProfiler(GCProfiler.class)
                 .addProfiler(SerializedSizeProfiler.class)
                 .shouldDoGC(true)
-                .timeUnit(TimeUnit.MILLISECONDS); // TODO make configurable. Milliseconds is good for most files, but really small ones need Microseconds.
+                .timeUnit(TimeUnit.valueOf(optionsMatrix.get("--time-unit").toString().toUpperCase()));
             String resultsFile = getStringOrNull(optionsMatrix.get("--results-file"));
             if (resultsFile != null) {
                 jmhOptionsBuilder.result(resultsFile);

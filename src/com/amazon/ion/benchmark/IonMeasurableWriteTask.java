@@ -8,6 +8,7 @@ import com.amazon.ion.Timestamp;
 import com.amazon.ion.system.IonReaderBuilder;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Path;
@@ -137,7 +138,7 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
 
     @Override
     void generateWriteInstructionsStreaming(Consumer<WriteInstruction<IonWriter>> instructionsSink) throws IOException {
-        try (IonReader reader = IonReaderBuilder.standard().build(options.newInputStream(inputPath.toFile()))) {
+        try (IonReader reader = IonReaderBuilder.standard().build(options.newInputStream(inputFile))) {
             fullyTraverse(reader, instructionsSink);
             instructionsSink.accept(IonWriter::finish);
         }
@@ -145,19 +146,19 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
 
     @Override
     void generateWriteInstructionsDom(Consumer<WriteInstruction<IonWriter>> instructionsSink) throws IOException {
-        IonDatagram datagram = ION_SYSTEM.getLoader().load(inputPath.toFile());
+        IonDatagram datagram = ION_SYSTEM.getLoader().load(inputFile);
         instructionsSink.accept(datagram::writeTo);
         instructionsSink.accept(IonWriter::finish);
     }
 
-    // TODO make it configurable to perform writer setup/teardown within the timed block.
     @Override
-    public IonWriter newWriter() throws IOException {
-        return writerBuilder.get(newOutputStream());
+    public IonWriter newWriter(OutputStream outputStream) throws IOException {
+        return writerBuilder.get(outputStream);
     }
 
     @Override
     public void closeWriter(IonWriter writer) throws IOException {
+        // Note: this closes the underlying OutputStream.
         writer.close();
     }
 

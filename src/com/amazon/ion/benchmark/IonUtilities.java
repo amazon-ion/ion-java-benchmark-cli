@@ -172,7 +172,7 @@ class IonUtilities {
     /**
      * Rewrite the given Ion file using the given options.
      * @param input path to the file to re-write.
-     * @param output path to thte destination file.
+     * @param output path to the destination file.
      * @param options the options to use when rewriting.
      * @param writerSupplierFactory IonWriterSupplierFactory for retrieving suppliers of IonWriters with the given options.
      * @throws IOException if thrown when reading or writing.

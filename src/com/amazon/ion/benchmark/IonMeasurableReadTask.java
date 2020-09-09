@@ -1,6 +1,5 @@
 package com.amazon.ion.benchmark;
 
-import com.amazon.ion.IonLoader;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.impl.LookaheadIonReaderWrapper;
 import com.amazon.ion.system.IonReaderBuilder;
@@ -19,8 +18,6 @@ class IonMeasurableReadTask extends MeasurableReadTask {
 
     private static final int DEFAULT_NON_BLOCKING_BUFFER_SIZE = 64 * 1024;
     private final IonReaderBuilder readerBuilder;
-    private IonReader reader;
-    private IonLoader loader;
 
     /**
      * Returns the next power of two greater than or equal to the given value.
@@ -48,32 +45,6 @@ class IonMeasurableReadTask extends MeasurableReadTask {
                     new LookaheadIonReaderWrapper.Builder().withInitialBufferSize(nextPowerOfTwo((int) inputSize))
                 );
             }
-        }
-    }
-
-    // TODO make it configurable to perform reader/loader setup/teardown within the timed block.
-    @Override
-    public void setUpIteration() throws IOException {
-        if (options.api == IonAPI.STREAMING) {
-            if (buffer != null) {
-                reader = readerBuilder.build(buffer);
-            } else {
-                reader = readerBuilder.build(options.newInputStream(inputPath.toFile()));
-            }
-            if (options.paths != null) {
-                // TODO create path extractor.
-            }
-            loader = null;
-        } else {
-            loader = ION_SYSTEM.getLoader();
-            reader = null;
-        }
-    }
-
-    @Override
-    public void tearDownIteration() throws IOException {
-        if (reader != null) {
-            reader.close();
         }
     }
 
@@ -135,23 +106,44 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         }
     }
 
+
     @Override
-    public void fullyTraverse() {
+    void fullyTraverseFromBuffer() throws IOException {
+        IonReader reader = readerBuilder.build(buffer);
         fullyTraverse(reader, false);
+        reader.close();
     }
 
     @Override
-    public void traverse(List<String> paths) {
+    public void fullyTraverseFromFile() throws IOException {
+        IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
+        fullyTraverse(reader, false);
+        reader.close();
+    }
+
+    @Override
+    void traverseFromBuffer(List<String> paths) throws IOException {
+        IonReader reader = readerBuilder.build(buffer);
+        // TODO create path extractor
+        reader.close();
+        throw new IllegalStateException("Not yet implemented.");
+    }
+
+    @Override
+    public void traverseFromFile(List<String> paths) throws IOException {
+        IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
+        // TODO create path extractor
+        reader.close();
         throw new IllegalStateException("Not yet implemented.");
     }
 
     @Override
     public void fullyReadDomFromBuffer() throws IOException {
-        loader.load(buffer);
+        ION_SYSTEM.newLoader().load(buffer);
     }
 
     @Override
     public void fullyReadDomFromFile() throws IOException {
-        loader.load(inputPath.toFile());
+        ION_SYSTEM.newLoader().load(inputFile);
     }
 }
