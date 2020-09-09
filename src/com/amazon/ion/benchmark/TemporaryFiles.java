@@ -43,7 +43,7 @@ final class TemporaryFiles {
 
     /**
      * Delete the existing temporary directory (if necessary), then re-create it.
-     * @throws IOException
+     * @throws IOException if deletion or creation fails.
      */
     static void prepareTempDirectory() throws IOException {
         cleanUpTempDirectory();

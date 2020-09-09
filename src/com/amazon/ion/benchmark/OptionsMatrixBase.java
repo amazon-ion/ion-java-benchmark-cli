@@ -174,7 +174,7 @@ abstract class OptionsMatrixBase {
      * @param intOrAuto a String representation of an integer, or the String 'auto', or null.
      * @return null if the input is null or is 'auto'; otherwise, the integer parsed from the input.
      */
-    static Integer getIntOrAuto(String intOrAuto) {
+    private static Integer getIntOrAuto(String intOrAuto) {
         if (intOrAuto == null || intOrAuto.equals(Constants.AUTO_VALUE)) {
             return null;
         }

@@ -27,7 +27,7 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
     /**
      * @param inputPath path to the data to re-write.
      * @param options options to use when writing.
-     * @throws IOException
+     * @throws IOException if thrown when handling the options.
      */
     IonMeasurableWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
         super(inputPath, options);

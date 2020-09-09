@@ -18,7 +18,7 @@ import java.util.jar.Manifest;
 /**
  * Collects version info from the JAR manifest and properties files.
  */
-public class VersionInfo {
+class VersionInfo {
 
     private static final String MANIFEST_FILE = "META-INF/MANIFEST.MF";
     private static final String ION_JAVA_PROPERTIES_FILE = "META-INF/maven/com.amazon.ion/ion-java/pom.properties";
@@ -38,7 +38,7 @@ public class VersionInfo {
      *
      * @throws IonException if there's a problem loading the build info.
      */
-    public VersionInfo() throws IonException {
+    VersionInfo() throws IonException {
         Enumeration<URL> manifestUrls;
         try {
             manifestUrls = getClass().getClassLoader().getResources(MANIFEST_FILE);
