@@ -9,6 +9,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 
 /**
@@ -35,9 +36,14 @@ public class Bench {
     @Setup(Level.Trial)
     public void setUpTrial() throws Exception {
         OptionsCombinationBase optionsCombination = OptionsCombinationBase.from(options);
-        measurableTask = optionsCombination.createMeasurableTask(input);
+        measurableTask = optionsCombination.createMeasurableTask(Paths.get(input));
         measurableTask.setUpTrial();
         taskToMeasure = measurableTask.getTask();
+    }
+
+    @TearDown(Level.Trial)
+    public void tearDownTrial() throws IOException {
+        measurableTask.tearDownTrial();
     }
 
     @Setup(Level.Iteration)

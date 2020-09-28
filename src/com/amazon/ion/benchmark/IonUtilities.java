@@ -1,6 +1,8 @@
 package com.amazon.ion.benchmark;
 
+import com.amazon.ion.IonCatalog;
 import com.amazon.ion.IonReader;
+import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonWriter;
 import com.amazon.ion.OffsetSpan;
@@ -9,6 +11,7 @@ import com.amazon.ion.SymbolTable;
 import com.amazon.ion.impl._Private_IonSystem;
 import com.amazon.ion.impl.bin._Private_IonManagedBinaryWriterBuilder;
 import com.amazon.ion.system.IonReaderBuilder;
+import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.system.IonTextWriterBuilder;
 import com.amazon.ion.system.SimpleCatalog;
 
@@ -16,6 +19,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -42,7 +46,7 @@ class IonUtilities {
      * @return an array of shared symbol tables.
      * @throws IOException if thrown while reading the file.
      */
-    private static SymbolTable[] parseImportsFromFile(String importsFile) throws IOException {
+    static SymbolTable[] parseImportsFromFile(String importsFile) throws IOException {
         if (importsFile == null) {
             return null;
         }
@@ -56,6 +60,81 @@ class IonUtilities {
             }
         }
         return sharedSymbolTables.toArray(new SymbolTable[]{});
+    }
+
+    /**
+     * Determines whether shared SymbolTable sequences are equivalent.
+     * @param lhsImports a sequence of shared SymbolTables.
+     * @param rhsImports another sequence of shared SymbolTables.
+     * @return true if both sequences are equivalent; otherwise, false.
+     */
+    static boolean importsEqual(SymbolTable[] lhsImports, SymbolTable[] rhsImports) {
+        if ((lhsImports == null || lhsImports.length == 0) != (rhsImports == null || rhsImports.length == 0)) {
+            return false;
+        }
+        if (lhsImports == null || lhsImports.length == 0) {
+            return true;
+        }
+        if (lhsImports.length != rhsImports.length) {
+            return false;
+        }
+        for (int i = 0; i < rhsImports.length; i++) {
+            SymbolTable lhsImport = rhsImports[i];
+            SymbolTable rhsImport = lhsImports[i];
+            if (!lhsImport.getName().equals(rhsImport.getName())) {
+                return false;
+            }
+            if (lhsImport.getVersion() != rhsImport.getVersion()) {
+                return false;
+            }
+            if (lhsImport.getMaxId() != rhsImport.getMaxId()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Determines whether the Ion data provided by 'input' contains the shared symbol table imports included in
+     * 'importsFile'.
+     * @param importsFile a file containing shared symbol tables.
+     * @param input a stream of Ion data.
+     * @return true if the file and the stream contain the same shared symbol table imports; otherwise, false.
+     * @throws IOException if thrown when reading from the stream or file.
+     */
+    static boolean importsEqual(String importsFile, InputStream input) throws IOException {
+        try (IonReader reader = IonReaderBuilder.standard().build(input)) {
+            reader.next();
+            SymbolTable[] lhsImports = reader.getSymbolTable().getImportedTables();
+            SymbolTable[] rhsImports = parseImportsFromFile(importsFile);
+            return importsEqual(lhsImports, rhsImports);
+        }
+    }
+
+    /**
+     * See {@link #importsEqual(String, InputStream)}.
+     * @param importsFile a file containing shared symbol tables.
+     * @param input a file containing Ion data.
+     * @return true if the file and the stream contain the same shared symbol table imports; otherwise, false.
+     * @throws IOException if thrown when reading from the stream or file.
+     */
+    static boolean importsEqual(String importsFile, File input) throws IOException {
+        try (InputStream inputStream = new FileInputStream(input)) {
+            return importsEqual(importsFile, inputStream);
+        }
+    }
+
+    /**
+     * Determines whether the shared symbol tables included in both files are the same.
+     * @param lhsImportsFile a file containing a sequence of shared symbol tables.
+     * @param rhsImportsFile another file containing a sequence of shared symbol tables.
+     * @return true if the files contain the same sequence of shared symbol tables; otherwise, false.
+     * @throws IOException if thrown when reading from either file.
+     */
+    static boolean importsFilesEqual(String lhsImportsFile, String rhsImportsFile) throws IOException {
+        SymbolTable[] lhsImports = parseImportsFromFile(lhsImportsFile);
+        SymbolTable[] rhsImports = parseImportsFromFile(rhsImportsFile);
+        return importsEqual(lhsImports, rhsImports);
     }
 
     /**
@@ -84,7 +163,7 @@ class IonUtilities {
         return _Private_IonManagedBinaryWriterBuilder.create(_Private_IonManagedBinaryWriterBuilder.AllocatorMode.POOLED)
             //.withUserBlockSize(builder.ionWriterBlockSize) // TODO?
             .withPaddedLengthPreallocation(options.preallocation != null ? options.preallocation : 2)
-            .withImports(parseImportsFromFile(options.importsFile))
+            .withImports(parseImportsFromFile(options.importsForBenchmarkFile))
             .withLocalSymbolTableAppendEnabled()
             ::newWriter;
     }
@@ -96,25 +175,45 @@ class IonUtilities {
      * @throws IOException if thrown when parsing shared symbol tables.
      */
     static IonWriterSupplier newTextWriterSupplier(OptionsCombinationBase options) throws IOException {
-        return IonTextWriterBuilder.standard().withImports(parseImportsFromFile(options.importsFile))::build;
+        return IonTextWriterBuilder.standard().withImports(parseImportsFromFile(options.importsForBenchmarkFile))::build;
     }
 
     /**
-     * Create a new IonReaderBuilder with the given options.
-     * @param options the options to use when creating readers.
-     * @return a new instance.
-     * @throws IOException if thrown when parsing shared symbol tables.
+     * Create a new IonCatalog populated with SharedSymbolTables read from the given file.
+     * @param importsFile the file containing the shared symbol tables to import.
+     * @return a new IonCatalog, or null if the given file is null.
+     * @throws IOException if thrown while parsing the shared symbol tables from the file.
      */
-    static IonReaderBuilder newReaderBuilder(OptionsCombinationBase options) throws IOException {
+    static IonCatalog newCatalog(String importsFile) throws IOException {
         SimpleCatalog catalog = null;
-        SymbolTable[] sharedSymbolTables = parseImportsFromFile(options.importsFile);
+        SymbolTable[] sharedSymbolTables = parseImportsFromFile(importsFile);
         if (sharedSymbolTables != null) {
             catalog = new SimpleCatalog();
             for (SymbolTable sharedSymbolTable : sharedSymbolTables) {
                 catalog.putTable(sharedSymbolTable);
             }
         }
-        return IonReaderBuilder.standard().withCatalog(catalog);
+        return catalog;
+    }
+
+    /**
+     * Create a new IonReaderBuilder with the given options for use during read benchmarks.
+     * @param options the options to use when creating readers.
+     * @return a new instance.
+     * @throws IOException if thrown when parsing shared symbol tables.
+     */
+    static IonReaderBuilder newReaderBuilderForBenchmark(OptionsCombinationBase options) throws IOException {
+        return IonReaderBuilder.standard().withCatalog(newCatalog(options.importsForBenchmarkFile));
+    }
+
+    /**
+     * Create a new IonReaderBuilder with the given options for use when reading the input file.
+     * @param options the options to use when creating readers.
+     * @return a new instance.
+     * @throws IOException if thrown when parsing shared symbol tables.
+     */
+    static IonReaderBuilder newReaderBuilderForInput(OptionsCombinationBase options) throws IOException {
+        return IonReaderBuilder.standard().withCatalog(newCatalog(options.importsForInputFile));
     }
 
     /**
@@ -184,14 +283,19 @@ class IonUtilities {
         IonWriter writer = null;
         IonReader reader = null;
         try {
-            if (options.flushPeriod == null && options.format == Format.ION_BINARY) {
+            if (
+                options.flushPeriod == null &&
+                options.importsForInputFile == null &&
+                options.importsForBenchmarkFile == null &&
+                options.format == Format.ION_BINARY
+            ) {
                 // Use system-level reader to preserve the same symbol tables from the input.
                 writer = writerSupplier.get(options.newOutputStream(outputFile));
                 reader = ((_Private_IonSystem) ION_SYSTEM).newSystemReader(options.newInputStream(inputFile));
             } else {
                 // Do not preserve the existing symbol table boundaries.
                 writer = writerSupplier.get(options.newOutputStream(outputFile));
-                reader = newReaderBuilder(options).build(options.newInputStream(inputFile));
+                reader = newReaderBuilderForInput(options).build(options.newInputStream(inputFile));
             }
             writeValuesWithOptions(reader, writer, options);
         } finally {
@@ -202,5 +306,33 @@ class IonUtilities {
                 reader.close();
             }
         }
+    }
+
+    /**
+     * Return an IonSystem compatible with the given options. If the options include shared symbol table imports
+     * for use in benchmarks, the returned system will include and IonCatalog containing those imports.
+     * @param options the options from which to construct the IonSystem.
+     * @return an IonSystem.
+     * @throws IOException if thrown when parsing imports.
+     */
+    static IonSystem ionSystemForBenchmark(OptionsCombinationBase options) throws IOException {
+        if (options.importsForBenchmarkFile == null) {
+            return ION_SYSTEM;
+        }
+        return IonSystemBuilder.standard().withCatalog(newCatalog(options.importsForBenchmarkFile)).build();
+    }
+
+    /**
+     * Return an IonSystem compatible with the given options. If the options include shared symbol table imports
+     * for use in with the input file, the returned system will include and IonCatalog containing those imports.
+     * @param options the options from which to construct the IonSystem.
+     * @return an IonSystem.
+     * @throws IOException if thrown when parsing imports.
+     */
+    static IonSystem ionSystemForInput(OptionsCombinationBase options) throws IOException {
+        if (options.importsForInputFile == null) {
+            return ION_SYSTEM;
+        }
+        return IonSystemBuilder.standard().withCatalog(newCatalog(options.importsForInputFile)).build();
     }
 }

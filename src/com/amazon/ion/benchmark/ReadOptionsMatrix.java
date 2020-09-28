@@ -27,8 +27,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
     void parseCommandSpecificOptions(Map<String, Object> optionsMatrix, List<IonStruct> optionsCombinationStructs) {
         String pathsFile = getStringOrNull(optionsMatrix.get("--paths"));
         if (pathsFile != null) {
-            requireFileToExist(pathsFile);
-            addOptionTo(optionsCombinationStructs, PATHS_NAME, ION_SYSTEM.newString(pathsFile));
+            addOptionTo(optionsCombinationStructs, PATHS_NAME, ION_SYSTEM.newString(requireFileToExist(pathsFile)));
         }
         parseAndCombine(
             optionsMatrix.get("--ion-reader"),

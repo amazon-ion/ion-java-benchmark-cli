@@ -19,14 +19,15 @@ enum Format {
             Format sourceFormat = classify(input);
             switch (sourceFormat) {
                 case ION_BINARY:
-                    if (
-                        options.limit == Integer.MAX_VALUE
-                        && options.flushPeriod == null
-                        && options.preallocation == null
-                    ) {
+                    boolean optionsRequireRewrite = options.flushPeriod != null
+                        || options.preallocation != null
+                        || (options.importsForBenchmarkFile != null
+                            && !IonUtilities.importsEqual(options.importsForBenchmarkFile, input.toFile()))
+                        || !IonUtilities.importsFilesEqual(options.importsForInputFile, options.importsForBenchmarkFile);
+                    if (options.limit == Integer.MAX_VALUE && !optionsRequireRewrite) {
                         // There are no settings that require mutating the original input.
                         return input;
-                    } else if (options.flushPeriod == null && options.preallocation == null) {
+                    } else if (!optionsRequireRewrite) {
                         // This combination of settings requires simple truncation.
                         return IonUtilities.truncateBinaryIonFile(input, output, options.limit);
                     } else {
@@ -54,6 +55,11 @@ enum Format {
         @Override
         MeasurableWriteTask createWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
             return new IonMeasurableWriteTask(inputPath, options);
+        }
+
+        @Override
+        boolean isIon() {
+            return true;
         }
     },
     ION_TEXT() {
@@ -88,6 +94,11 @@ enum Format {
         @Override
         MeasurableWriteTask createWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
             return new IonMeasurableWriteTask(inputPath, options);
+        }
+
+        @Override
+        boolean isIon() {
+            return true;
         }
     };
 
@@ -126,13 +137,18 @@ enum Format {
     abstract MeasurableWriteTask createWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException;
 
     /**
+     * @return true if the format is an Ion (text or binary).
+     */
+    abstract boolean isIon();
+
+    /**
      * Determine which Format the data at the given path represents.
      * @param path the path to the data to be classified.
      * @return the Format of the data.
      * @throws IOException if thrown while reading the data.
      * @throws IllegalArgumentException if the data does not match a known Format.
      */
-    private static Format classify(Path path) throws IOException {
+    static Format classify(Path path) throws IOException {
         File file = path.toFile();
         // TODO use the length of the longest format header.
         byte[] firstBytes = new byte[_Private_IonConstants.BINARY_VERSION_MARKER_SIZE];

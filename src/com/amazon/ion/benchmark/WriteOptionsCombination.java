@@ -16,7 +16,7 @@ class WriteOptionsCombination extends OptionsCombinationBase {
     }
 
     @Override
-    protected MeasurableTask createMeasurableTask(Path convertedInput) throws IOException {
-        return format.createWriteTask(convertedInput, this);
+    protected MeasurableTask createMeasurableTask(Path inputFile) throws IOException {
+        return format.createWriteTask(inputFile, this);
     }
 }

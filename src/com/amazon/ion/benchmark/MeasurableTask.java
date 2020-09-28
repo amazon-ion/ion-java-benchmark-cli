@@ -15,6 +15,12 @@ public interface MeasurableTask {
     void setUpTrial() throws IOException;
 
     /**
+     * Tear down the trial.
+     * @throws IOException if thrown during teardown.
+     */
+    void tearDownTrial() throws IOException;
+
+    /**
      * Set up an iteration, of which there are many per trial.
      * @throws IOException if thrown during setup.
      */

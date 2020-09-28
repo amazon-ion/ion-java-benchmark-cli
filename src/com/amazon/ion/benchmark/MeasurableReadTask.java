@@ -12,17 +12,26 @@ import java.util.concurrent.Callable;
  */
 abstract class MeasurableReadTask implements MeasurableTask {
 
-    final File inputFile;
+    final Path originalFile;
+    File inputFile;
     final ReadOptionsCombination options;
     byte[] buffer = null;
 
     /**
      * @param inputPath path to the data to read.
      * @param options options to use when reading.
+     * @throws IOException if thrown when validating the options against the input.
      */
-    MeasurableReadTask(Path inputPath, ReadOptionsCombination options) {
-        this.inputFile = inputPath.toFile();
+    MeasurableReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
+        this.originalFile = inputPath;
         this.options = options;
+        if (Format.classify(originalFile).isIon()
+            && !IonUtilities.importsEqual(options.importsForInputFile, originalFile.toFile())) {
+            throw new IllegalArgumentException(
+                "The input file contains shared symbol table imports. Those imports must be " +
+                    "supplied using --ion-imports-for-input."
+            );
+        }
     }
 
     /**
@@ -78,11 +87,22 @@ abstract class MeasurableReadTask implements MeasurableTask {
 
     @Override
     public void setUpTrial() throws IOException {
+        inputFile = options.convertFileIfNecessary(originalFile).toFile();
         if (options.ioType == IoType.BUFFER) {
             // Note: the input file will already have been truncated to the value limit, if necessary.
             buffer = Files.readAllBytes(inputFile.toPath());
         }
         SerializedSizeProfiler.setSize(inputFile.length());
+    }
+
+    @Override
+    public void tearDownTrial() throws IOException {
+        if (!inputFile.equals(originalFile.toFile())) {
+            // 'inputFile' is a temporary file that was converted form 'originalFile' for this specific options
+            // combination. Clean it up to avoid consuming this disk space throughout the rest of the trials.
+            Files.delete(inputFile.toPath());
+        }
+        buffer = null;
     }
 
     @Override
