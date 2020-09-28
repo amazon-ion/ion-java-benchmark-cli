@@ -1,5 +1,6 @@
 package com.amazon.ion.benchmark;
 
+import com.amazon.ion.IonBool;
 import com.amazon.ion.IonInt;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonText;
@@ -15,13 +16,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.function.Function;
 
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_API_NAME;
-import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_TYPE_NAME;
 import static com.amazon.ion.benchmark.Constants.LIMIT_NAME;
 import static com.amazon.ion.benchmark.Constants.PREALLOCATION_NAME;
@@ -36,7 +38,9 @@ abstract class OptionsCombinationBase {
     final Format format;
     final IonAPI api;
     final IoType ioType;
-    final String importsFile;
+    final String importsForInputFile;
+    final String importsForBenchmarkFile;
+    final boolean useSymbolTokens;
     final int limit;
 
     /**
@@ -71,8 +75,24 @@ abstract class OptionsCombinationBase {
         format = getOrDefault(parametersStruct, FORMAT_NAME, val -> Format.valueOf(((IonText) val).stringValue()), Format.ION_BINARY);
         api = getOrDefault(parametersStruct, ION_API_NAME, val -> IonAPI.valueOf(((IonText) val).stringValue()), IonAPI.STREAMING);
         ioType = getOrDefault(parametersStruct, IO_TYPE_NAME, val -> IoType.valueOf(((IonText) val).stringValue()), IoType.FILE);
-        importsFile = getOrDefault(parametersStruct, ION_IMPORTS_NAME, val -> ((IonText) val).stringValue(), null);
+        importsForInputFile = getOrDefault(parametersStruct, ION_IMPORTS_FOR_INPUT_NAME, val -> ((IonText) val).stringValue(), null);
+        importsForBenchmarkFile = getOrDefault(parametersStruct, ION_IMPORTS_FOR_BENCHMARK_NAME, val -> ((IonText) val).stringValue(), null);
+        useSymbolTokens = getOrDefault(parametersStruct, ION_USE_SYMBOL_TOKENS_NAME, val -> ((IonBool) val).booleanValue(), false);
         limit = getOrDefault(parametersStruct, LIMIT_NAME, val -> ((IonInt) val).intValue(), Integer.MAX_VALUE);
+    }
+
+    /**
+     * Convert the input file to match the options, if necessary.
+     * @param inputFile the input file.
+     * @return the Path to the resulting file, which will be the same as the input file if no conversion was required.
+     * @throws IOException if thrown during conversion.
+     */
+    final Path convertFileIfNecessary(Path inputFile) throws IOException {
+        return format.convert(
+            inputFile,
+            TemporaryFiles.newTempFile(inputFile.toFile().getName(), format.getSuffix()),
+            this
+        );
     }
 
     /**
@@ -82,24 +102,7 @@ abstract class OptionsCombinationBase {
      * @return a new MeasurableTask instance.
      * @throws Exception if an error occurs while preparing the task.
      */
-    final MeasurableTask createMeasurableTask(String inputFile) throws Exception {
-        Path originalInput = Paths.get(inputFile);
-        Path convertedInput = format.convert(
-            originalInput,
-            TemporaryFiles.newTempFile(originalInput.toFile().getName(), format.getSuffix()),
-            this
-        );
-        return createMeasurableTask(convertedInput);
-    }
-
-    /**
-     * Creates a measurable task for this options combination over the given input file, which will already be in
-     * a format that matches the options.
-     * @param convertedInput path to a file containing the data to be processed by this task.
-     * @return a new MeasurableTask instance.
-     * @throws Exception if an error occurs while preparing the task.
-     */
-    protected abstract MeasurableTask createMeasurableTask(Path convertedInput) throws Exception;
+    protected abstract MeasurableTask createMeasurableTask(Path inputFile) throws Exception;
 
     /**
      * Creates a new OptionsCombinationBase from the given Ion representation of an options combination.

@@ -3,9 +3,10 @@ package com.amazon.ion.benchmark;
 import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonType;
+import com.amazon.ion.IonValue;
 import com.amazon.ion.IonWriter;
+import com.amazon.ion.SymbolToken;
 import com.amazon.ion.Timestamp;
-import com.amazon.ion.system.IonReaderBuilder;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -48,20 +49,25 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
     private void fullyTraverse(IonReader reader, Consumer<WriteInstruction<IonWriter>> instructionsSink) {
         int numberOfTopLevelValues = 0;
         while (reader.next() != null) {
-            if (reader.getDepth() == 0) {
-                numberOfTopLevelValues++;
-                if (options.flushPeriod != null && numberOfTopLevelValues % options.flushPeriod == 0) {
-                    instructionsSink.accept(IonWriter::flush);
+            if (reader.isInStruct()) {
+                if (options.useSymbolTokens) {
+                    SymbolToken fieldName = reader.getFieldNameSymbol();
+                    instructionsSink.accept(writer -> writer.setFieldNameSymbol(fieldName));
+                } else {
+                    String fieldName = reader.getFieldName();
+                    instructionsSink.accept(writer -> writer.setFieldName(fieldName));
                 }
             }
-            if (reader.isInStruct()) {
-                String fieldName = reader.getFieldName();
-                instructionsSink.accept(writer -> writer.setFieldName(fieldName));
-            }
-            Iterator<String> annotationsIterator = reader.iterateTypeAnnotations();
-            while (annotationsIterator.hasNext()) {
-                String annotation = annotationsIterator.next();
-                instructionsSink.accept(writer -> writer.addTypeAnnotation(annotation));
+            if (options.useSymbolTokens) {
+                SymbolToken[] annotations = reader.getTypeAnnotationSymbols();
+                if (annotations.length > 0) {
+                    instructionsSink.accept(writer -> writer.setTypeAnnotationSymbols(annotations));
+                }
+            } else {
+                String[] annotations = reader.getTypeAnnotations();
+                if (annotations.length > 0) {
+                    instructionsSink.accept(writer -> writer.setTypeAnnotations(annotations));
+                }
             }
             IonType type = reader.getType();
             if (reader.isNullValue()) {
@@ -105,8 +111,13 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
                         instructionsSink.accept(writer -> writer.writeTimestamp(timestampValue));
                         break;
                     case SYMBOL:
-                        String symbolValue = reader.stringValue();
-                        instructionsSink.accept(writer -> writer.writeSymbol(symbolValue));
+                        if (options.useSymbolTokens) {
+                            SymbolToken symbolValue = reader.symbolValue();
+                            instructionsSink.accept(writer -> writer.writeSymbolToken(symbolValue));
+                        } else {
+                            String symbolValue = reader.stringValue();
+                            instructionsSink.accept(writer -> writer.writeSymbol(symbolValue));
+                        }
                         break;
                     case STRING:
                         String stringValue = reader.stringValue();
@@ -133,12 +144,21 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
                         break;
                 }
             }
+            if (reader.getDepth() == 0) {
+                numberOfTopLevelValues++;
+                if (options.flushPeriod != null && numberOfTopLevelValues % options.flushPeriod == 0) {
+                    instructionsSink.accept(IonWriter::flush);
+                }
+                if (options.limit != Integer.MAX_VALUE && numberOfTopLevelValues >= options.limit) {
+                    break;
+                }
+            }
         }
     }
 
     @Override
     void generateWriteInstructionsStreaming(Consumer<WriteInstruction<IonWriter>> instructionsSink) throws IOException {
-        try (IonReader reader = IonReaderBuilder.standard().build(options.newInputStream(inputFile))) {
+        try (IonReader reader = IonUtilities.newReaderBuilderForInput(options).build(options.newInputStream(inputFile))) {
             fullyTraverse(reader, instructionsSink);
             instructionsSink.accept(IonWriter::finish);
         }
@@ -146,7 +166,21 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
 
     @Override
     void generateWriteInstructionsDom(Consumer<WriteInstruction<IonWriter>> instructionsSink) throws IOException {
-        IonDatagram datagram = ION_SYSTEM.getLoader().load(inputFile);
+        IonDatagram datagram;
+        if (options.limit == Integer.MAX_VALUE) {
+            datagram = IonUtilities.ionSystemForInput(options).getLoader().load(inputFile);
+        } else {
+            datagram = ION_SYSTEM.newDatagram();
+            try (IonReader reader = IonUtilities.newReaderBuilderForInput(options).build(options.newInputStream(inputFile))) {
+                Iterator<IonValue> valueIterator = ION_SYSTEM.iterate(reader);
+                while (valueIterator.hasNext()) {
+                    datagram.add(valueIterator.next());
+                    if (datagram.size() >= options.limit) {
+                        break;
+                    }
+                }
+            }
+        }
         instructionsSink.accept(datagram::writeTo);
         instructionsSink.accept(IonWriter::finish);
     }

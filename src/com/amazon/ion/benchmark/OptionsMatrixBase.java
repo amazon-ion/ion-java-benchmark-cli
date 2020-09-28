@@ -11,6 +11,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -24,8 +25,10 @@ import java.util.function.Function;
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_API_NAME;
-import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
+import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_TYPE_NAME;
 import static com.amazon.ion.benchmark.Constants.LIMIT_NAME;
 import static com.amazon.ion.benchmark.Constants.PREALLOCATION_NAME;
@@ -86,9 +89,9 @@ abstract class OptionsMatrixBase {
     }
 
     /**
-     * Parses option(s) from the given List or String and combines the new options with all existing combinations. This
+     * Parses option(s) from the given List of Strings and combines the new options with all existing combinations. This
      * multiplies the number of combinations by the number of new options parsed.
-     * @param optionValueListOrString String or List of Strings containing option values.
+     * @param optionValueList List of Strings containing option values.
      * @param newOptionName the name of the new option.
      * @param parser parser function from String to the desired type.
      * @param translator translator from the desired type to IonValue.
@@ -96,14 +99,16 @@ abstract class OptionsMatrixBase {
      * @param <T> the type of the option.
      */
     static <T> void parseAndCombine(
-        Object optionValueListOrString,
+        Object optionValueList,
         String newOptionName,
         Function<String, T> parser,
         Function<T, IonValue> translator,
         List<IonStruct> optionsCombinationStructs
     ) {
         Set<T> values = new HashSet<>();
-        collectFromListOrString(optionValueListOrString, s -> values.add(parser.apply(s)));
+        for (String optionValue : ((List<String>) optionValueList)) {
+            values.add(parser.apply(optionValue));
+        }
         List<IonValue> newOptions = new ArrayList<>(values.size());
         for (T value : values) {
             if (value == null) {
@@ -135,12 +140,14 @@ abstract class OptionsMatrixBase {
 
     /**
      * @param fileName a file that must exist on disk.
+     * @return fileName, if it exists.
      * @throws IllegalArgumentException if the file does not exist, or is not a normal file.
      */
-    static void requireFileToExist(String fileName) {
+    static String requireFileToExist(String fileName) {
         if (!new File(fileName).isFile()) {
             throw new IllegalArgumentException("File " + fileName + " does not exist or is not a normal file.");
         }
+        return fileName;
     }
 
     /**
@@ -155,22 +162,6 @@ abstract class OptionsMatrixBase {
     }
 
     /**
-     * Collects Strings from the input, which may be either a String or a List of Strings.
-     * @param listOrString either a String or a List of Strings.
-     * @param consumer consumer for all of the available Strings from the input.
-     */
-    private static void collectFromListOrString(Object listOrString, Consumer<String> consumer) {
-        if (listOrString instanceof List) {
-            for (String compressionString : ((List<String>) listOrString)) {
-                consumer.accept(compressionString);
-            }
-        } else {
-            // TODO remove getStringOrNull from here?
-            consumer.accept(getStringOrNull(listOrString.toString()));
-        }
-    }
-
-    /**
      * @param intOrAuto a String representation of an integer, or the String 'auto', or null.
      * @return null if the input is null or is 'auto'; otherwise, the integer parsed from the input.
      */
@@ -179,6 +170,35 @@ abstract class OptionsMatrixBase {
             return null;
         }
         return Integer.parseInt(intOrAuto);
+    }
+
+    /**
+     * @param fileNameOrNone a String filename, or the String 'none', or null.
+     * @return null if the input is null or is 'none'; otherwise, the filename.
+     * @throws IllegalArgumentException if the filename is not null/'none' and does not exist.
+     */
+    private static String getFileOrNone(String fileNameOrNone) {
+        if (fileNameOrNone == null || fileNameOrNone.equals(Constants.NONE_VALUE)) {
+            return null;
+        }
+        return requireFileToExist(fileNameOrNone);
+    }
+
+    /**
+     * @param fileNameOrNone a String filename, or the String 'none' or 'auto', or null
+     * @param defaultFile the default value to use if fileNameOrNone is 'auto'.
+     * @return null if the input is null or is 'none', or if the input is 'auto' and defaultFile is 'none'; otherwise,
+     *   the filename.
+     * @throws IllegalArgumentException if the resolved filename does not exist.
+     */
+    private static String getFileOrDefault(String fileNameOrNone, String defaultFile) {
+        if (fileNameOrNone == null || fileNameOrNone.equals(Constants.NONE_VALUE)) {
+            return null;
+        }
+        if (fileNameOrNone.equals(Constants.AUTO_VALUE)) {
+            return getFileOrNone(defaultFile);
+        }
+        return requireFileToExist(fileNameOrNone);
     }
 
     /**
@@ -202,11 +222,17 @@ abstract class OptionsMatrixBase {
         }
         IoType ioType = IoType.valueOf(optionsMatrix.get("--io-type").toString().toUpperCase());
         addOptionTo(optionsCombinationStructs, IO_TYPE_NAME, ION_SYSTEM.newSymbol(ioType.name()));
-        String importsFile = getStringOrNull(optionsMatrix.get("--ion-imports"));
-        if (importsFile != null) {
-            requireFileToExist(importsFile);
-            addOptionTo(optionsCombinationStructs, ION_IMPORTS_NAME, ION_SYSTEM.newString(importsFile));
+        String importsForInput = getFileOrNone(optionsMatrix.get("--ion-imports-for-input").toString());
+        if (importsForInput != null) {
+            addOptionTo(optionsCombinationStructs, ION_IMPORTS_FOR_INPUT_NAME, ION_SYSTEM.newString(importsForInput));
         }
+        parseAndCombine(
+            optionsMatrix.get("--ion-imports-for-benchmark"),
+            ION_IMPORTS_FOR_BENCHMARK_NAME,
+            (s) -> OptionsMatrixBase.getFileOrDefault(s, importsForInput),
+            ION_SYSTEM::newString,
+            optionsCombinationStructs
+        );
         parseAndCombine(
             optionsMatrix.get("--ion-length-preallocation"),
             PREALLOCATION_NAME,
@@ -226,6 +252,13 @@ abstract class OptionsMatrixBase {
             ION_API_NAME,
             (s) -> IonAPI.valueOf(s.toUpperCase()),
             (api) -> ION_SYSTEM.newSymbol(api.name()),
+            optionsCombinationStructs
+        );
+        parseAndCombine(
+            optionsMatrix.get("--ion-use-symbol-tokens"),
+            ION_USE_SYMBOL_TOKENS_NAME,
+            (s) -> Boolean.valueOf(s.toLowerCase()),
+            ION_SYSTEM::newBool,
             optionsCombinationStructs
         );
         parseAndCombine(
@@ -278,6 +311,13 @@ abstract class OptionsMatrixBase {
     }
 
     /**
+     * @return the serialized options combinations generated by this matrix.
+     */
+    String[] getSerializedOptionsCombinations() {
+        return serializedOptionsCombinations;
+    }
+
+    /**
      * Parse any options related to a specific command.
      * @param optionsMatrix Map representing the options matrix for this command. The values of the map are either
      *                      scalar values or Lists of scalar values.
@@ -294,7 +334,7 @@ abstract class OptionsMatrixBase {
         TemporaryFiles.prepareTempDirectory();
         if (profile) {
             OptionsCombinationBase options = OptionsCombinationBase.from(serializedOptionsCombinations[0]);
-            MeasurableTask measurableTask = options.createMeasurableTask(inputFile);
+            MeasurableTask measurableTask = options.createMeasurableTask(Paths.get(inputFile));
             measurableTask.setUpTrial();
             Callable<Void> task = measurableTask.getTask();
             System.out.println("Entering profiling mode. Type q (followed by Enter/Return) to terminate after the next complete iteration.");
@@ -303,6 +343,7 @@ abstract class OptionsMatrixBase {
                 task.call();
                 measurableTask.tearDownIteration();
             }
+            measurableTask.tearDownTrial();
         } else {
             new Runner(jmhOptions).run();
         }

@@ -35,7 +35,11 @@ class ReadOptionsCombination extends OptionsCombinationBase {
         } else {
             paths = new ArrayList<>();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(pathsFile)))) {
-                paths.add(reader.readLine());
+                String line = reader.readLine();
+                while (line != null && !line.isEmpty()) {
+                    paths.add(line);
+                    line = reader.readLine();
+                }
             }
         }
         readerType = getOrDefault(
@@ -47,8 +51,8 @@ class ReadOptionsCombination extends OptionsCombinationBase {
     }
 
     @Override
-    protected MeasurableTask createMeasurableTask(Path convertedInput) throws IOException {
-        return format.createReadTask(convertedInput, this);
+    protected MeasurableTask createMeasurableTask(Path inputFile) throws IOException {
+        return format.createReadTask(inputFile, this);
     }
 
 }

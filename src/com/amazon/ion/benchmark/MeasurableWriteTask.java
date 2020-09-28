@@ -28,16 +28,23 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
     private final List<WriteInstruction<T>> writeInstructions = new ArrayList<>();
     final File inputFile;
     final WriteOptionsCombination options;
-    private File currentFile = null;
-    private ByteArrayOutputStream currentBuffer = null;
+    File currentFile = null;
+    ByteArrayOutputStream currentBuffer = null;
 
     /**
      * @param inputPath path to the data to write.
      * @param options options to use while writing.
      */
-    MeasurableWriteTask(Path inputPath, WriteOptionsCombination options) {
+    MeasurableWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
         this.inputFile = inputPath.toFile();
         this.options = options;
+        if (Format.classify(inputPath).isIon()
+            && !IonUtilities.importsEqual(options.importsForInputFile, inputPath.toFile())) {
+            throw new IllegalArgumentException(
+                "The input file contains shared symbol table imports. Those imports must be " +
+                    "supplied using --ion-imports-for-input."
+            );
+        }
     }
 
     /**
@@ -81,6 +88,11 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
                 generateWriteInstructionsDom(writeInstructions::add);
                 break;
         }
+    }
+
+    @Override
+    public void tearDownTrial() {
+        writeInstructions.clear();
     }
 
     @Override

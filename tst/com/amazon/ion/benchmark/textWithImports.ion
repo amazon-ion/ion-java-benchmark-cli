@@ -1,0 +1,23 @@
+$ion_symbol_table::{
+    imports: [
+        {
+            name: "abc",
+            version: 1,
+            max_id: 1
+        },
+        {
+            name: "def",
+            version: 1,
+            max_id: 1
+        }
+    ],
+    symbols: ["abc", "baz"]
+}
+{
+    $10: $11,
+    $12: [123, 456]
+}
+{
+    $10: $13,
+    $12: [42.0, 43e0]
+}

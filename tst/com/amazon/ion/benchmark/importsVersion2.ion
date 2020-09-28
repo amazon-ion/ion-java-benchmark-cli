@@ -1,0 +1,12 @@
+$ion_shared_symbol_table::{
+    name: "abc",
+    version: 2,
+    max_id: 2,
+    symbols: ["foo", "abc"]
+}
+$ion_shared_symbol_table::{
+    name: "def",
+    version: 2,
+    max_id: 2,
+    symbols: ["bar", "baz"]
+}

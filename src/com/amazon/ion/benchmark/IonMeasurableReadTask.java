@@ -1,6 +1,7 @@
 package com.amazon.ion.benchmark;
 
 import com.amazon.ion.IonReader;
+import com.amazon.ion.IonSystem;
 import com.amazon.ion.impl.LookaheadIonReaderWrapper;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ionpathextraction.PathExtractor;
@@ -10,9 +11,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
-
-import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 
 /**
  * A MeasurableReadTask for reading data in the Ion format (either text or binary).
@@ -20,9 +18,9 @@ import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 class IonMeasurableReadTask extends MeasurableReadTask {
 
     private static final int DEFAULT_NON_BLOCKING_BUFFER_SIZE = 64 * 1024;
-    private static final Function<IonReader, Integer> PATH_EXTRACTOR_CALLBACK = IonMeasurableReadTask::pathExtractorCallback;
     private final IonReaderBuilder readerBuilder;
     private final PathExtractor<?> pathExtractor;
+    private final IonSystem ionSystem;
 
     /**
      * Returns the next power of two greater than or equal to the given value.
@@ -38,7 +36,7 @@ class IonMeasurableReadTask extends MeasurableReadTask {
      * @param reader the reader positioned at the match.
      * @return 0, meaning that the reader should not step out of the current container after a match.
      */
-    private static int pathExtractorCallback(IonReader reader) {
+    private int pathExtractorCallback(IonReader reader) {
         consumeCurrentValue(reader, reader.isInStruct());
         return 0;
     }
@@ -50,7 +48,8 @@ class IonMeasurableReadTask extends MeasurableReadTask {
      */
     IonMeasurableReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
         super(inputPath, options);
-        readerBuilder = IonUtilities.newReaderBuilder(options).
+        ionSystem = IonUtilities.ionSystemForBenchmark(options);
+        readerBuilder = IonUtilities.newReaderBuilderForBenchmark(options).
             withNonBlockingEnabled(options.readerType == IonReaderType.NON_BLOCKING);
         if (readerBuilder.isNonBlockingEnabled()) {
             // TODO configurable initial buffer size for non-blocking to take precedence over the auto-tuned value.
@@ -64,7 +63,7 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         if (options.paths != null) {
             PathExtractorBuilder<?> pathExtractorBuilder = PathExtractorBuilder.standard();
             for (String path : options.paths) {
-                pathExtractorBuilder.withSearchPath(path, PATH_EXTRACTOR_CALLBACK);
+                pathExtractorBuilder.withSearchPath(path, this::pathExtractorCallback);
             }
             pathExtractor = pathExtractorBuilder.build();
         } else {
@@ -82,13 +81,22 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         // Nothing to do.
     }
 
-    private static void consumeCurrentValue(IonReader reader, boolean isInStruct) {
+    private void consumeCurrentValue(IonReader reader, boolean isInStruct) {
         if (isInStruct) {
-            reader.getFieldName();
+            if (options.useSymbolTokens) {
+                reader.getFieldNameSymbol();
+            } else {
+                reader.getFieldName();
+            }
         }
-        Iterator<String> annotationsIterator = reader.iterateTypeAnnotations();
-        while (annotationsIterator.hasNext()) {
-            annotationsIterator.next();
+        if (options.useSymbolTokens) {
+            reader.getTypeAnnotationSymbols();
+        } else {
+            // TODO option not to iterate the annotations?
+            Iterator<String> annotationsIterator = reader.iterateTypeAnnotations();
+            while (annotationsIterator.hasNext()) {
+                annotationsIterator.next();
+            }
         }
         switch (reader.getType()) {
             case NULL:
@@ -111,8 +119,11 @@ class IonMeasurableReadTask extends MeasurableReadTask {
                 reader.timestampValue();
                 break;
             case SYMBOL:
-                // TODO add option for symbolValue
-                reader.stringValue();
+                if (options.useSymbolTokens) {
+                    reader.symbolValue();
+                } else {
+                    reader.stringValue();
+                }
                 break;
             case STRING:
                 reader.stringValue();
@@ -138,7 +149,7 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         }
     }
 
-    private static void fullyTraverse(IonReader reader, boolean isInStruct) {
+    private void fullyTraverse(IonReader reader, boolean isInStruct) {
         while (reader.next() != null) {
             consumeCurrentValue(reader, isInStruct);
         }
@@ -173,13 +184,14 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         reader.close();
     }
 
+    // TODO allow for use with --ion-reader non_blocking
     @Override
     public void fullyReadDomFromBuffer() throws IOException {
-        ION_SYSTEM.newLoader().load(buffer);
+        ionSystem.newLoader().load(buffer);
     }
 
     @Override
     public void fullyReadDomFromFile() throws IOException {
-        ION_SYSTEM.newLoader().load(inputFile);
+        ionSystem.newLoader().load(inputFile);
     }
 }
