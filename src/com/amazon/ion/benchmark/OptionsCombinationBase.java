@@ -21,6 +21,7 @@ import java.util.function.Function;
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_API_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
@@ -40,6 +41,7 @@ abstract class OptionsCombinationBase {
     final IoType ioType;
     final String importsForInputFile;
     final String importsForBenchmarkFile;
+    final Integer floatWidth;
     final boolean useSymbolTokens;
     final int limit;
 
@@ -77,6 +79,7 @@ abstract class OptionsCombinationBase {
         ioType = getOrDefault(parametersStruct, IO_TYPE_NAME, val -> IoType.valueOf(((IonText) val).stringValue()), IoType.FILE);
         importsForInputFile = getOrDefault(parametersStruct, ION_IMPORTS_FOR_INPUT_NAME, val -> ((IonText) val).stringValue(), null);
         importsForBenchmarkFile = getOrDefault(parametersStruct, ION_IMPORTS_FOR_BENCHMARK_NAME, val -> ((IonText) val).stringValue(), null);
+        floatWidth = getOrDefault(parametersStruct, ION_FLOAT_WIDTH_NAME, val -> ((IonInt) val).intValue(), null);
         useSymbolTokens = getOrDefault(parametersStruct, ION_USE_SYMBOL_TOKENS_NAME, val -> ((IonBool) val).booleanValue(), false);
         limit = getOrDefault(parametersStruct, LIMIT_NAME, val -> ((IonInt) val).intValue(), Integer.MAX_VALUE);
     }

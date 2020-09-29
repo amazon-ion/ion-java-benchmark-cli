@@ -25,6 +25,7 @@ import java.util.function.Function;
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_API_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
@@ -266,6 +267,18 @@ abstract class OptionsMatrixBase {
             FORMAT_NAME,
             (s) -> Format.valueOf(s.toUpperCase()),
             (format) -> ION_SYSTEM.newSymbol(format.name()),
+            optionsCombinationStructs
+        );
+        parseAndCombine(
+            optionsMatrix.get("--ion-float-width"),
+            ION_FLOAT_WIDTH_NAME,
+            OptionsMatrixBase::getIntOrAuto,
+            (width) -> {
+                if (width != 32 && width != 64) {
+                    throw new IllegalArgumentException("--ion-float-width must be 32, 64, or auto.");
+                }
+                return ION_SYSTEM.newInt(width);
+            },
             optionsCombinationStructs
         );
         parseCommandSpecificOptions(optionsMatrix, optionsCombinationStructs);

@@ -160,12 +160,18 @@ class IonUtilities {
      * @throws IOException if thrown when parsing shared symbol tables.
      */
     static IonWriterSupplier newBinaryWriterSupplier(OptionsCombinationBase options) throws IOException {
-        return _Private_IonManagedBinaryWriterBuilder.create(_Private_IonManagedBinaryWriterBuilder.AllocatorMode.POOLED)
+        _Private_IonManagedBinaryWriterBuilder builder = _Private_IonManagedBinaryWriterBuilder
+            .create(_Private_IonManagedBinaryWriterBuilder.AllocatorMode.POOLED)
             //.withUserBlockSize(builder.ionWriterBlockSize) // TODO?
             .withPaddedLengthPreallocation(options.preallocation != null ? options.preallocation : 2)
             .withImports(parseImportsFromFile(options.importsForBenchmarkFile))
-            .withLocalSymbolTableAppendEnabled()
-            ::newWriter;
+            .withLocalSymbolTableAppendEnabled();
+        if (options.floatWidth != null && options.floatWidth == 32) {
+            builder.withFloatBinary32Enabled();
+        } else {
+            builder.withFloatBinary32Disabled();
+        }
+        return builder::newWriter;
     }
 
     /**
