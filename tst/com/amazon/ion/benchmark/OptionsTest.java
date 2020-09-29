@@ -65,6 +65,7 @@ public class OptionsTest {
         String importsForBenchmarkFile = null;
         int limit = Integer.MAX_VALUE;
         boolean useSymbolTokens = false;
+        Integer floatWidth = null;
 
         final T preallocation(Integer preallocation) {
             this.preallocation = preallocation;
@@ -111,6 +112,11 @@ public class OptionsTest {
             return (T) this;
         }
 
+        final T floatWidth(Integer floatWidth) {
+            this.floatWidth = floatWidth;
+            return (T) this;
+        }
+
         void assertOptionsEqual(U that) {
             assertEquals(flushPeriod, that.flushPeriod);
             assertEquals(api, that.api);
@@ -120,6 +126,7 @@ public class OptionsTest {
             assertEquals(importsForInputFile, that.importsForInputFile);
             assertEquals(importsForBenchmarkFile, that.importsForBenchmarkFile);
             assertEquals(ioType, that.ioType);
+            assertEquals(floatWidth, that.floatWidth);
         }
     }
 
@@ -712,7 +719,7 @@ public class OptionsTest {
             "input1.10n"
         );
         assertEquals(3, optionsCombinations.size());
-        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(3);
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().importsForBenchmarkFile(importsFileName));
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().importsForBenchmarkFile(importsV2FileName));
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions());
@@ -753,6 +760,58 @@ public class OptionsTest {
     }
 
     @Test
+    public void importsForBenchmarkAuto() throws Exception {
+        String importsFileName = fileInTestDirectory("imports.ion").toString();
+        WriteOptionsCombination combination1 = parseSingleOptionsCombination(
+            "write",
+            "--ion-imports-for-input",
+            importsFileName,
+            "binaryWithImports.10n"
+        );
+        ExpectedWriteOptionsCombination.defaultOptions()
+            .importsForInputFile(importsFileName)
+            .importsForBenchmarkFile(importsFileName)
+            .assertOptionsEqual(combination1);
+
+        WriteOptionsCombination combination2 = parseSingleOptionsCombination(
+            "write",
+            "--ion-imports-for-input",
+            "none",
+            "--ion-imports-for-benchmark",
+            "auto",
+            "binaryWithImports.10n"
+        );
+        ExpectedWriteOptionsCombination.defaultOptions()
+            .importsForInputFile(null)
+            .importsForBenchmarkFile(null)
+            .assertOptionsEqual(combination2);
+
+        ReadOptionsCombination combination3 = parseSingleOptionsCombination(
+            "read",
+            "--ion-imports-for-input",
+            importsFileName,
+            "--ion-imports-for-benchmark",
+            "auto",
+            "binaryWithImports.10n"
+        );
+        ExpectedReadOptionsCombination.defaultOptions()
+            .importsForInputFile(importsFileName)
+            .importsForBenchmarkFile(importsFileName)
+            .assertOptionsEqual(combination3);
+
+        ReadOptionsCombination combination4 = parseSingleOptionsCombination(
+            "read",
+            "--ion-imports-for-input",
+            "none",
+            "binaryWithImports.10n"
+        );
+        ExpectedReadOptionsCombination.defaultOptions()
+            .importsForInputFile(null)
+            .importsForBenchmarkFile(null)
+            .assertOptionsEqual(combination4);
+    }
+
+    @Test
     public void readBinaryFromDataWithImportsWithoutProvidingCatalogRaisesError() throws Exception {
         ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
             "read",
@@ -770,6 +829,73 @@ public class OptionsTest {
         );
         Path inputPath = fileInTestDirectory("binaryWithImports.10n");
         assertThrows(IllegalArgumentException.class, () -> optionsCombination.createMeasurableTask(inputPath));
+    }
+
+    @Test
+    public void readBinaryFloatWidths() throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--ion-float-width",
+            "32",
+            "--ion-float-width",
+            "64",
+            "--ion-float-width",
+            "auto",
+            "input1.10n"
+        );
+        assertEquals(3, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(3);
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().floatWidth(32));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().floatWidth(64));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions());
+
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.floatWidth, optionsCombination.floatWidth));
+
+            assertReadTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, optionsCombination.floatWidth != null);
+            assertReadTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, true);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void writeBinaryFloatWidths() throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "write",
+            "--ion-float-width",
+            "32",
+            "--ion-float-width",
+            "64",
+            "--ion-float-width",
+            "auto",
+            "input1.10n"
+        );
+        assertEquals(3, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(3);
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().floatWidth(32));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().floatWidth(64));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions());
+
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.floatWidth, optionsCombination.floatWidth));
+
+            assertWriteTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void invalidFloatWidthRaisesError() {
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> parseSingleOptionsCombination(
+            "write",
+            "--ion-float-width",
+            "99",
+            "input1.10n"
+            )
+        );
     }
 
 }

@@ -15,6 +15,7 @@ class Constants {
     static final String FORMAT_NAME = "f";
     static final String ION_READER_NAME = "R";
     static final String ION_USE_SYMBOL_TOKENS_NAME = "k";
+    static final String ION_FLOAT_WIDTH_NAME = "W";
     static final String PATHS_NAME = "s";
     static final String AUTO_VALUE = "auto";
     static final String NONE_VALUE = "none";

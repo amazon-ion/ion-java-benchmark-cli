@@ -99,7 +99,6 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
                         break;
                     case FLOAT:
                         double doubleValue = reader.doubleValue();
-                        // TODO 32-bit floats
                         instructionsSink.accept(writer -> writer.writeFloat(doubleValue));
                         break;
                     case DECIMAL:

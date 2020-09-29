@@ -25,12 +25,12 @@ public class Main {
         + "  ion-java-benchmark write [--profile] [--io-type <type>] [--ion-api <api>]... [--format <type>]... "
                 + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
                 + "[--results-file <file>] [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
-                + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... "
+                + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
                 + "[--ion-use-symbol-tokens <bool>]... [--mode <mode>] [--time-unit <unit>] <input_file>\n"
         + "  ion-java-benchmark read [--profile] [--io-type <type>] [--ion-api <api>]... [--format <type>]... "
                 + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
                 + "[--results-file <file>] [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
-                + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... "
+                + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
                 + "[--ion-use-symbol-tokens <bool>]... [--mode <mode>] [--time-unit <unit>] [--ion-reader <type>]... "
                 + "[--paths <file>] <input_file>\n"
         + "  ion-java-benchmark --help\n"
@@ -59,7 +59,6 @@ public class Main {
 
     // TODO add options for the following:
     // TODO IO buffer size (for buffered input/output streams)
-    // TODO ion float 32 support
     // TODO read lobs using getBytes() into reusable buffers
     // TODO read decimals using bigDecimalValue() instead of decimalValue()
     // TODO binary writer block size
@@ -132,6 +131,12 @@ public class Main {
                 + "specified twice to compare both options. [default: false]\n"
         + "  -R --ion-reader <type>                 The IonReader type to use, from the set (blocking | non_blocking). "
                 + "May be specified multiple times to compare different readers. [default: non_blocking]\n"
+        + "  -W --ion-float-width <int>             The bit width of binary Ion float values (32 | 64 | auto). "
+                + "Ignored unless the format is ion_binary. May be specified multiple times to compare different "
+                + "settings. 'auto' behaves as follows: for write benchmarks, 64-bit floats are written; for read "
+                + "benchmarks, the input file is read as-is unless the values of other options require it to be "
+                + "re-written, in which case it will be re-written and later read using 64-bit floats. "
+                + "[default: auto]\n"
         + "  -s --paths <file>                      A file containing a sequence of Ion s-expressions representing "
                 + "search paths (https://github.com/amzn/ion-java-path-extraction/#search-paths) into the input data. "
                 + "Only values matching one of the paths will be materialized; all other values will be skipped. For "

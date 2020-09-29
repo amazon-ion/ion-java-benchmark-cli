@@ -21,18 +21,19 @@ enum Format {
                 case ION_BINARY:
                     boolean optionsRequireRewrite = options.flushPeriod != null
                         || options.preallocation != null
+                        || options.floatWidth != null
                         || (options.importsForBenchmarkFile != null
                             && !IonUtilities.importsEqual(options.importsForBenchmarkFile, input.toFile()))
                         || !IonUtilities.importsFilesEqual(options.importsForInputFile, options.importsForBenchmarkFile);
-                    if (options.limit == Integer.MAX_VALUE && !optionsRequireRewrite) {
-                        // There are no settings that require mutating the original input.
-                        return input;
-                    } else if (!optionsRequireRewrite) {
-                        // This combination of settings requires simple truncation.
-                        return IonUtilities.truncateBinaryIonFile(input, output, options.limit);
-                    } else {
+                    if (optionsRequireRewrite) {
                         // This combination of settings requires re-encoding the input.
                         IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newBinaryWriterSupplier);
+                    } else if (options.limit == Integer.MAX_VALUE) {
+                        // There are no settings that require mutating the original input.
+                        return input;
+                    } else {
+                        // This combination of settings requires simple truncation.
+                        return IonUtilities.truncateBinaryIonFile(input, output, options.limit);
                     }
                     break;
                 case ION_TEXT:
