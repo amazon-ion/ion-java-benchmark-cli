@@ -21,6 +21,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
@@ -90,6 +91,16 @@ abstract class OptionsMatrixBase {
     }
 
     /**
+     * Throws an exception if invoked. Intended to be used as the `implicitDefault` argument to
+     * {@link #parseAndCombine(Object, String, Function, Function, List, Supplier)} when the option to be parsed
+     * must always have an explicit value.
+     * @return never returns cleanly.
+     */
+    static IonValue noImplicitDefault() {
+        throw new IllegalStateException("This option must always be specified explicitly.");
+    }
+
+    /**
      * Parses option(s) from the given List of Strings and combines the new options with all existing combinations. This
      * multiplies the number of combinations by the number of new options parsed.
      * @param optionValueList List of Strings containing option values.
@@ -97,6 +108,9 @@ abstract class OptionsMatrixBase {
      * @param parser parser function from String to the desired type.
      * @param translator translator from the desired type to IonValue.
      * @param optionsCombinationStructs structs representing all existing options combinations.
+     * @param implicitDefault supplier of the value that is implied by a `null` value being returned from the parser
+     *                        function. This supplier is used when the implicit value is one of multiple values for
+     *                        the option, and therefore must be declared explicitly.
      * @param <T> the type of the option.
      */
     static <T> void parseAndCombine(
@@ -104,7 +118,8 @@ abstract class OptionsMatrixBase {
         String newOptionName,
         Function<String, T> parser,
         Function<T, IonValue> translator,
-        List<IonStruct> optionsCombinationStructs
+        List<IonStruct> optionsCombinationStructs,
+        Supplier<IonValue> implicitDefault
     ) {
         Set<T> values = new HashSet<>();
         for (String optionValue : ((List<String>) optionValueList)) {
@@ -114,8 +129,8 @@ abstract class OptionsMatrixBase {
         for (T value : values) {
             if (value == null) {
                 if (values.size() > 1) {
-                    // There are values in addition to the 'auto' value, so it must be included literally.
-                    newOptions.add(ION_SYSTEM.newSymbol(Constants.AUTO_VALUE));
+                    // There are values in addition to the implicit value, so it must be included literally.
+                    newOptions.add(implicitDefault.get());
                 }
             } else {
                 newOptions.add(translator.apply(value));
@@ -232,42 +247,54 @@ abstract class OptionsMatrixBase {
             ION_IMPORTS_FOR_BENCHMARK_NAME,
             (s) -> OptionsMatrixBase.getFileOrDefault(s, importsForInput),
             ION_SYSTEM::newString,
-            optionsCombinationStructs
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE)
         );
         parseAndCombine(
             optionsMatrix.get("--ion-length-preallocation"),
             PREALLOCATION_NAME,
             OptionsMatrixBase::getIntOrAuto,
             ION_SYSTEM::newInt,
-            optionsCombinationStructs
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE)
         );
         parseAndCombine(
             optionsMatrix.get("--ion-flush-period"),
             FLUSH_PERIOD_NAME,
             OptionsMatrixBase::getIntOrAuto,
             ION_SYSTEM::newInt,
-            optionsCombinationStructs
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE)
         );
         parseAndCombine(
             optionsMatrix.get("--ion-api"),
             ION_API_NAME,
             (s) -> IonAPI.valueOf(s.toUpperCase()),
             (api) -> ION_SYSTEM.newSymbol(api.name()),
-            optionsCombinationStructs
+            optionsCombinationStructs,
+            OptionsMatrixBase::noImplicitDefault
         );
         parseAndCombine(
             optionsMatrix.get("--ion-use-symbol-tokens"),
             ION_USE_SYMBOL_TOKENS_NAME,
-            (s) -> Boolean.valueOf(s.toLowerCase()),
+            (s) -> {
+                boolean value = Boolean.parseBoolean(s.toLowerCase());
+                if (value) {
+                    return true;
+                }
+                return null;
+            },
             ION_SYSTEM::newBool,
-            optionsCombinationStructs
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newBool(false)
         );
         parseAndCombine(
             optionsMatrix.get("--format"),
             FORMAT_NAME,
             (s) -> Format.valueOf(s.toUpperCase()),
             (format) -> ION_SYSTEM.newSymbol(format.name()),
-            optionsCombinationStructs
+            optionsCombinationStructs,
+            OptionsMatrixBase::noImplicitDefault
         );
         parseAndCombine(
             optionsMatrix.get("--ion-float-width"),
@@ -279,7 +306,8 @@ abstract class OptionsMatrixBase {
                 }
                 return ION_SYSTEM.newInt(width);
             },
-            optionsCombinationStructs
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE)
         );
         parseCommandSpecificOptions(optionsMatrix, optionsCombinationStructs);
         serializedOptionsCombinations = serializeOptionsCombinations(optionsCombinationStructs);
