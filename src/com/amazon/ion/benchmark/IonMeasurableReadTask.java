@@ -92,7 +92,6 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         if (options.useSymbolTokens) {
             reader.getTypeAnnotationSymbols();
         } else {
-            // TODO option not to iterate the annotations?
             Iterator<String> annotationsIterator = reader.iterateTypeAnnotations();
             while (annotationsIterator.hasNext()) {
                 annotationsIterator.next();
@@ -112,7 +111,6 @@ class IonMeasurableReadTask extends MeasurableReadTask {
                 reader.doubleValue();
                 break;
             case DECIMAL:
-                // TODO add option for bigDecimalValue
                 reader.decimalValue();
                 break;
             case TIMESTAMP:
@@ -130,7 +128,6 @@ class IonMeasurableReadTask extends MeasurableReadTask {
                 break;
             case CLOB:
             case BLOB:
-                // TODO add option for getBytes
                 reader.newBytes();
                 break;
             case LIST:

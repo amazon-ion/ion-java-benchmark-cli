@@ -34,7 +34,8 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
             ION_READER_NAME,
             (s) -> IonReaderType.valueOf(s.toUpperCase()),
             (type) -> ION_SYSTEM.newSymbol(type.name()),
-            optionsCombinationStructs
+            optionsCombinationStructs,
+            OptionsMatrixBase::noImplicitDefault
         );
     }
 
