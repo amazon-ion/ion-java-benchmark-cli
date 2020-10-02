@@ -184,14 +184,17 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         reader.close();
     }
 
-    // TODO allow for use with --ion-reader non_blocking
     @Override
     public void fullyReadDomFromBuffer() throws IOException {
-        ionSystem.newLoader().load(buffer);
+        IonReader reader = readerBuilder.build(buffer);
+        ionSystem.newLoader().load(reader);
+        reader.close();
     }
 
     @Override
     public void fullyReadDomFromFile() throws IOException {
-        ionSystem.newLoader().load(inputFile);
+        IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
+        ionSystem.newLoader().load(reader);
+        reader.close();
     }
 }
