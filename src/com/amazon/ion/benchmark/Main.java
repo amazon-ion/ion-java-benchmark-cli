@@ -26,7 +26,8 @@ public class Main {
                 + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
                 + "[--results-file <file>] [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
                 + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
-                + "[--ion-use-symbol-tokens <bool>]... [--mode <mode>] [--time-unit <unit>] <input_file>\n"
+                + "[--ion-use-symbol-tokens <bool>]... [--mode <mode>] [--time-unit <unit>] "
+                + "[--ion-writer-block-size <int>]... <input_file>\n"
         + "  ion-java-benchmark read [--profile] [--io-type <type>] [--ion-api <api>]... [--format <type>]... "
                 + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
                 + "[--results-file <file>] [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
@@ -61,7 +62,6 @@ public class Main {
     // TODO IO buffer size (for buffered input/output streams)
     // TODO read lobs using getBytes() into reusable buffers
     // TODO read decimals using bigDecimalValue() instead of decimalValue()
-    // TODO binary writer block size
     // TODO make io-type repeatable and consolidate readBinaryWithLimitFromBuffer and readBinaryWithLimitFromFile
     private static final String OPTIONS =
         "Options:\n"
@@ -147,6 +147,10 @@ public class Main {
                 + "formats, the most efficient known API for performing sparse reads will be used. Ignored unless "
                 + "--ion-api streaming is specified. By default, no search paths will be used, meaning the input data "
                 + "will be fully traversed and materialized.)\n"
+        + "  -b --ion-writer-block-size <int>       The size in bytes of the blocks the binary IonWriter uses to "
+                + "buffer data, or 'auto', which uses the default value provided by the Ion writer builder. May be "
+                + "specified multiple times to compare different values. Ignored unless the format is ion_binary. "
+                + "[default: auto]\n"
         + "  -m --mode <mode>                       The JMH benchmark mode to use, from the set (SingleShotTime | "
                 + "SampleTime | AverageTime | Throughput). SingleShotTime, in which each benchmark iteration writes "
                 + "or reads the data exactly once, is usually sufficient for medium and large streams. SampleTime, "
