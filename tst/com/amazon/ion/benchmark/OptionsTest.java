@@ -161,15 +161,21 @@ public class OptionsTest {
     private static class ExpectedWriteOptionsCombination
         extends ExpectedOptionsCombinationBase<ExpectedWriteOptionsCombination, WriteOptionsCombination> {
 
-        // Note: there are not yet any write-specific options.
+        Integer ionWriterBlockSize = null;
 
         static ExpectedWriteOptionsCombination defaultOptions() {
             return new ExpectedWriteOptionsCombination();
         }
 
+        final ExpectedWriteOptionsCombination ionWriterBlockSize(Integer ionWriterBlockSize) {
+            this.ionWriterBlockSize = ionWriterBlockSize;
+            return this;
+        }
+
         @Override
         void assertOptionsEqual(WriteOptionsCombination that) {
             super.assertOptionsEqual(that);
+            assertEquals(ionWriterBlockSize, that.ionWriterBlockSize);
         }
     }
 
@@ -896,6 +902,34 @@ public class OptionsTest {
             "input1.10n"
             )
         );
+    }
+
+    @Test
+    public void ionWriterBlockSize() throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "write",
+            "--ion-writer-block-size",
+            "16",
+            "--ion-writer-block-size",
+            "1024",
+            "--ion-writer-block-size",
+            "auto",
+            "input1.10n"
+        );
+        assertEquals(3, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(3);
+
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ionWriterBlockSize(16));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ionWriterBlockSize(1024));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions());
+
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.ionWriterBlockSize, optionsCombination.ionWriterBlockSize));
+
+            assertWriteTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+        }
+        assertTrue(expectedCombinations.isEmpty());
     }
 
 }

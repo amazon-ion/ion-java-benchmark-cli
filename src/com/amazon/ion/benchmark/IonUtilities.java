@@ -162,7 +162,6 @@ class IonUtilities {
     static IonWriterSupplier newBinaryWriterSupplier(OptionsCombinationBase options) throws IOException {
         _Private_IonManagedBinaryWriterBuilder builder = _Private_IonManagedBinaryWriterBuilder
             .create(_Private_IonManagedBinaryWriterBuilder.AllocatorMode.POOLED)
-            //.withUserBlockSize(builder.ionWriterBlockSize) // TODO?
             .withPaddedLengthPreallocation(options.preallocation != null ? options.preallocation : 2)
             .withImports(parseImportsFromFile(options.importsForBenchmarkFile))
             .withLocalSymbolTableAppendEnabled();
@@ -170,6 +169,15 @@ class IonUtilities {
             builder.withFloatBinary32Enabled();
         } else {
             builder.withFloatBinary32Disabled();
+        }
+        if (options instanceof WriteOptionsCombination) {
+            // When this method is used by the read benchmark for converting the input file, 'options' will be a
+            // ReadOptionsCombination, which does not have the 'ionWriterUserBufferSize' value, because this value
+            // does not affect the serialized Ion.
+            Integer ionWriterBlockSize = ((WriteOptionsCombination) options).ionWriterBlockSize;
+            if (ionWriterBlockSize != null) {
+                builder.withUserBlockSize(ionWriterBlockSize);
+            }
         }
         return builder::newWriter;
     }

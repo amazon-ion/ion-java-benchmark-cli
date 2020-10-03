@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -181,7 +180,7 @@ abstract class OptionsMatrixBase {
      * @param intOrAuto a String representation of an integer, or the String 'auto', or null.
      * @return null if the input is null or is 'auto'; otherwise, the integer parsed from the input.
      */
-    private static Integer getIntOrAuto(String intOrAuto) {
+    static Integer getIntOrAuto(String intOrAuto) {
         if (intOrAuto == null || intOrAuto.equals(Constants.AUTO_VALUE)) {
             return null;
         }

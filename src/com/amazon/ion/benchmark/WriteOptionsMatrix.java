@@ -5,6 +5,9 @@ import com.amazon.ion.IonStruct;
 import java.util.List;
 import java.util.Map;
 
+import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
+import static com.amazon.ion.benchmark.Constants.ION_WRITER_BLOCK_SIZE_NAME;
+
 /**
  * Represents all write command options combinations, corresponding to all write benchmark trials. A single
  * WriteOptionsMatrix may yield multiple WriteOptionsCombinations.
@@ -21,7 +24,14 @@ class WriteOptionsMatrix extends OptionsMatrixBase {
 
     @Override
     void parseCommandSpecificOptions(Map<String, Object> optionsMatrix, List<IonStruct> optionsCombinationStructs) {
-        // There are currently no write-specific options.
+        parseAndCombine(
+            optionsMatrix.get("--ion-writer-block-size"),
+            ION_WRITER_BLOCK_SIZE_NAME,
+            OptionsMatrixBase::getIntOrAuto,
+            ION_SYSTEM::newInt,
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE)
+        );
     }
 
 }
