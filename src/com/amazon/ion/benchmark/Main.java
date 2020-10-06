@@ -22,13 +22,13 @@ public class Main {
 
     private static final String USAGE =
         "Usage:\n"
-        + "  ion-java-benchmark write [--profile] [--io-type <type>] [--ion-api <api>]... [--format <type>]... "
+        + "  ion-java-benchmark write [--profile] [--io-type <type>]... [--ion-api <api>]... [--format <type>]... "
                 + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
                 + "[--results-file <file>] [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
                 + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
                 + "[--ion-use-symbol-tokens <bool>]... [--mode <mode>] [--time-unit <unit>] "
                 + "[--ion-writer-block-size <int>]... <input_file>\n"
-        + "  ion-java-benchmark read [--profile] [--io-type <type>] [--ion-api <api>]... [--format <type>]... "
+        + "  ion-java-benchmark read [--profile] [--io-type <type>]... [--ion-api <api>]... [--format <type>]... "
                 + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
                 + "[--results-file <file>] [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
                 + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
@@ -62,7 +62,7 @@ public class Main {
     // TODO IO buffer size (for buffered input/output streams)
     // TODO read lobs using getBytes() into reusable buffers
     // TODO read decimals using bigDecimalValue() instead of decimalValue()
-    // TODO make io-type repeatable and consolidate readBinaryWithLimitFromBuffer and readBinaryWithLimitFromFile
+    // TODO comment OptionsTest
     private static final String OPTIONS =
         "Options:\n"
         + "  -h --help                              Show this screen.\n"
@@ -79,7 +79,8 @@ public class Main {
                 + "each input file are processed.\n"
         + "  -t --io-type <type>                    The source or destination type, from the set (buffer | file). If "
                 + "buffer is selected, buffers the input data in memory before reading and writes the output data to "
-                + "an in-memory buffer instead of a file. To limit the amount of memory required, use --limit. "
+                + "an in-memory buffer instead of a file. To limit the amount of memory required, use --limit. May be "
+                + "specified multiple times to compare both settings."
                 + "[default: file]\n"
         + "  -w --warmups <int>                     Number of benchmark warm-up iterations. [default: 10]\n"
         + "  -i --iterations <int>                  Number of benchmark iterations. [default: 10]\n"
