@@ -62,7 +62,6 @@ public class Main {
     // TODO IO buffer size (for buffered input/output streams)
     // TODO read lobs using getBytes() into reusable buffers
     // TODO read decimals using bigDecimalValue() instead of decimalValue()
-    // TODO comment OptionsTest
     private static final String OPTIONS =
         "Options:\n"
         + "  -h --help                              Show this screen.\n"
