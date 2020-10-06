@@ -959,23 +959,31 @@ public class OptionsTest {
 
     @Test
     public void readAllTypes() throws Exception {
-        // TODO both reader implementations
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
             "read",
             "--format",
             "ion_binary",
             "--format",
             "ion_text",
+            "--ion-reader",
+            "blocking",
+            "--ion-reader",
+            "non_blocking",
             "binaryAllTypes.10n"
         );
-        assertEquals(2, optionsCombinations.size());
-        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        assertEquals(4, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(4);
 
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY));
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_TEXT));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.BLOCKING).format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.BLOCKING).format(Format.ION_TEXT));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.NON_BLOCKING).format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.NON_BLOCKING).format(Format.ION_TEXT));
 
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
-            expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.format, optionsCombination.format));
+            expectedCombinations.removeIf(expectedCandidate -> {
+                return nullSafeEquals(expectedCandidate.format, optionsCombination.format)
+                    && expectedCandidate.readerType == optionsCombination.readerType;
+            });
 
             assertReadTaskExecutesCorrectly("binaryAllTypes.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
             assertReadTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);

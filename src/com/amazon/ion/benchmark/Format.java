@@ -151,7 +151,7 @@ enum Format {
      */
     static Format classify(Path path) throws IOException {
         File file = path.toFile();
-        // TODO use the length of the longest format header.
+        // TODO use the length of the longest format header once support for other formats is added.
         byte[] firstBytes = new byte[_Private_IonConstants.BINARY_VERSION_MARKER_SIZE];
         try (InputStream inputStream = new FileInputStream(file)) {
             int bytesRead = inputStream.read(firstBytes);
