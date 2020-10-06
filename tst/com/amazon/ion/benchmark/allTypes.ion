@@ -1,0 +1,32 @@
+null
+null.null
+null.bool
+null.int
+null.float
+null.decimal
+null.timestamp
+null.blob
+null.clob
+null.symbol
+null.string
+null.list
+null.sexp
+null.struct
+foo::true
+false
+123
+-123
+1234567896546513
+-12345678965465131234567896546513
+1.23e4
+-1.23e-4
+0.00001
+-1.0d23
+2000-01-01T00:00:00Z
+{{ aGVsbG8= }}
+{{ "hello" }}
+abc
+"abc"
+[123, {foo: bar}, ()]
+({foo: [123]})
+{foo: (a b c), bar: wolf::fox::[[[]]]}

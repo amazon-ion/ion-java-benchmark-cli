@@ -932,4 +932,56 @@ public class OptionsTest {
         assertTrue(expectedCombinations.isEmpty());
     }
 
+    @Test
+    public void writeAllTypes() throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "write",
+            "--format",
+            "ion_binary",
+            "--format",
+            "ion_text",
+            "allTypes.10n"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
+
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_TEXT));
+
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.format, optionsCombination.format));
+
+            assertWriteTaskExecutesCorrectly("allTypes.10n", optionsCombination, optionsCombination.format, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("allTypes.ion", optionsCombination, optionsCombination.format, IoType.FILE);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void readAllTypes() throws Exception {
+        // TODO both reader implementations
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--format",
+            "ion_binary",
+            "--format",
+            "ion_text",
+            "allTypes.10n"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
+
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_TEXT));
+
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.format, optionsCombination.format));
+
+            assertReadTaskExecutesCorrectly("allTypes.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
+            assertReadTaskExecutesCorrectly("allTypes.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);
+
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
 }
