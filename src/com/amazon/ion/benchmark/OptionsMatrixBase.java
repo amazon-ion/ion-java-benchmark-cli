@@ -235,12 +235,18 @@ abstract class OptionsMatrixBase {
             int limit = Integer.parseInt(optionsMatrix.get("--limit").toString());
             addOptionTo(optionsCombinationStructs, LIMIT_NAME, ION_SYSTEM.newInt(limit));
         }
-        IoType ioType = IoType.valueOf(optionsMatrix.get("--io-type").toString().toUpperCase());
-        addOptionTo(optionsCombinationStructs, IO_TYPE_NAME, ION_SYSTEM.newSymbol(ioType.name()));
         String importsForInput = getFileOrNone(optionsMatrix.get("--ion-imports-for-input").toString());
         if (importsForInput != null) {
             addOptionTo(optionsCombinationStructs, ION_IMPORTS_FOR_INPUT_NAME, ION_SYSTEM.newString(importsForInput));
         }
+        parseAndCombine(
+            optionsMatrix.get("--io-type"),
+            IO_TYPE_NAME,
+            (s) -> IoType.valueOf(s.toUpperCase()),
+            (type) -> ION_SYSTEM.newSymbol(type.name()),
+            optionsCombinationStructs,
+            OptionsMatrixBase::noImplicitDefault
+        );
         parseAndCombine(
             optionsMatrix.get("--ion-imports-for-benchmark"),
             ION_IMPORTS_FOR_BENCHMARK_NAME,

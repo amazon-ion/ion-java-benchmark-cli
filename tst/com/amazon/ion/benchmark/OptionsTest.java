@@ -243,36 +243,6 @@ public class OptionsTest {
         assertTrue(inputPath.toFile().exists());
     }
 
-    private static <T extends OptionsCombinationBase> List<T> parseOptionsCombinations(String... args) throws IOException {
-        OptionsMatrixBase matrix = OptionsMatrixBase.from(
-            Main.parseArguments(args)
-        );
-        String[] serializedOptionsCombinations = matrix.getSerializedOptionsCombinations();
-        List<T> readOptionsCombinations = new ArrayList<>(serializedOptionsCombinations.length);
-        for (String serializedOptionsCombination : serializedOptionsCombinations) {
-            readOptionsCombinations.add(
-                (T) OptionsCombinationBase.from(serializedOptionsCombination)
-            );
-        }
-        return readOptionsCombinations;
-    }
-
-    private static <T extends OptionsCombinationBase> T parseSingleOptionsCombination(String... args) throws IOException {
-        List<T> optionsCombinations = parseOptionsCombinations(args);
-        assertEquals(1, optionsCombinations.size());
-        return optionsCombinations.get(0);
-    }
-
-    @Test
-    public void defaultRead() throws Exception {
-        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination("read", "binaryStructs.10n");
-        ExpectedReadOptionsCombination.defaultOptions().assertOptionsEqual(optionsCombination);
-        // No conversion is required because the input is already binary Ion.
-        assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, false);
-        // Conversion is required because the input is text Ion but binary Ion is requested.
-        assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, true);
-    }
-
     private static void assertWriteTaskExecutesCorrectly(
         String inputFileName,
         WriteOptionsCombination optionsCombination,
@@ -325,6 +295,47 @@ public class OptionsTest {
         assertNull(task.currentBuffer);
     }
 
+    private static <T extends OptionsCombinationBase> List<T> parseOptionsCombinations(String... args) throws IOException {
+        OptionsMatrixBase matrix = OptionsMatrixBase.from(
+            Main.parseArguments(args)
+        );
+        String[] serializedOptionsCombinations = matrix.getSerializedOptionsCombinations();
+        List<T> readOptionsCombinations = new ArrayList<>(serializedOptionsCombinations.length);
+        for (String serializedOptionsCombination : serializedOptionsCombinations) {
+            readOptionsCombinations.add(
+                (T) OptionsCombinationBase.from(serializedOptionsCombination)
+            );
+        }
+        return readOptionsCombinations;
+    }
+
+    private static <T extends OptionsCombinationBase> T parseSingleOptionsCombination(String... args) throws IOException {
+        List<T> optionsCombinations = parseOptionsCombinations(args);
+        assertEquals(1, optionsCombinations.size());
+        return optionsCombinations.get(0);
+    }
+
+    private static boolean nullSafeEquals(Object lhs, Object rhs) {
+        if ((lhs == null) != (rhs == null)) {
+            return false;
+        }
+        if (lhs == null) {
+            // They're both null.
+            return true;
+        }
+        return lhs.equals(rhs);
+    }
+
+    @Test
+    public void defaultRead() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination("read", "binaryStructs.10n");
+        ExpectedReadOptionsCombination.defaultOptions().assertOptionsEqual(optionsCombination);
+        // No conversion is required because the input is already binary Ion.
+        assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, false);
+        // Conversion is required because the input is text Ion but binary Ion is requested.
+        assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, true);
+    }
+
     @Test
     public void defaultWrite() throws Exception {
         WriteOptionsCombination optionsCombination = parseSingleOptionsCombination("write", "binaryStructs.10n");
@@ -334,8 +345,8 @@ public class OptionsTest {
     }
 
     @Test
-    public void writeTextToBufferUsingDom() throws Exception {
-        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+    public void writeTextUsingDom() throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
             "write",
             "--format",
             "ion_text",
@@ -343,16 +354,35 @@ public class OptionsTest {
             "dom",
             "--io-type",
             "buffer",
+            "--io-type",
+            "file",
             "textStructs.ion"
         );
-        ExpectedWriteOptionsCombination.defaultOptions()
+        // There were IoTypes requested.
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions()
             .api(IonAPI.DOM)
             .format(Format.ION_TEXT)
             .ioType(IoType.BUFFER)
-            .assertOptionsEqual(optionsCombination);
+        );
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions()
+            .api(IonAPI.DOM)
+            .format(Format.ION_TEXT)
+            .ioType(IoType.FILE)
+        );
 
-        assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_TEXT, IoType.BUFFER);
-        assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_TEXT, IoType.BUFFER);
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(expectedCandidate -> {
+                return expectedCandidate.api == IonAPI.DOM
+                    && expectedCandidate.format == Format.ION_TEXT
+                    && expectedCandidate.ioType == optionsCombination.ioType;
+            });
+
+            assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_TEXT, optionsCombination.ioType);
+            assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_TEXT, optionsCombination.ioType);
+        }
+        assertTrue(expectedCombinations.isEmpty());
     }
 
     @Test
@@ -414,26 +444,30 @@ public class OptionsTest {
     }
 
     @Test
-    public void readBinaryWithLimitFromBuffer() throws Exception {
+    public void readBinaryWithLimit() throws Exception {
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
             "read",
             "--limit",
             "1",
             "--io-type",
             "buffer",
+            "--io-type",
+            "file",
             "--format",
             "ion_text",
             "--format",
             "ion_binary",
             "binaryStructs.10n"
         );
-        assertEquals(2, optionsCombinations.size());
-        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).format(Format.ION_BINARY));
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).format(Format.ION_TEXT));
+        assertEquals(4, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(4);
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).format(Format.ION_BINARY).ioType(IoType.BUFFER));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).format(Format.ION_TEXT).ioType(IoType.BUFFER));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).format(Format.ION_BINARY).ioType(IoType.FILE));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).format(Format.ION_TEXT).ioType(IoType.FILE));
 
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
-            expectedCombinations.removeIf(expectedCandidate -> expectedCandidate.format == optionsCombination.format);
+            expectedCombinations.removeIf(expectedCandidate -> expectedCandidate.format == optionsCombination.format && expectedCandidate.ioType == optionsCombination.ioType);
             assertEquals(1, optionsCombination.limit);
 
             assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, optionsCombination.format, true);
@@ -514,17 +548,6 @@ public class OptionsTest {
                 "binaryStructs.10n"
             )
         );
-    }
-
-    private static boolean nullSafeEquals(Object lhs, Object rhs) {
-        if ((lhs == null) != (rhs == null)) {
-            return false;
-        }
-        if (lhs == null) {
-            // They're both null.
-            return true;
-        }
-        return lhs.equals(rhs);
     }
 
     @Test
