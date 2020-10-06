@@ -265,12 +265,12 @@ public class OptionsTest {
 
     @Test
     public void defaultRead() throws Exception {
-        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination("read", "input1.10n");
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination("read", "binaryStructs.10n");
         ExpectedReadOptionsCombination.defaultOptions().assertOptionsEqual(optionsCombination);
         // No conversion is required because the input is already binary Ion.
-        assertReadTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, false);
+        assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, false);
         // Conversion is required because the input is text Ion but binary Ion is requested.
-        assertReadTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, true);
+        assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, true);
     }
 
     private static void assertWriteTaskExecutesCorrectly(
@@ -327,10 +327,10 @@ public class OptionsTest {
 
     @Test
     public void defaultWrite() throws Exception {
-        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination("write", "input1.10n");
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination("write", "binaryStructs.10n");
         ExpectedWriteOptionsCombination.defaultOptions().assertOptionsEqual(optionsCombination);
-        assertWriteTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
-        assertWriteTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+        assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
+        assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
     }
 
     @Test
@@ -343,7 +343,7 @@ public class OptionsTest {
             "dom",
             "--io-type",
             "buffer",
-            "input1.ion"
+            "textStructs.ion"
         );
         ExpectedWriteOptionsCombination.defaultOptions()
             .api(IonAPI.DOM)
@@ -351,8 +351,8 @@ public class OptionsTest {
             .ioType(IoType.BUFFER)
             .assertOptionsEqual(optionsCombination);
 
-        assertWriteTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_TEXT, IoType.BUFFER);
-        assertWriteTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_TEXT, IoType.BUFFER);
+        assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_TEXT, IoType.BUFFER);
+        assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_TEXT, IoType.BUFFER);
     }
 
     @Test
@@ -369,7 +369,7 @@ public class OptionsTest {
             "dom",
             "--ion-api",
             "streaming",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         // There were two Formats and two IonAPIs requested; four combinations.
         assertEquals(4, optionsCombinations.size());
@@ -398,13 +398,13 @@ public class OptionsTest {
             expectedCombinations.removeIf(expectedCandidate -> expectedCandidate.format == optionsCombination.format
                 && expectedCandidate.api == optionsCombination.api);
             assertReadTaskExecutesCorrectly(
-                "input1.10n",
+                "binaryStructs.10n",
                 optionsCombination,
                 optionsCombination.format,
                 optionsCombination.format != Format.ION_BINARY
             );
             assertReadTaskExecutesCorrectly(
-                "input1.ion",
+                "textStructs.ion",
                 optionsCombination,
                 optionsCombination.format,
                 optionsCombination.format != Format.ION_TEXT
@@ -425,7 +425,7 @@ public class OptionsTest {
             "ion_text",
             "--format",
             "ion_binary",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(2, optionsCombinations.size());
         List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
@@ -436,8 +436,8 @@ public class OptionsTest {
             expectedCombinations.removeIf(expectedCandidate -> expectedCandidate.format == optionsCombination.format);
             assertEquals(1, optionsCombination.limit);
 
-            assertReadTaskExecutesCorrectly("input1.10n", optionsCombination, optionsCombination.format, true);
-            assertReadTaskExecutesCorrectly("input1.ion", optionsCombination, optionsCombination.format, true);
+            assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, optionsCombination.format, true);
+            assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, optionsCombination.format, true);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -456,7 +456,7 @@ public class OptionsTest {
             "ion_binary",
             "--ion-api",
             "dom",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(2, optionsCombinations.size());
         List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
@@ -467,8 +467,8 @@ public class OptionsTest {
             expectedCombinations.removeIf(expectedCandidate -> expectedCandidate.format == optionsCombination.format);
             assertEquals(1, optionsCombination.limit);
 
-            assertReadTaskExecutesCorrectly("input1.10n", optionsCombination, optionsCombination.format, true);
-            assertReadTaskExecutesCorrectly("input1.ion", optionsCombination, optionsCombination.format, true);
+            assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, optionsCombination.format, true);
+            assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, optionsCombination.format, true);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -483,7 +483,7 @@ public class OptionsTest {
             "dom",
             "--ion-api",
             "streaming",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(2, optionsCombinations.size());
         List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
@@ -494,8 +494,8 @@ public class OptionsTest {
             expectedCombinations.removeIf(expectedCandidate -> expectedCandidate.api == optionsCombination.api);
             assertEquals(1, optionsCombination.limit);
 
-            assertWriteTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
-            assertWriteTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -511,7 +511,7 @@ public class OptionsTest {
                 "dom",
                 "--ion-api",
                 "streaming",
-                "input1.10n"
+                "binaryStructs.10n"
             )
         );
     }
@@ -543,7 +543,7 @@ public class OptionsTest {
             "2",
             "--ion-flush-period",
             "auto",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(9, optionsCombinations.size());
         List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(9);
@@ -561,8 +561,8 @@ public class OptionsTest {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.preallocation, optionsCombination.preallocation)
                 && nullSafeEquals(expectedCandidate.flushPeriod, optionsCombination.flushPeriod));
             boolean isConversionRequired = optionsCombination.preallocation != null || optionsCombination.flushPeriod != null;
-            assertReadTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, isConversionRequired);
-            assertReadTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, true);
+            assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, isConversionRequired);
+            assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, true);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -583,7 +583,7 @@ public class OptionsTest {
             "2",
             "--ion-flush-period",
             "auto",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(9, optionsCombinations.size());
         List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(9);
@@ -600,8 +600,8 @@ public class OptionsTest {
         for (WriteOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.preallocation, optionsCombination.preallocation)
                 && nullSafeEquals(expectedCandidate.flushPeriod, optionsCombination.flushPeriod));
-            assertWriteTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
-            assertWriteTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -612,13 +612,13 @@ public class OptionsTest {
             "read",
             "--paths",
             fileInTestDirectory("paths.ion").toString(),
-            "input1.10n"
+            "binaryStructs.10n"
         );
         ExpectedReadOptionsCombination.defaultOptions()
             .paths(Arrays.asList("(foo)", "(bar 1)"))
             .assertOptionsEqual(optionsCombination);
-        assertReadTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, false);
-        assertReadTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, true);
+        assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, false);
+        assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, true);
     }
 
     @Test
@@ -631,20 +631,20 @@ public class OptionsTest {
             "buffer",
             "--format",
             "ion_text",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         ExpectedReadOptionsCombination.defaultOptions()
             .paths(Arrays.asList("(foo)", "(bar 1)"))
             .ioType(IoType.BUFFER)
             .format(Format.ION_TEXT)
             .assertOptionsEqual(optionsCombination);
-        assertReadTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_TEXT, true);
-        assertReadTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_TEXT, true);
+        assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_TEXT, true);
+        assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_TEXT, true);
     }
 
     @Test
     public void readBinaryWithAndWithoutImports() throws Exception {
-        String importsFileName = fileInTestDirectory("imports.ion").toString();
+        String importsFileName = fileInTestDirectory("importsVersion1.ion").toString();
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
             "read",
             "--ion-imports-for-benchmark",
@@ -655,7 +655,7 @@ public class OptionsTest {
             "buffer",
             "--ion-use-symbol-tokens",
             "true",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(2, optionsCombinations.size());
         List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
@@ -665,8 +665,8 @@ public class OptionsTest {
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.importsForBenchmarkFile, optionsCombination.importsForBenchmarkFile));
 
-            assertReadTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, optionsCombination.importsForBenchmarkFile != null);
-            assertReadTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, true);
+            assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, optionsCombination.importsForBenchmarkFile != null);
+            assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, true);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -675,7 +675,7 @@ public class OptionsTest {
     public void readBinaryFromDataWithImports() throws Exception {
         // During the read benchmark, the reader must use the SymbolToken APIs when no catalog is provided because
         // all symbols will have unknown text.
-        String importsFileName = fileInTestDirectory("imports.ion").toString();
+        String importsFileName = fileInTestDirectory("importsVersion1.ion").toString();
         String importsV2FileName = fileInTestDirectory("importsVersion2.ion").toString();
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
             "read",
@@ -691,7 +691,7 @@ public class OptionsTest {
             "blocking",
             "--ion-use-symbol-tokens",
             "true",
-            "binaryWithImports.10n"
+            "binaryStructsWithImports.10n"
         );
         assertEquals(3, optionsCombinations.size());
         List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(3);
@@ -702,17 +702,17 @@ public class OptionsTest {
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.importsForBenchmarkFile, optionsCombination.importsForBenchmarkFile));
 
-            // binaryWithImports.10n is already encoded with the same symbol tables declared in imports.ion, so it does
-            // not need to be re-encoded when the imports for benchmark is imports.ion.
-            assertReadTaskExecutesCorrectly("binaryWithImports.10n", optionsCombination, Format.ION_BINARY, !importsFileName.equals(optionsCombination.importsForBenchmarkFile));
-            assertReadTaskExecutesCorrectly("textWithImports.ion", optionsCombination, Format.ION_BINARY, true);
+            // binaryStructsWithImports.10n is already encoded with the same symbol tables declared in importsVersion1.ion, so it does
+            // not need to be re-encoded when the imports for benchmark is importsVersion1.ion.
+            assertReadTaskExecutesCorrectly("binaryStructsWithImports.10n", optionsCombination, Format.ION_BINARY, !importsFileName.equals(optionsCombination.importsForBenchmarkFile));
+            assertReadTaskExecutesCorrectly("textStructsWithImports.ion", optionsCombination, Format.ION_BINARY, true);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
 
     @Test
     public void writeBinaryWithAndWithoutImports() throws Exception {
-        String importsFileName = fileInTestDirectory("imports.ion").toString();
+        String importsFileName = fileInTestDirectory("importsVersion1.ion").toString();
         String importsV2FileName = fileInTestDirectory("importsVersion2.ion").toString();
         List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
             "write",
@@ -722,7 +722,7 @@ public class OptionsTest {
             importsV2FileName,
             "--ion-imports-for-benchmark",
             "none",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(3, optionsCombinations.size());
         List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(3);
@@ -733,15 +733,15 @@ public class OptionsTest {
         for (WriteOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.importsForBenchmarkFile, optionsCombination.importsForBenchmarkFile));
 
-            assertWriteTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
-            assertWriteTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
 
     @Test
     public void writeBinaryFromDataWithImports() throws Exception {
-        String importsFileName = fileInTestDirectory("imports.ion").toString();
+        String importsFileName = fileInTestDirectory("importsVersion1.ion").toString();
         WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
             "write",
             "--ion-imports-for-input",
@@ -752,7 +752,7 @@ public class OptionsTest {
             "buffer",
             "--ion-use-symbol-tokens",
             "true",
-            "binaryWithImports.10n"
+            "binaryStructsWithImports.10n"
         );
         ExpectedWriteOptionsCombination.defaultOptions()
             .importsForInputFile(importsFileName)
@@ -761,18 +761,18 @@ public class OptionsTest {
             .useSymbolTokens(true)
             .assertOptionsEqual(optionsCombination);
 
-        assertWriteTaskExecutesCorrectly("binaryWithImports.10n", optionsCombination, Format.ION_BINARY, IoType.BUFFER);
-        assertWriteTaskExecutesCorrectly("textWithImports.ion", optionsCombination, Format.ION_BINARY, IoType.BUFFER);
+        assertWriteTaskExecutesCorrectly("binaryStructsWithImports.10n", optionsCombination, Format.ION_BINARY, IoType.BUFFER);
+        assertWriteTaskExecutesCorrectly("textStructsWithImports.ion", optionsCombination, Format.ION_BINARY, IoType.BUFFER);
     }
 
     @Test
     public void importsForBenchmarkAuto() throws Exception {
-        String importsFileName = fileInTestDirectory("imports.ion").toString();
+        String importsFileName = fileInTestDirectory("importsVersion1.ion").toString();
         WriteOptionsCombination combination1 = parseSingleOptionsCombination(
             "write",
             "--ion-imports-for-input",
             importsFileName,
-            "binaryWithImports.10n"
+            "binaryStructsWithImports.10n"
         );
         ExpectedWriteOptionsCombination.defaultOptions()
             .importsForInputFile(importsFileName)
@@ -785,7 +785,7 @@ public class OptionsTest {
             "none",
             "--ion-imports-for-benchmark",
             "auto",
-            "binaryWithImports.10n"
+            "binaryStructsWithImports.10n"
         );
         ExpectedWriteOptionsCombination.defaultOptions()
             .importsForInputFile(null)
@@ -798,7 +798,7 @@ public class OptionsTest {
             importsFileName,
             "--ion-imports-for-benchmark",
             "auto",
-            "binaryWithImports.10n"
+            "binaryStructsWithImports.10n"
         );
         ExpectedReadOptionsCombination.defaultOptions()
             .importsForInputFile(importsFileName)
@@ -809,7 +809,7 @@ public class OptionsTest {
             "read",
             "--ion-imports-for-input",
             "none",
-            "binaryWithImports.10n"
+            "binaryStructsWithImports.10n"
         );
         ExpectedReadOptionsCombination.defaultOptions()
             .importsForInputFile(null)
@@ -821,9 +821,9 @@ public class OptionsTest {
     public void readBinaryFromDataWithImportsWithoutProvidingCatalogRaisesError() throws Exception {
         ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
             "read",
-            "binaryWithImports.10n"
+            "binaryStructsWithImports.10n"
         );
-        Path inputPath = fileInTestDirectory("binaryWithImports.10n");
+        Path inputPath = fileInTestDirectory("binaryStructsWithImports.10n");
         assertThrows(IllegalArgumentException.class, () -> optionsCombination.createMeasurableTask(inputPath));
     }
 
@@ -831,9 +831,9 @@ public class OptionsTest {
     public void writeBinaryFromDataWithImportsWithoutProvidingCatalogRaisesError() throws Exception {
         WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
             "write",
-            "binaryWithImports.10n"
+            "binaryStructsWithImports.10n"
         );
-        Path inputPath = fileInTestDirectory("binaryWithImports.10n");
+        Path inputPath = fileInTestDirectory("binaryStructsWithImports.10n");
         assertThrows(IllegalArgumentException.class, () -> optionsCombination.createMeasurableTask(inputPath));
     }
 
@@ -847,7 +847,7 @@ public class OptionsTest {
             "64",
             "--ion-float-width",
             "auto",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(3, optionsCombinations.size());
         List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(3);
@@ -858,8 +858,8 @@ public class OptionsTest {
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.floatWidth, optionsCombination.floatWidth));
 
-            assertReadTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, optionsCombination.floatWidth != null);
-            assertReadTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, true);
+            assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, optionsCombination.floatWidth != null);
+            assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, true);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -874,7 +874,7 @@ public class OptionsTest {
             "64",
             "--ion-float-width",
             "auto",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(3, optionsCombinations.size());
         List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(3);
@@ -885,8 +885,8 @@ public class OptionsTest {
         for (WriteOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.floatWidth, optionsCombination.floatWidth));
 
-            assertWriteTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
-            assertWriteTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -899,7 +899,7 @@ public class OptionsTest {
             "write",
             "--ion-float-width",
             "99",
-            "input1.10n"
+            "binaryStructs.10n"
             )
         );
     }
@@ -914,7 +914,7 @@ public class OptionsTest {
             "1024",
             "--ion-writer-block-size",
             "auto",
-            "input1.10n"
+            "binaryStructs.10n"
         );
         assertEquals(3, optionsCombinations.size());
         List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(3);
@@ -926,8 +926,8 @@ public class OptionsTest {
         for (WriteOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.ionWriterBlockSize, optionsCombination.ionWriterBlockSize));
 
-            assertWriteTaskExecutesCorrectly("input1.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
-            assertWriteTaskExecutesCorrectly("input1.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -940,7 +940,7 @@ public class OptionsTest {
             "ion_binary",
             "--format",
             "ion_text",
-            "allTypes.10n"
+            "binaryAllTypes.10n"
         );
         assertEquals(2, optionsCombinations.size());
         List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
@@ -951,8 +951,8 @@ public class OptionsTest {
         for (WriteOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.format, optionsCombination.format));
 
-            assertWriteTaskExecutesCorrectly("allTypes.10n", optionsCombination, optionsCombination.format, IoType.FILE);
-            assertWriteTaskExecutesCorrectly("allTypes.ion", optionsCombination, optionsCombination.format, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("binaryAllTypes.10n", optionsCombination, optionsCombination.format, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, optionsCombination.format, IoType.FILE);
         }
         assertTrue(expectedCombinations.isEmpty());
     }
@@ -966,7 +966,7 @@ public class OptionsTest {
             "ion_binary",
             "--format",
             "ion_text",
-            "allTypes.10n"
+            "binaryAllTypes.10n"
         );
         assertEquals(2, optionsCombinations.size());
         List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
@@ -977,8 +977,8 @@ public class OptionsTest {
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.format, optionsCombination.format));
 
-            assertReadTaskExecutesCorrectly("allTypes.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
-            assertReadTaskExecutesCorrectly("allTypes.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);
+            assertReadTaskExecutesCorrectly("binaryAllTypes.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
+            assertReadTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);
 
         }
         assertTrue(expectedCombinations.isEmpty());
