@@ -32,10 +32,23 @@ import static org.junit.Assert.assertTrue;
 
 public class OptionsTest {
 
+    /**
+     * Gets the Path to a file in the same directory as OptionsTest.
+     * @param simpleName the simple name of the file.
+     * @return a new Path.
+     */
     private static Path fileInTestDirectory(String simpleName) {
         return Paths.get("tst", "com", "amazon", "ion", "benchmark", simpleName);
     }
 
+    /**
+     * Asserts Ion data model equality using the given options.
+     * @param expected the expected Ion data.
+     * @param actual the actual Ion data.
+     * @param options the options, which include the shared symbol tables to use (if any) and the maximum number of
+     *                values to compare.
+     * @throws IOException if thrown while trying to read a file.
+     */
     private static void assertIonEquals(File expected, byte[] actual, OptionsCombinationBase options) throws IOException {
         IonSystem systemForInput = IonUtilities.ionSystemForInput(options);
         IonSystem systemForBenchmark = IonUtilities.ionSystemForBenchmark(options);
@@ -51,10 +64,20 @@ public class OptionsTest {
         }
     }
 
+    /**
+     * Asserts that the given data is in the expected format.
+     * @param buffer buffer containing the data to test.
+     * @param expectedFormat the format to assert.
+     */
     private static void assertFormat(byte[] buffer, Format expectedFormat) {
         assertEquals(expectedFormat == Format.ION_BINARY, IonStreamUtils.isIonBinary(buffer));
     }
 
+    /**
+     * Base class for expected read/write options combinations.
+     * @param <T> the concrete implementation of this class.
+     * @param <U> the type of {@link OptionsCombinationBase} to test against.
+     */
     private abstract static class ExpectedOptionsCombinationBase<T extends ExpectedOptionsCombinationBase, U extends OptionsCombinationBase> {
         Integer preallocation = null;
         Integer flushPeriod = null;
@@ -130,6 +153,9 @@ public class OptionsTest {
         }
     }
 
+    /**
+     * Test class for asserting that {@link ReadOptionsCombination} instances match expected values.
+     */
     private static class ExpectedReadOptionsCombination
         extends ExpectedOptionsCombinationBase<ExpectedReadOptionsCombination, ReadOptionsCombination> {
 
@@ -158,6 +184,9 @@ public class OptionsTest {
         }
     }
 
+    /**
+     * Test class for asserting that {@link WriteOptionsCombination} instances match expected values.
+     */
     private static class ExpectedWriteOptionsCombination
         extends ExpectedOptionsCombinationBase<ExpectedWriteOptionsCombination, WriteOptionsCombination> {
 
@@ -179,16 +208,13 @@ public class OptionsTest {
         }
     }
 
-    @Before
-    public void prepareTemporaryDirectory() throws IOException {
-        TemporaryFiles.prepareTempDirectory();
-    }
-
-    @After
-    public void cleanUpTemporaryDirectory() throws IOException {
-        TemporaryFiles.cleanUpTempDirectory();
-    }
-
+    /**
+     * Determines whether the given Ion data contains shared symbol table imports at the beginning of the stream.
+     * @param bytes the Ion data to test.
+     * @return true if the given Ion data contains shared symbol table imports at the beginning of the stream;
+     *   otherwise, false.
+     * @throws IOException if thrown when parsing the data.
+     */
     private static boolean streamIncludesImports(byte[] bytes) throws IOException {
         try (IonReader reader = IonReaderBuilder.standard().build(new ByteArrayInputStream(bytes))) {
             reader.next();
@@ -197,12 +223,30 @@ public class OptionsTest {
         }
     }
 
+    /**
+     * Asserts that the given Ion data declares the shared symbol table imports specified in the given file at the
+     * beginning of the stream.
+     * @param expectedImportsFile file containing shared symbol tables.
+     * @param bytes the Ion data to test.
+     * @throws IOException if thrown when parsing the imports file or the Ion data.
+     */
     private static void assertImportsEqual(String expectedImportsFile, byte[] bytes) throws IOException {
         try (InputStream input = new ByteArrayInputStream(bytes)) {
             assertTrue(IonUtilities.importsEqual(expectedImportsFile, input));
         }
     }
 
+    /**
+     * Asserts that a read task executes as expected. This includes assertions that temporary files are created only
+     * when expected and are always cleaned up, that conversions between formats are correct and happen only when
+     * expected, and that all phases of the read task complete without errors.
+     * @param inputFileName the file to test.
+     * @param optionsCombination a combination of read command options.
+     * @param expectedFormat the format of the data that is expected to be tested.
+     * @param isConversionRequired false if the task is expected to be able to read the input file without conversion
+     *                             or copying; otherwise, false.
+     * @throws Exception if an unexpected error occurs.
+     */
     private static void assertReadTaskExecutesCorrectly(
         String inputFileName,
         ReadOptionsCombination optionsCombination,
@@ -243,6 +287,17 @@ public class OptionsTest {
         assertTrue(inputPath.toFile().exists());
     }
 
+    /**
+     * Asserts that a write task executes as expected. This includes assertions that the task writes to file only when
+     * expected and that these files are always cleaned up, that the output file or buffer contains data in the expected
+     * format that is equivalent to the data in the input file, and that all phases of the write task complete without
+     * errors.
+     * @param inputFileName the file to test.
+     * @param optionsCombination a combination of write command options.
+     * @param expectedOutputFormat the expected format of the data to be written.
+     * @param expectedIoType the expected IO type.
+     * @throws Exception if an unexpected error occurs.
+     */
     private static void assertWriteTaskExecutesCorrectly(
         String inputFileName,
         WriteOptionsCombination optionsCombination,
@@ -295,6 +350,15 @@ public class OptionsTest {
         assertNull(task.currentBuffer);
     }
 
+    /**
+     * Parses a list of {@link OptionsCombinationBase} from the given arguments, which are identical to the arguments
+     * that would be provided to an invocation of the CLI.
+     * @param args the arguments from which to generate options combinations.
+     * @param <T> {@link ReadOptionsCombination} for the 'read' command; {@link WriteOptionsCombination} for the 'write'
+     *           command.
+     * @return a new list.
+     * @throws IOException if thrown when parsing the options.
+     */
     private static <T extends OptionsCombinationBase> List<T> parseOptionsCombinations(String... args) throws IOException {
         OptionsMatrixBase matrix = OptionsMatrixBase.from(
             Main.parseArguments(args)
@@ -309,12 +373,27 @@ public class OptionsTest {
         return readOptionsCombinations;
     }
 
+    /**
+     * Calls {@link #parseOptionsCombinations(String...)}, asserts that the resulting list contains a single element,
+     * and returns that element.
+     * @param args the arguments from which to generate options combinations.
+     * @param <T> {@link ReadOptionsCombination} for the 'read' command; {@link WriteOptionsCombination} for the 'write'
+     *           command.
+     * @return the only options combination resulting from the given arguments.
+     * @throws IOException if thrown when parsing the options.
+     */
     private static <T extends OptionsCombinationBase> T parseSingleOptionsCombination(String... args) throws IOException {
         List<T> optionsCombinations = parseOptionsCombinations(args);
         assertEquals(1, optionsCombinations.size());
         return optionsCombinations.get(0);
     }
 
+    /**
+     * Tests the given objects for equality, allowing for either or both to be null.
+     * @param lhs an Object.
+     * @param rhs an Object.
+     * @return true if both lhs and rhs are null or `lhs.equals(rhs)` is true; otherwise, false.
+     */
     private static boolean nullSafeEquals(Object lhs, Object rhs) {
         if ((lhs == null) != (rhs == null)) {
             return false;
@@ -324,6 +403,16 @@ public class OptionsTest {
             return true;
         }
         return lhs.equals(rhs);
+    }
+
+    @Before
+    public void prepareTemporaryDirectory() throws IOException {
+        TemporaryFiles.prepareTempDirectory();
+    }
+
+    @After
+    public void cleanUpTemporaryDirectory() throws IOException {
+        TemporaryFiles.cleanUpTempDirectory();
     }
 
     @Test
