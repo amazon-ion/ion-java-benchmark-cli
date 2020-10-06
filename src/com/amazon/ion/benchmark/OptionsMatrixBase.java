@@ -30,6 +30,7 @@ import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
+import static com.amazon.ion.benchmark.Constants.IO_BUFFER_SIZE_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_TYPE_NAME;
 import static com.amazon.ion.benchmark.Constants.LIMIT_NAME;
 import static com.amazon.ion.benchmark.Constants.PREALLOCATION_NAME;
@@ -246,6 +247,14 @@ abstract class OptionsMatrixBase {
             (type) -> ION_SYSTEM.newSymbol(type.name()),
             optionsCombinationStructs,
             OptionsMatrixBase::noImplicitDefault
+        );
+        parseAndCombine(
+            optionsMatrix.get("--io-buffer-size"),
+            IO_BUFFER_SIZE_NAME,
+            OptionsMatrixBase::getIntOrAuto,
+            ION_SYSTEM::newInt,
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE)
         );
         parseAndCombine(
             optionsMatrix.get("--ion-imports-for-benchmark"),

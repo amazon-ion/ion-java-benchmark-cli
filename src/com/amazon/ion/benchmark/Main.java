@@ -22,21 +22,24 @@ public class Main {
 
     private static final String USAGE =
         "Usage:\n"
-        + "  ion-java-benchmark write [--profile] [--io-type <type>]... [--ion-api <api>]... [--format <type>]... "
-                + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
-                + "[--results-file <file>] [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
-                + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
-                + "[--ion-use-symbol-tokens <bool>]... [--mode <mode>] [--time-unit <unit>] "
-                + "[--ion-writer-block-size <int>]... <input_file>\n"
-        + "  ion-java-benchmark read [--profile] [--io-type <type>]... [--ion-api <api>]... [--format <type>]... "
-                + "[--limit <int>] [--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
-                + "[--results-file <file>] [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
-                + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
-                + "[--ion-use-symbol-tokens <bool>]... [--mode <mode>] [--time-unit <unit>] [--ion-reader <type>]... "
-                + "[--paths <file>] <input_file>\n"
+
+        + "  ion-java-benchmark write [--profile] [--limit <int>] [--mode <mode>] [--time-unit <unit>] "
+            + "[--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
+            + "[--results-file <file>] [--io-type <type>]... [--io-buffer-size <int>]... [--format <type>]... "
+            + "[--ion-api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
+            + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
+            + "[--ion-use-symbol-tokens <bool>]...  [--ion-writer-block-size <int>]... <input_file>\n"
+
+        + "  ion-java-benchmark read [--profile] [--limit <int>] [--mode <mode>] [--time-unit <unit>] "
+            + "[--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
+            + "[--results-file <file>] [--io-type <type>]... [--io-buffer-size <int>]... [--format <type>]... "
+            + "[--ion-api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
+            + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
+            + "[--ion-use-symbol-tokens <bool>]...[--ion-reader <type>]... [--paths <file>] <input_file>\n"
+
         + "  ion-java-benchmark --help\n"
-        + "  ion-java-benchmark --version\n"
-        + "\n";
+
+        + "  ion-java-benchmark --version\n\n";
 
     private static final String COMMANDS =
         "Commands:\n"
@@ -59,7 +62,6 @@ public class Main {
         + "\n";
 
     // TODO add options for the following:
-    // TODO IO buffer size (for buffered input/output streams)
     // TODO read lobs using getBytes() into reusable buffers
     // TODO read decimals using bigDecimalValue() instead of decimalValue()
     private static final String OPTIONS =
@@ -81,6 +83,12 @@ public class Main {
                 + "an in-memory buffer instead of a file. To limit the amount of memory required, use --limit. May be "
                 + "specified multiple times to compare both settings."
                 + "[default: file]\n"
+        + "  -z --io-buffer-size <int>              The size in bytes of the internal buffer of the "
+                + "BufferedInputStream that wraps the input file (for read benchmarks) or BufferedOutputStream / "
+                + "ByteArrayOutputStream that wraps the output file or buffer (for write benchmarks), or 'auto', which "
+                + "uses the stream's default buffer size. Ignored for read benchmarks when --io-type buffer is used "
+                + "because this mode reads the entire input directly from a properly-sized buffer. May be specified "
+                + "multiple times to compare different settings. [default: auto]\n"
         + "  -w --warmups <int>                     Number of benchmark warm-up iterations. [default: 10]\n"
         + "  -i --iterations <int>                  Number of benchmark iterations. [default: 10]\n"
         + "  -F --forks <int>                       Number of benchmark forks (distinct JVMs). [default: 1]\n"

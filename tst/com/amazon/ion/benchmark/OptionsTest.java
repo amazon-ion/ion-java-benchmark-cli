@@ -83,6 +83,7 @@ public class OptionsTest {
         Integer flushPeriod = null;
         Format format = Format.ION_BINARY;
         IonAPI api = IonAPI.STREAMING;
+        Integer ioBufferSize = null;
         IoType ioType = IoType.FILE;
         String importsForInputFile = null;
         String importsForBenchmarkFile = null;
@@ -112,6 +113,11 @@ public class OptionsTest {
 
         final T ioType(IoType ioType) {
             this.ioType = ioType;
+            return (T) this;
+        }
+
+        final T ioBufferSize(Integer bufferSize) {
+            this.ioBufferSize = bufferSize;
             return (T) this;
         }
 
@@ -149,6 +155,7 @@ public class OptionsTest {
             assertEquals(importsForInputFile, that.importsForInputFile);
             assertEquals(importsForBenchmarkFile, that.importsForBenchmarkFile);
             assertEquals(ioType, that.ioType);
+            assertEquals(ioBufferSize, that.ioBufferSize);
             assertEquals(floatWidth, that.floatWidth);
         }
     }
@@ -1101,6 +1108,74 @@ public class OptionsTest {
             assertReadTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);
 
         }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void readWithVariousIoBufferSizes() throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--io-buffer-size",
+            "32",
+            "--io-buffer-size",
+            "16384",
+            "--io-buffer-size",
+            "auto",
+            "binaryAllTypes.10n"
+        );
+        assertEquals(3, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(3);
+
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().ioBufferSize(32));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().ioBufferSize(16384));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions());
+
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(expectedCandidate -> nullSafeEquals(expectedCandidate.ioBufferSize, optionsCombination.ioBufferSize));
+
+            assertReadTaskExecutesCorrectly("binaryAllTypes.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
+            assertReadTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);
+        }
+
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void writeWithVariousBufferSizes() throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "write",
+            "--io-buffer-size",
+            "32",
+            "--io-buffer-size",
+            "16384",
+            "--io-buffer-size",
+            "auto",
+            "--io-type",
+            "file",
+            "--io-type",
+            "buffer",
+            "binaryAllTypes.10n"
+        );
+        assertEquals(6, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(6);
+
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.FILE).ioBufferSize(32));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.FILE).ioBufferSize(16384));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.FILE));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.BUFFER).ioBufferSize(32));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.BUFFER).ioBufferSize(16384));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.BUFFER));
+
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(expectedCandidate -> {
+                return nullSafeEquals(expectedCandidate.ioBufferSize, optionsCombination.ioBufferSize)
+                    && expectedCandidate.ioType == optionsCombination.ioType;
+            });
+
+            assertWriteTaskExecutesCorrectly("binaryAllTypes.10n", optionsCombination, Format.ION_BINARY, optionsCombination.ioType);
+            assertWriteTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, Format.ION_BINARY, optionsCombination.ioType);
+        }
+
         assertTrue(expectedCombinations.isEmpty());
     }
 
