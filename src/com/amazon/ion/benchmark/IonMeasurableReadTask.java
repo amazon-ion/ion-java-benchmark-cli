@@ -2,6 +2,7 @@ package com.amazon.ion.benchmark;
 
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
+import com.amazon.ion.IonType;
 import com.amazon.ion.impl.LookaheadIonReaderWrapper;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ionpathextraction.PathExtractor;
@@ -97,52 +98,62 @@ class IonMeasurableReadTask extends MeasurableReadTask {
                 annotationsIterator.next();
             }
         }
-        switch (reader.getType()) {
-            case NULL:
-                // In this case, you'd typically just return the type, which we've already retrieved above.
-                break;
-            case BOOL:
-                reader.booleanValue();
-                break;
-            case INT:
-                reader.longValue();
-                break;
-            case FLOAT:
-                reader.doubleValue();
-                break;
-            case DECIMAL:
-                reader.decimalValue();
-                break;
-            case TIMESTAMP:
-                reader.timestampValue();
-                break;
-            case SYMBOL:
-                if (options.useSymbolTokens) {
-                    reader.symbolValue();
-                } else {
+        IonType type = reader.getType();
+        if (!reader.isNullValue()) {
+            switch (type) {
+                case BOOL:
+                    reader.booleanValue();
+                    break;
+                case INT:
+                    switch (reader.getIntegerSize()) {
+                        case INT:
+                            reader.intValue();
+                            break;
+                        case LONG:
+                            reader.longValue();
+                            break;
+                        case BIG_INTEGER:
+                            reader.bigIntegerValue();
+                            break;
+                    }
+                    break;
+                case FLOAT:
+                    reader.doubleValue();
+                    break;
+                case DECIMAL:
+                    reader.decimalValue();
+                    break;
+                case TIMESTAMP:
+                    reader.timestampValue();
+                    break;
+                case SYMBOL:
+                    if (options.useSymbolTokens) {
+                        reader.symbolValue();
+                    } else {
+                        reader.stringValue();
+                    }
+                    break;
+                case STRING:
                     reader.stringValue();
-                }
-                break;
-            case STRING:
-                reader.stringValue();
-                break;
-            case CLOB:
-            case BLOB:
-                reader.newBytes();
-                break;
-            case LIST:
-            case SEXP:
-                reader.stepIn();
-                fullyTraverse(reader, false);
-                reader.stepOut();
-                break;
-            case STRUCT:
-                reader.stepIn();
-                fullyTraverse(reader, true);
-                reader.stepOut();
-                break;
-            default:
-                break;
+                    break;
+                case CLOB:
+                case BLOB:
+                    reader.newBytes();
+                    break;
+                case LIST:
+                case SEXP:
+                    reader.stepIn();
+                    fullyTraverse(reader, false);
+                    reader.stepOut();
+                    break;
+                case STRUCT:
+                    reader.stepIn();
+                    fullyTraverse(reader, true);
+                    reader.stepOut();
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
