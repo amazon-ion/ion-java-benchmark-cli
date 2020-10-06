@@ -121,7 +121,7 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
         switch (options.ioType) {
             case BUFFER:
                 return () -> {
-                    currentBuffer = new ByteArrayOutputStream();
+                    currentBuffer = options.newByteArrayOutputStream();
                     T writer = newWriter(currentBuffer);
                     for (WriteInstruction<T> instruction : writeInstructions) {
                         instruction.execute(writer);

@@ -10,6 +10,7 @@ class Constants {
     static final String FLUSH_PERIOD_NAME = "d";
     static final String ION_API_NAME = "a";
     static final String IO_TYPE_NAME = "t";
+    static final String IO_BUFFER_SIZE_NAME = "z";
     static final String ION_IMPORTS_FOR_INPUT_NAME = "I";
     static final String ION_IMPORTS_FOR_BENCHMARK_NAME = "c";
     static final String FORMAT_NAME = "f";

@@ -9,6 +9,7 @@ import com.amazon.ion.IonValue;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -25,6 +26,7 @@ import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
+import static com.amazon.ion.benchmark.Constants.IO_BUFFER_SIZE_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_TYPE_NAME;
 import static com.amazon.ion.benchmark.Constants.LIMIT_NAME;
 import static com.amazon.ion.benchmark.Constants.PREALLOCATION_NAME;
@@ -39,6 +41,7 @@ abstract class OptionsCombinationBase {
     final Format format;
     final IonAPI api;
     final IoType ioType;
+    final Integer ioBufferSize;
     final String importsForInputFile;
     final String importsForBenchmarkFile;
     final Integer floatWidth;
@@ -77,6 +80,7 @@ abstract class OptionsCombinationBase {
         format = getOrDefault(parametersStruct, FORMAT_NAME, val -> Format.valueOf(((IonText) val).stringValue()), Format.ION_BINARY);
         api = getOrDefault(parametersStruct, ION_API_NAME, val -> IonAPI.valueOf(((IonText) val).stringValue()), IonAPI.STREAMING);
         ioType = getOrDefault(parametersStruct, IO_TYPE_NAME, val -> IoType.valueOf(((IonText) val).stringValue()), IoType.FILE);
+        ioBufferSize = getOrDefault(parametersStruct, IO_BUFFER_SIZE_NAME, val -> ((IonInt) val).intValue(), null);
         importsForInputFile = getOrDefault(parametersStruct, ION_IMPORTS_FOR_INPUT_NAME, val -> ((IonText) val).stringValue(), null);
         importsForBenchmarkFile = getOrDefault(parametersStruct, ION_IMPORTS_FOR_BENCHMARK_NAME, val -> ((IonText) val).stringValue(), null);
         floatWidth = getOrDefault(parametersStruct, ION_FLOAT_WIDTH_NAME, val -> ((IonInt) val).intValue(), null);
@@ -134,8 +138,10 @@ abstract class OptionsCombinationBase {
      * @throws IOException if thrown when constructing the InputStream.
      */
     InputStream newInputStream(File file) throws IOException {
-        // TODO configurable buffer size?
-        return new BufferedInputStream(new FileInputStream(file));
+        if (ioBufferSize == null) {
+            return new BufferedInputStream(new FileInputStream(file));
+        }
+        return new BufferedInputStream(new FileInputStream(file), ioBufferSize);
     }
 
     /**
@@ -145,8 +151,22 @@ abstract class OptionsCombinationBase {
      * @throws IOException if thrown when constructing the OutputStream.
      */
     OutputStream newOutputStream(File file) throws IOException {
-        // TODO configurable buffer size?
-        return new BufferedOutputStream(new FileOutputStream(file, false));
+        if (ioBufferSize == null) {
+            return new BufferedOutputStream(new FileOutputStream(file, false));
+        }
+        return new BufferedOutputStream(new FileOutputStream(file, false), ioBufferSize);
+    }
+
+    /**
+     * Creates a new ByteArrayOutputStream with the initial buffer size equivalent to {@link #ioBufferSize}. If
+     * ioBufferSize is null, the default ByteArrayOutputStream constructor is used.
+     * @return a new ByteArrayOutputStream.
+     */
+    ByteArrayOutputStream newByteArrayOutputStream() {
+        if (ioBufferSize == null) {
+            return new ByteArrayOutputStream();
+        }
+        return new ByteArrayOutputStream(ioBufferSize);
     }
 
 }
