@@ -219,7 +219,7 @@ public class Main {
         "                          --ion-imports-for-benchmark none \\\n" +
         "                          --ion-api dom \\\n" +
         "                          --ion-api streaming \\\n" +
-        "                          example.10n\n" +
+        "                          exampleWithImports.10n\n" +
         "\n";
 
     private static void printHelpAndExit(String... messages) {
