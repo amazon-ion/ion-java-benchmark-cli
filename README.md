@@ -89,24 +89,85 @@ for gathering performance profiles.
 ion-java-benchmark read --profile --paths paths.ion example.10n
 ```
 
-Benchmark a fully-buffered write of binary Ion data equivalent to `example.10n` both with and without
-using shared symbol tables. The file `tables.ion` contains a sequence of Ion symbol tables, while the
-file `empty.ion` is empty.
+Benchmark a fully-buffered write of binary Ion data equivalent to example.10n both with and without
+using shared symbol tables. The file tables.ion contains a sequence of Ion symbol tables.
 
 ```
-ion-java-benchmark write --ion-imports tables.ion --ion-imports empty.ion example.10n
+ion-java-benchmark write --ion-imports-for-benchmark tables.ion \
+                         --ion-imports-for-benchmark none \
+                         example.10n
 ```
 
-Benchmark a full-traversal read of `example.10n`, producing results from using both the DOM and
-IonReader APIs, using the sequence of symbol tables specified in `tables.ion` as the catalog from
-which to resolve shared symbol table imports encountered in the input data.
+Benchmark a full-traversal read of data equivalent to exampleWithImports.10n, which declares the shared
+symbol table imports provided by inputTables.ion, re-encoded (if necessary) using the shared symbol
+tables provided by benchmarkTables.ion, inputTables.ion, and no shared symbol tables. Produce
+results from using both the DOM and IonReader APIs.\n" +
 
 ```
-ion-java-benchmark read --ion-imports tables.ion \
+ion-java-benchmark read --ion-imports-for-input inputTables.ion \
+                        --ion-imports-for-benchmark benchmarkTables.ion \
+                        --ion-imports-for-benchmark auto \
+                        --ion-imports-for-benchmark none \
                         --ion-api dom \
                         --ion-api streaming \
-                        example.10n
+                        exampleWithImports.10n
 ```
+
+## For developers
+
+### Adding an option
+
+Adding an option involves the following steps:
+1. In `Main`, add the option to the `USAGE` and `OPTIONS` strings, mimicking the existing format.
+2. If the option applies to both the `read` and `write` commands, add parameterization logic to the
+`OptionsMatrixBase` constructor using the existing helper methods. If the option applies only to
+the `read` or the `write` command, add this logic to the `ReadOptionsMatrix` or `WriteOptionsMatrix`
+constructor, respectively. These classes are responsible for generating the complete set of
+combinations for the chosen set of option values, which corresponds to the complete set of benchmark
+trials to be run.
+3. If the option applies to both the `read` and `write` commands, add parsing logic to the
+`OptionsCombinationBase` constructor using the existing helper methods. If the option applies only
+to the `read` or the `write` command, add this logic to the `ReadOptionsCombination` or
+`WriteOptionsCombination` constructor, respectively. These classes are responsible for representing
+a single combination of option values, which corresponds to a single benchmark trial.
+4. Determine where to place the logic that uses the new option. If the option applies to all formats
+or affects how a resource is constructed or configured, it may make sense to add a factory method
+to `OptionsCombinationBase`, `ReadOptionsCombination`, or `WriteOptionsCombination` and invoke this
+method in any `MeasurableTask` implementations to which the option applies. As an example, see
+`OptionsCombinationBase.newInputStream`. If the option applies to all formats but only the `write`
+or `read` command, then using the option within `MeasurableReadTask` or `MeasurableWriteTask` may
+make sense. As an example, see `MeasurableWriteTask.getTask`. If the option applies to multiple
+formats, but not all formats, it may make sense to add a utility function or use inheritance. As
+an example, see `IonUtilities`, which is used by `IonMeasurableReadTask` and `IonMeasurableWriteTask`.
+If the option is limited to use with a particular format and command, then its logic may belong
+in the concrete `MeasurableTask` implementation for that format/command combination. As an example,
+the `--ion-reader` option only applies to the `read` command when used with either Ion text or binary,
+so the logic that uses the option is contained within `IonMeasurableReadTask`.
+5. In `OptionsTest`, add tests that exercise all values for this option (if enumerated) or a variety
+of values, for all commands to which it applies.
+
+### Adding a format
+
+Adding support for an additional serialization format involves the following steps.
+1. Identify the Java library (or libraries) that provides the reader/writer implementation for that
+format in Java. Add an open-ended dependency on that library to `pom.xml`.
+2. Add a value to the `Format` enum to represent the new format.
+3. In `Main`'s `OPTIONS` string, edit the entry for the `--format` command to allow for the new format.
+4. Using `IonMeasurableReadTask` and `IonMeasurableWriteTask` as examples, create concrete
+implementations of `MeasurableReadTask` and `MeasurableWriteTask` for the new format.
+5. Implement the inherited abstract methods in the new `Format` enum value. This involves adding
+logic to convert between formats and to instantiate the `MeasurableTask` classes created in the
+previous step. The `convert` implementations for the existing `Format` values will need to be updated
+as well to support conversions from the new format. Add logic to `Format.classify` to determine whether
+a file contains data in the new format.
+6. Follow the steps from the `Adding an option` section above to add any format- or library-specific
+options to the CLI.
+7. In `OptionsTest`, add tests that thoroughly exercise the new format. Add data in the new format
+into the test directory for use in tests.
+8. Build the tool using `mvn clean install`. Using various samples of data in the new format, run
+the tool by hand to make sure everything looks correct and the benchmark results look reasonable.
+9. Add at least one example of using the new format to the `EXAMPLES` string in `Main`. Copy this
+example into the `Examples` section of this README.
 
 ## Security
 
