@@ -19,9 +19,11 @@ import java.util.List;
 class IonMeasurableReadTask extends MeasurableReadTask {
 
     private static final int DEFAULT_NON_BLOCKING_BUFFER_SIZE = 64 * 1024;
+    private static final int DEFAULT_REUSABLE_LOB_BUFFER_SIZE = 1024;
     private final IonReaderBuilder readerBuilder;
     private final PathExtractor<?> pathExtractor;
     private final IonSystem ionSystem;
+    private final byte[] reusableLobBuffer;
 
     /**
      * Returns the next power of two greater than or equal to the given value.
@@ -69,6 +71,11 @@ class IonMeasurableReadTask extends MeasurableReadTask {
             pathExtractor = pathExtractorBuilder.build();
         } else {
             pathExtractor = null;
+        }
+        if (options.useLobChunks) {
+            reusableLobBuffer = new byte[DEFAULT_REUSABLE_LOB_BUFFER_SIZE];
+        } else {
+            reusableLobBuffer = null;
         }
     }
 
@@ -138,7 +145,18 @@ class IonMeasurableReadTask extends MeasurableReadTask {
                     break;
                 case CLOB:
                 case BLOB:
-                    reader.newBytes();
+                    if (options.useLobChunks) {
+                        int bytesRemaining = reader.byteSize();
+                        while (bytesRemaining > 0) {
+                            bytesRemaining -= reader.getBytes(
+                                reusableLobBuffer,
+                                0,
+                                Math.min(bytesRemaining, reusableLobBuffer.length)
+                            );
+                        }
+                    } else {
+                        reader.newBytes();
+                    }
                     break;
                 case LIST:
                 case SEXP:

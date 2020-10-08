@@ -151,7 +151,7 @@ enum Format {
      */
     static Format classify(Path path) throws IOException {
         File file = path.toFile();
-        // TODO use the length of the longest format header once support for other formats is added.
+        // Note: use the length of the longest format header once support for other formats is added.
         byte[] firstBytes = new byte[_Private_IonConstants.BINARY_VERSION_MARKER_SIZE];
         try (InputStream inputStream = new FileInputStream(file)) {
             int bytesRead = inputStream.read(firstBytes);
@@ -160,7 +160,8 @@ enum Format {
                     return Format.ION_BINARY;
                 }
             }
-            // TODO compare against other formats that have self-identifying headers.
+            // Note: compare against other formats that have self-identifying headers once support for other formats
+            // is added.
         }
         // No format headers matched. Fall back on file suffix.
         if (file.getName().endsWith(".ion")) {

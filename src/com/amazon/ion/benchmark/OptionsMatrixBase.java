@@ -189,6 +189,14 @@ abstract class OptionsMatrixBase {
     }
 
     /**
+     * @param valueString a String representation of a boolean.
+     * @return `true` if valueString represents `true`; otherwise, null.
+     */
+    static Boolean getTrueOrNull(String valueString) {
+        return Boolean.parseBoolean(valueString.toLowerCase()) ? true : null;
+    }
+
+    /**
      * @param fileNameOrNone a String filename, or the String 'none', or null.
      * @return null if the input is null or is 'none'; otherwise, the filename.
      * @throws IllegalArgumentException if the filename is not null/'none' and does not exist.
@@ -291,13 +299,7 @@ abstract class OptionsMatrixBase {
         parseAndCombine(
             optionsMatrix.get("--ion-use-symbol-tokens"),
             ION_USE_SYMBOL_TOKENS_NAME,
-            (s) -> {
-                boolean value = Boolean.parseBoolean(s.toLowerCase());
-                if (value) {
-                    return true;
-                }
-                return null;
-            },
+            OptionsMatrixBase::getTrueOrNull,
             ION_SYSTEM::newBool,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newBool(false)

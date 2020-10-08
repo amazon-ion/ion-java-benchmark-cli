@@ -168,6 +168,7 @@ public class OptionsTest {
 
         List<String> paths = null;
         IonReaderType readerType = IonReaderType.NON_BLOCKING;
+        boolean useLobChunks = false;
 
         static ExpectedReadOptionsCombination defaultOptions() {
             return new ExpectedReadOptionsCombination();
@@ -183,11 +184,17 @@ public class OptionsTest {
             return this;
         }
 
+        final ExpectedReadOptionsCombination useLobChunks(boolean useLobChunks) {
+            this.useLobChunks = useLobChunks;
+            return this;
+        }
+
         @Override
         void assertOptionsEqual(ReadOptionsCombination that) {
             super.assertOptionsEqual(that);
             assertEquals(paths, that.paths);
             assertEquals(readerType, that.readerType);
+            assertEquals(useLobChunks, that.useLobChunks);
         }
     }
 
@@ -1174,6 +1181,38 @@ public class OptionsTest {
 
             assertWriteTaskExecutesCorrectly("binaryAllTypes.10n", optionsCombination, Format.ION_BINARY, optionsCombination.ioType);
             assertWriteTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, Format.ION_BINARY, optionsCombination.ioType);
+        }
+
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void readUsingLogChunks() throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--ion-use-lob-chunks",
+            "true",
+            "--ion-use-lob-chunks",
+            "false",
+            "--format",
+            "ion_text",
+            "--format",
+            "ion_binary",
+            "binaryLargeLobs.10n"
+        );
+        assertEquals(4, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(4);
+
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().useLobChunks(true).format(Format.ION_TEXT));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().useLobChunks(false).format(Format.ION_TEXT));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().useLobChunks(true).format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().useLobChunks(false).format(Format.ION_BINARY));
+
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> candidate.useLobChunks == optionsCombination.useLobChunks && candidate.format == optionsCombination.format);
+
+            assertReadTaskExecutesCorrectly("binaryLargeLobs.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
+            assertReadTaskExecutesCorrectly("textLargeLobs.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);
         }
 
         assertTrue(expectedCombinations.isEmpty());

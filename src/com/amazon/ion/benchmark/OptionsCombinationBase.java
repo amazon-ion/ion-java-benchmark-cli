@@ -74,18 +74,18 @@ abstract class OptionsCombinationBase {
      * @param options Ion representation of the options.
      */
     OptionsCombinationBase(String options) {
-        IonStruct parametersStruct = (IonStruct) Constants.ION_SYSTEM.singleValue(options);
-        preallocation = getOrDefault(parametersStruct, PREALLOCATION_NAME, val -> ((IonInt) val).intValue(), null);
-        flushPeriod = getOrDefault(parametersStruct, FLUSH_PERIOD_NAME, val -> ((IonInt) val).intValue(), null);
-        format = getOrDefault(parametersStruct, FORMAT_NAME, val -> Format.valueOf(((IonText) val).stringValue()), Format.ION_BINARY);
-        api = getOrDefault(parametersStruct, ION_API_NAME, val -> IonAPI.valueOf(((IonText) val).stringValue()), IonAPI.STREAMING);
-        ioType = getOrDefault(parametersStruct, IO_TYPE_NAME, val -> IoType.valueOf(((IonText) val).stringValue()), IoType.FILE);
-        ioBufferSize = getOrDefault(parametersStruct, IO_BUFFER_SIZE_NAME, val -> ((IonInt) val).intValue(), null);
-        importsForInputFile = getOrDefault(parametersStruct, ION_IMPORTS_FOR_INPUT_NAME, val -> ((IonText) val).stringValue(), null);
-        importsForBenchmarkFile = getOrDefault(parametersStruct, ION_IMPORTS_FOR_BENCHMARK_NAME, val -> ((IonText) val).stringValue(), null);
-        floatWidth = getOrDefault(parametersStruct, ION_FLOAT_WIDTH_NAME, val -> ((IonInt) val).intValue(), null);
-        useSymbolTokens = getOrDefault(parametersStruct, ION_USE_SYMBOL_TOKENS_NAME, val -> ((IonBool) val).booleanValue(), false);
-        limit = getOrDefault(parametersStruct, LIMIT_NAME, val -> ((IonInt) val).intValue(), Integer.MAX_VALUE);
+        IonStruct optionsCombinationStruct = (IonStruct) Constants.ION_SYSTEM.singleValue(options);
+        preallocation = getOrDefault(optionsCombinationStruct, PREALLOCATION_NAME, val -> ((IonInt) val).intValue(), null);
+        flushPeriod = getOrDefault(optionsCombinationStruct, FLUSH_PERIOD_NAME, val -> ((IonInt) val).intValue(), null);
+        format = getOrDefault(optionsCombinationStruct, FORMAT_NAME, val -> Format.valueOf(((IonText) val).stringValue()), Format.ION_BINARY);
+        api = getOrDefault(optionsCombinationStruct, ION_API_NAME, val -> IonAPI.valueOf(((IonText) val).stringValue()), IonAPI.STREAMING);
+        ioType = getOrDefault(optionsCombinationStruct, IO_TYPE_NAME, val -> IoType.valueOf(((IonText) val).stringValue()), IoType.FILE);
+        ioBufferSize = getOrDefault(optionsCombinationStruct, IO_BUFFER_SIZE_NAME, val -> ((IonInt) val).intValue(), null);
+        importsForInputFile = getOrDefault(optionsCombinationStruct, ION_IMPORTS_FOR_INPUT_NAME, val -> ((IonText) val).stringValue(), null);
+        importsForBenchmarkFile = getOrDefault(optionsCombinationStruct, ION_IMPORTS_FOR_BENCHMARK_NAME, val -> ((IonText) val).stringValue(), null);
+        floatWidth = getOrDefault(optionsCombinationStruct, ION_FLOAT_WIDTH_NAME, val -> ((IonInt) val).intValue(), null);
+        useSymbolTokens = getOrDefault(optionsCombinationStruct, ION_USE_SYMBOL_TOKENS_NAME, val -> ((IonBool) val).booleanValue(), false);
+        limit = getOrDefault(optionsCombinationStruct, LIMIT_NAME, val -> ((IonInt) val).intValue(), Integer.MAX_VALUE);
     }
 
     /**
@@ -118,8 +118,8 @@ abstract class OptionsCombinationBase {
      * @throws IOException if thrown while parsing the options.
      */
     static OptionsCombinationBase from(String optionsIon) throws IOException {
-        IonStruct parametersStruct = (IonStruct) Constants.ION_SYSTEM.singleValue(optionsIon);
-        String firstAnnotation = parametersStruct.getTypeAnnotations()[0];
+        IonStruct optionsCombinationStruct = (IonStruct) Constants.ION_SYSTEM.singleValue(optionsIon);
+        String firstAnnotation = optionsCombinationStruct.getTypeAnnotations()[0];
         OptionsCombinationBase options;
         if (firstAnnotation.equals("read")) {
             options = new ReadOptionsCombination(optionsIon);

@@ -35,7 +35,8 @@ public class Main {
             + "[--results-file <file>] [--io-type <type>]... [--io-buffer-size <int>]... [--format <type>]... "
             + "[--ion-api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
-            + "[--ion-use-symbol-tokens <bool>]...[--ion-reader <type>]... [--paths <file>] <input_file>\n"
+            + "[--ion-use-symbol-tokens <bool>]...[--ion-reader <type>]... [--ion-use-lob-chunks <bool>]... "
+            + "[--paths <file>] <input_file>\n"
 
         + "  ion-java-benchmark --help\n"
 
@@ -62,8 +63,8 @@ public class Main {
         + "\n";
 
     // TODO add options for the following:
-    // TODO read lobs using getBytes() into reusable buffers
     // TODO read decimals using bigDecimalValue() instead of decimalValue()
+    // TODO add a Tips section to the README to explain how to get the best results and avoid common pitfalls.
     private static final String OPTIONS =
         "Options:\n"
         + "  -h --help                              Show this screen.\n"
@@ -136,7 +137,7 @@ public class Main {
                 + "symbol values, determines whether to use Ion APIs that return and accept SymbolToken objects rather "
                 + "than Strings. Either 'true' or 'false'. Ignored unless --ion-api is streaming. Must be 'true' when "
                 + "the streaming APIs are used with Ion streams that contain symbols with unknown text. May be "
-                + "specified twice to compare both options. [default: false]\n"
+                + "specified twice to compare both settings. [default: false]\n"
         + "  -R --ion-reader <type>                 The IonReader type to use, from the set (blocking | non_blocking). "
                 + "May be specified multiple times to compare different readers. Note: because the DOM uses IonReader "
                 + "to parse data, this option is applicable for read benchmarks with both options for --ion-api. "
@@ -147,6 +148,11 @@ public class Main {
                 + "benchmarks, the input file is read as-is unless the values of other options require it to be "
                 + "re-written, in which case it will be re-written and later read using 64-bit floats. "
                 + "[default: auto]\n"
+        + "  -e --ion-use-lob-chunks <bool>         When true, read Ion blobs and clobs in chunks into a reusable "
+                + "buffer of size 1024 bytes using `IonReader.getBytes`. When false, use `IonReader.newBytes`, which "
+                + "allocates a properly-sized buffer on each invocation. Ignored unless one of the specified formats "
+                + "is ion_binary or ion_text and --ion-api streaming is used. May be specified twice to compare both "
+                + "settings. [default: false]\n"
         + "  -s --paths <file>                      A file containing a sequence of Ion s-expressions representing "
                 + "search paths (https://github.com/amzn/ion-java-path-extraction/#search-paths) into the input data. "
                 + "Only values matching one of the paths will be materialized; all other values will be skipped. For "
