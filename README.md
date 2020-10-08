@@ -113,6 +113,36 @@ ion-java-benchmark read --ion-imports-for-input inputTables.ion \
                         exampleWithImports.10n
 ```
 
+## Tips
+
+As the JMH output warns: "Do not assume the numbers tell you what you want them to tell." Benchmarking
+on the JVM is hard. There is non-deterministic behavior that can lead to high variance between
+iterations. Be suspicious of benchmark results with a reported Error that is a high percentage of the
+Score. Aim for an Error percentage of less than 10%.
+
+To reduce Error, try increasing the number of warmup iterations, timed iterations, and forks. To
+ensure the JVM is properly warmed up, benchmarks should include enough warmup iterations to allow for
+the scores to stabilize. This often takes at least 20 seconds. Benchmarks should be run on idle systems.
+Background processes competing for resources can lead to higher variance, especially for benchmarks
+with a short execution time per invocation.
+
+The default benchmark mode is SingleShotTime, meaning that the reported score is the result of a
+single invocation of the benchmark method. This works well for medium and large input data that takes
+on the order of seconds per invocation, but leads to higher variance for input data that takes only
+milliseconds or microseconds per invocation. Such data should be used with one of the other modes,
+each of which generates an iteration score by averaging the score of multiple invocations of the
+benchmark method. For very small data, it may also be necessary to change the reported time unit to
+provide enough granularity to observe differences between trials.
+
+Both the `read` and `write` benchmark commands involve a setup phase that occurs before the benchmark
+begins. However, due to a quirk in the JMH implementation, this phase occurs after JMH prints
+`Warmup Iteration 1:` to the output. This can make it seem like the first warmup iteration takes an
+excessive amount of time or is deadlocked, but give it a chance to complete. Once the scores stabilize,
+if the iterations take longer than you're willing to wait, consider using the `--limit` option to
+limit the amount of data processed by the benchmark. For write benchmarks, using `--limit` may be
+necessary depending on the size of the input data and the memory constraints of the system, as
+the setup phase involves generating write instruction lambdas and storing them in memory.
+
 ## For developers
 
 ### Adding an option
