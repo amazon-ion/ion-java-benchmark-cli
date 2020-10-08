@@ -1,0 +1,198 @@
+{{
+LS0tCnRpdGxlOiBXaHkgSW9uPwpkZXNjcmlwdGlvbjogIkFtYXpvbiBJb24gaXMgYSByaWNobHktdHlwZWQsIHNlbGYtZGVzY3JpYmluZywgaGllcmFyY2hpY2FsIGRhdGEgc2VyaWFsaXphdGlvbgpmb3JtYXQgb2ZmZXJpbmcgaW50ZXJjaGFuZ2VhYmxlIGJpbmFyeSBhbmQgdGV4dCByZXByZXNlbnRhdGlvbnMuIElvbiB3YXMgYnVpbHQgdG8gYWRkcmVzcyByYXBpZCBkZXZlbG9wbWVudCwgZGVjb3VwbGluZywgYW5kIGVmZmljaWVuY3kgY2hhbGxlbmdlcyBmYWNlZCBldmVyeSBkYXkgd2hpbGUgZW5naW5lZXJpbmcgbGFyZ2Utc2NhbGUsIHNlcnZpY2Utb3JpZW50ZWQgYXJjaGl0ZWN0dXJlcy4gSW9uIGhhcyBiZWVuIGFkZHJlc3NpbmcgdGhlc2UgY2hhbGxlbmdlcyB3aXRoaW4gQW1hem9uIGZvciBuZWFybHkKYSBkZWNhZGUsIGFuZCB3ZSBiZWxpZXZlIG90aGVycyB3aWxsIGJlbmVmaXQgYXMgd2VsbC4iCi0tLQoKIyBbRG9jc11bMTVdLyAge3sgcGFnZS50aXRsZSB9fQogCiAgKiBJb24gcHJvdmlkZXMgKipbZHVhbC1mb3JtYXQgaW50ZXJvcGVyYWJpbGl0eV0oI2R1YWwtZm9ybWF0LWludGVyb3BlcmFiaWxpdHkpKiosIHdoaWNoIGVuYWJsZXMgdXNlcnMgdG8gdGFrZQogICAgYWR2YW50YWdlIG9mIHRoZSBlYXNlIG9mIHVzZSBvZiB0aGUgdGV4dCBmb3JtYXQgd2hpbGUgY2FwaXRhbGl6aW5nIG9uIHRoZQogICAgZWZmaWNpZW5jeSBvZiB0aGUgYmluYXJ5IGZvcm1hdC4gVGhlIHRleHQgZm9ybSBpcyBlYXN5IHRvIHByb3RvdHlwZSwgdGVzdCwKICAgIGFuZCBkZWJ1Zywgd2hpbGUgdGhlIGJpbmFyeSBmb3JtYXQgc2F2ZXMgc3BhY2UgYW5kIHBhcnNpbmcgZWZmb3J0LgoKICAqIElvbidzICoqW3JpY2ggdHlwZSBzeXN0ZW1dKCNyaWNoLXR5cGUtc3lzdGVtKSoqIGV4dGVuZHMgSlNPTidzLCBhZGRpbmcgc3VwcG9ydCBmb3IgdHlwZXMgdGhhdAogICAgbWFrZSBJb24gc3VpdGFibGUgZm9yIGEgd2lkZXIgdmFyaWV0eSBvZiB1c2VzLCBpbmNsdWRpbmcgcHJlY2lzaW9uLXNlbnNpdGl2ZQogICAgYXBwbGljYXRpb25zIGFuZCBwb3J0YWJpbGl0eSBhY3Jvc3MgbGFuZ3VhZ2VzIGFuZCBydW50aW1lcy4KICAgIAogICogSW9uIGlzIGEgKipbc2VsZi1kZXNjcmliaW5nXSgjc2VsZi1kZXNjcmliaW5nKSoqIGZvcm1hdCwgZ2l2aW5nIGl0cyByZWFkZXJzIGFuZCB3cml0ZXJzIHRoZQogICAgZmxleGliaWxpdHkgdG8gZXhjaGFuZ2UgSW9uIGRhdGEgd2l0aG91dCBuZWVkaW5nIHRvIGFncmVlIG9uIGEgc2NoZW1hIGluCiAgICBhZHZhbmNlLiBJb24ncyAib3Blbi1jb250ZW50IiBzdXBwb3J0cyBkaXNjb3ZlcnksIGRlZXAgY29tcG9uZW50IGNoYWluaW5nLAogICAgYW5kIHNjaGVtYSBldm9sdXRpb24uCiAgICAKICAqIEJlY2F1c2UgbW9zdCBkYXRhIGlzIHJlYWQgbW9yZSBvZnRlbiB0aGFuIGl0IGlzIHdyaXR0ZW4sIElvbiBkZWZpbmVzIGEgCiAgICAqKltyZWFkLW9wdGltaXplZCBiaW5hcnkgZm9ybWF0XSgjcmVhZC1vcHRpbWl6ZWQtYmluYXJ5LWZvcm1hdCkqKi4KCiMjIER1YWwtZm9ybWF0IGludGVyb3BlcmFiaWxpdHkKCkFwcGxpY2F0aW9ucyBjYW4gc2VhbWxlc3NseSBjb25zdW1lIElvbiBkYXRhIGluIGVpdGhlciBpdHMgdGV4dCBvciBiaW5hcnkgZm9ybXMKd2l0aG91dCBsb3NzIG9mIGRhdGEgZmlkZWxpdHkuIFdoaWxlIHRoZSBleHBlY3RhdGlvbiBpcyB0aGF0IG1vc3QgSW9uIGRhdGEgaXMgaW4KYmluYXJ5IGZvcm0sIHRoZSB0ZXh0IGZvcm0gcHJvbW90ZXMgaHVtYW4gcmVhZGFiaWxpdHksIHNpbXBsaWZ5aW5nIGRpc2NvdmVyeSBhbmQKZGlhZ25vc2lzLiAKCk5vdGFibHksIHRoZSB0ZXh0IGZvcm1hdCBpcyBhIHN1cGVyc2V0IG9mIEpTT04sIG1ha2luZyBhbGwgSlNPTiBkYXRhIHZhbGlkIElvbgpkYXRhLiAgWW91IHByb2JhYmx5IGFscmVhZHkga25vdyBob3cgdG8gcmVhZCBhbmQgYXV0aG9yIElvbi4KCiMjIyBFYXNlIG9mIHVzZQoKTGlrZSBKU09OLCBJb27igJlzIHRleHQgZm9ybWF0IGlzIGNvbmNpc2UgYW5kIGNsZWFybHkgbGVnaWJsZS4gSXQgaXMgaW50ZWxsaWdpYmxlCnRvIGh1bWFucyBhbmQgbWF5IGJlIGVkaXRlZCB1c2luZyBmYW1pbGlhciB0b29scyBsaWtlIGEgdGV4dCBlZGl0b3IuIFRoaXMgbWFrZXMKSW9uIHdlbGwtc3VpdGVkIHRvIHJhcGlkIHByb3RvdHlwaW5nOiBkZXZlbG9wZXJzIGNhbiBxdWlja2x5IG1vY2sgdXAgdGhlIHRoZWlyCmRhdGEgaW4gdGV4dCBJb24sIGtub3dpbmcgdGhhdCB0aGVpciBhcHBsaWNhdGlvbiB3aWxsIHVsdGltYXRlbHkgc2VhbWxlc3NseQpwcm9jZXNzIHRoZSBtb3JlIGVmZmljaWVudCBiaW5hcnkgSW9uIGZvcm1hdC4gT25jZSB0aGUgYXBwbGljYXRpb24gaXMgdXAgYW5kCnJ1bm5pbmcsIHRoZSB1c2VycyBjYW4gZGVidWcgaXQgYnkgaW50ZXJjZXB0aW5nIHRoZSBiaW5hcnkgSW9uIGRhdGEgYW5kCmNvbnZlcnRpbmcgaXQgdG8gdGV4dCBJb24gd2l0aCBmdWxsIGZpZGVsaXR5LiBBZnRlciBhbmFseXNpcywgaGFuZC1lZGl0ZWQKcmVjb3JkcyBjYW4gYmUgcmUtaW5zZXJ0ZWQgaW50byBhIHByb2Nlc3NpbmcgcGlwZWxpbmUgYXMgbmVlZGVkIHRvIHN1cHBvcnQKZGVidWdnaW5nIGFuZCBwcm90b3R5cGluZy4KClRleHQtb25seSBmb3JtYXRzIGFyZSBtb3JlIGV4cGVuc2l2ZSB0byBwYXJzZSwgd2hpY2ggaXMgd2h5IElvbiBvZmZlcnMgdGhlCm9wdGlvbiBvZiB0aGUgbGVuZ3RoLXByZWZpeGVkIGJpbmFyeSBmb3JtYXQuIFRoaXMgYmluYXJ5IGZvcm1hdCBzdXBwb3J0cyByYXBpZApza2lwLXNjYW5uaW5nIG9mIGRhdGEgdG8gbWF0ZXJpYWxpemUgb25seSBrZXkgdmFsdWVzIHdpdGhpbiBJb24gc3RyZWFtcy4KCiMjIyBTZWFtbGVzcyB0cmFuc2NvZGluZwoKSW9uJ3MgaW50ZXJvcGVyYWJsZSBmb3JtYXRzIGF2b2lkIHRoZSBraW5kcyBvZiBzZW1hbnRpYyBtaXNtYXRjaGVzIGVuY291bnRlcmVkCndoZW4gYXR0ZW1wdGluZyB0byBtaXggYW5kIG1hdGNoIHNlcGFyYXRlIHRleHQgYW5kIGJpbmFyeSBmb3JtYXRzLgoKU3RhbmRhbG9uZSBiaW5hcnkgZm9ybWF0cyBzdWNoIGFzIFtDQk9SXVsyXSBzYWNyaWZpY2UgaHVtYW4tcmVhZGFiaWxpdHkgaW4KZmF2b3Igb2YgYW4gZW5jb2RpbmcgdGhhdCBpcyBtb3JlIGNvbXBhY3QgYW5kIGVmZmljaWVudCB0byBwYXJzZS4gQWx0aG91Z2ggQ0JPUgppcyBiYXNlZCBvbiBKU09OLCB0cmFuc2NvZGluZyBiZXR3ZWVuIHRoZSB0d28gaXMgbm90IGFsd2F5cyBzdHJhaWdodGZvcndhcmQKYmVjYXVzZSBDQk9SJ3MgbW9yZSBleHByZXNzaXZlIHR5cGVzIGRvIG5vdCBuZWNlc3NhcmlseSBtYXAgY2xlYW5seSB0byBKU09OCnR5cGVzLiBGb3IgZXhhbXBsZSwgQ0JPUidzIGBiaWdudW1gIG11c3QgYmUgYmFzZS02NCBlbmNvZGVkIGFuZCByZXByZXNlbnRlZCBhcwphIEpTT04gYHN0cmluZ2AgaW4gb3JkZXIgdG8gYXZvaWQgbnVtZXJpYyBvdmVyZmxvdyB3aGVuIHJlYWQgYnkgYSBKU09OIHBhcnNlciwKd2hpbGUgYSBDQk9SIGBtYXBgIG1heSBiZSBkaXJlY3RseSBjb252ZXJ0ZWQgdG8gYSBKU09OIGBvYmplY3RgIG9ubHkgaWYgYWxsCml0cyBrZXlzIGFyZSBVVEYtOCBzdHJpbmdzLgoKIyMgUmljaCB0eXBlIHN5c3RlbQoKSW9uJ3MgdHlwZSBzeXN0ZW0gaXMgYSBzdXBlcnNldCBvZiBKU09OJ3M6IGluIGFkZGl0aW9uIHRvIHN0cmluZ3MsIEJvb2xlYW5zLAphcnJheXMgKGxpc3RzKSwgb2JqZWN0cyAoc3RydWN0cyksIGFuZCBudWxscywgSW9uIGFkZHMgc3VwcG9ydCBmb3IKYXJiaXRyYXJ5LXByZWNpc2lvbiB0aW1lc3RhbXBzLCBlbWJlZGRlZCBiaW5hcnkgdmFsdWVzIChibG9icyBhbmQgY2xvYnMpLCBhbmQKc3ltYm9saWMgZXhwcmVzc2lvbnMuIElvbiBhbHNvIGV4cGFuZHMgSlNPTidzIGBudW1iZXJgIHNwZWNpZmljYXRpb24gYnkKZGVmaW5pbmcgZGlzdGluY3QgdHlwZXMgZm9yIGFyYml0cmFyeS1zaXplIGludGVnZXJzLCBJRUVFLTc1NCBiaW5hcnkgZmxvYXRpbmcKcG9pbnQgbnVtYmVycywgYW5kIGluZmluaXRlLXByZWNpc2lvbiBkZWNpbWFscy4gRGVjaW1hbHMgYXJlIHBhcnRpY3VsYXJseSB1c2VmdWwKZm9yIHByZWNpc2lvbi1zZW5zaXRpdmUgYXBwbGljYXRpb25zIHN1Y2ggYXMgZmluYW5jaWFsIHRyYW5zYWN0aW9uCnJlY29yZC1rZWVwaW5nLiBKU09OJ3MgYG51bWJlcmAgdHlwZSBpcyB1bmRlcnNwZWNpZmllZDsgaW4gcHJhY3RpY2UsIG1hbnkKaW1wbGVtZW50YXRpb25zIHJlcHJlc2VudCBhbGwgSlNPTiBudW1iZXJzIGFzIGZpeGVkLXByZWNpc2lvbiBiYXNlLTIgZmxvYXRzLAp3aGljaCBhcmUgc3ViamVjdCB0byByb3VuZGluZyBlcnJvcnMgYW5kIG90aGVyIGxvc3Mgb2YgcHJlY2lzaW9uLgoKIyMjIFRpbWVzdGFtcHMKCklvbiBbdGltZXN0YW1wc11bMTJdIGFyZSBXM0MtY29tcGxpYW50IHJlcHJlc2VudGF0aW9ucyBvZiBjYWxlbmRhciBkYXRlcyBhbmQKdGltZSwgc3VwcG9ydGluZyB2YXJpYWJsZSBwcmVjaXNpb24gaW5jbHVkaW5nIHllYXIsIG1vbnRoLCBkYXksIGhvdXJzLCBtaW51dGVzLApzZWNvbmRzLCBhbmQgZnJhY3Rpb25hbCBzZWNvbmRzLiAgSW9uIHRpbWVzdGFtcHMgbWF5IG9wdGlvbmFsbHkgZW5jb2RlIGEgdGltZQp6b25lIG9mZnNldC4KCkJ5IGRlZmluaW5nIHRpbWVzdGFtcHMgYXMgYSBkaXN0aW5jdCB0eXBlLCBJb24gZWxpbWluYXRlZCB0aGUgYW1iaWd1aXR5IGludm9sdmVkCndpdGggcmVwcmVzZW50aW5nIGRhdGVzIGFzIHN0cmluZ3MsIGFzIHRoZSBzZW1hbnRpY3MgYXJlIGNsZWFybHkgZGVmaW5lZC4gVW5saWtlCmEgbnVtYmVyLCB3aGljaCBjb3VudHMgZnJvbSBzb21lICJlcG9jaCIsIGFyYml0cmFyeSBwcmVjaXNpb24gdGltZXN0YW1wcyBhbHNvCmFsbG93IGFwcGxpY2F0aW9ucyB0byByZXByZXNlbnQgZGVsaWJlcmF0ZSBhbWJpZ3VpdHkuCgojIyMgQmxvYnMgYW5kIENsb2JzCgpJb24ncyBbYGJsb2JgXVsxM10gYW5kIFtgY2xvYmBdWzE0XSB0eXBlcyBhbGxvdyBhcHBsaWNhdGlvbnMgdG8gdHVubmVsIGJpbmFyeQpkYXRhIHRocm91Z2ggSW9uLiBUaGlzIGFsbG93cyBzdWNoIGFwcGxpY2F0aW9ucyB0byB0cmFuc21pdCBvcGFxdWUgYmluYXJ5CnBheWxvYWRzIChlLmcuIG1lZGlhLCBjb2RlLCBhbmQgbm9uLVVURi04IHRleHQpIGluIElvbiB3aXRob3V0IHRoZSBuZWVkIHRvIGFwcGx5CmFkZGl0aW9uYWwgcHJvY2Vzc2luZyB0byB0aGUgcGF5bG9hZHMgdG8gbWFrZSB0aGVtIGNvbmZvcm0gdG8gYSBkaWZmZXJlbnQgSW9uCnR5cGUuCgpGb3IgZXhhbXBsZSwgYSBgYmxvYmAgY291bGQgYmUgdXNlZCB0byB0cmFuc21pdCBhIGJpdG1hcCBpbWFnZSwgd2hpbGUgYSBgY2xvYmAKY291bGQgYmUgdXNlZCB0byB0cmFuc21pdCBTaGlmdCBKSVMgdGV4dCBvciBhbiBYTUwgcGF5bG9hZC4KCiMjIyBTeW1ib2xpYyBleHByZXNzaW9ucwoKVGhlIElvbiBzcGVjaWZpY2F0aW9uIGRlZmluZXMgYSBkaXN0aW5jdCBzeW50YXggZm9yIFtzeW1ib2xpYyBleHByZXNzaW9uXVsxMF1zCigqUy1leHByZXNzaW9ucyopLCBidXQgZG9lcyBub3QgZGVmaW5lIGhvdyB0aGV5IHNob3VsZCBiZSBwcm9jZXNzZWQuIFRoaXMgYWxsb3dzCmFwcGxpY2F0aW9ucyB0byB1c2UgUy1leHByZXNzaW9ucyB0byBjb252ZXkgZG9tYWluLXNwZWNpZmljIHNlbWFudGljcyBpbiBhCmZpcnN0LWNsYXNzIElvbiB0eXBlLgoKRm9ybWF0cyB0aGF0IGxhY2sgUy1leHByZXNzaW9ucyBhcyBhIGZpcnN0LWNsYXNzIHR5cGUgYXJlIG9mdGVuIGxlZnQgdG8gY2hvb3NlCmJldHdlZW4gdHdvIGltcGVyZmVjdCBvcHRpb25zOiBhZGRpbmcgYSBwcmUtcHJvY2Vzc29yIChlLmcuIFtKc29ubmV0XVs3XSBvbiB0b3AKb2YgSlNPTikgdG8gd29yayBhcm91bmQgdGhlIGluYWJpbGl0eSB0byByZXByZXNlbnQgZXhwcmVzc2lvbnMgYXMgZGF0YSwgb3IKdHVubmVsaW5nIGRvbWFpbi1zcGVjaWZpYyBsYW5ndWFnZSB0ZXh0IGFzIG9wYXF1ZSBzdHJpbmdzIG9yIGJpbmFyeSBwYXlsb2Fkcy4KCiMjIyBBbm5vdGF0aW9ucwoKVGhlIElvbiBzcGVjaWZpY2F0aW9uIHByb3ZpZGVzIGEgZm9ybWFsIG1lY2hhbmlzbSBmb3IgYXBwbGljYXRpb25zIHRvIGFubm90YXRlCmFueSBJb24gdmFsdWUgd2l0aG91dCB0aGUgbmVlZCB0byBlbmNsb3NlIHRoZSB2YWx1ZSBpbiBhIGNvbnRhaW5lci4gVGhlc2UKKmFubm90YXRpb25zKiBhcmUgbm90IGludGVycHJldGVkIGJ5IElvbiByZWFkZXJzIGFuZCBtYXkgYmUgdXNlZCwgZm9yIGV4YW1wbGUsCnRvIGFkZCB0eXBlIGluZm9ybWF0aW9uIHRvIGEgYHN0cnVjdGAsIHRpbWUgdW5pdHMgdG8gYW4gaW50ZWdlciBvciBkZWNpbWFsCnZhbHVlLCBvciBhIGRlc2NyaXB0aW9uIG9mIHRoZSBjb250ZW50cyBvZiBhIGJsb2IgdmFsdWUuCgojIyBTZWxmLWRlc2NyaWJpbmcKCkxpa2UgSlNPTiBhbmQgQ0JPUiwgSW9uIGlzIGEgc2VsZi1kZXNjcmliaW5nIGZvcm1hdCwgbWVhbmluZyB0aGF0IGl0IGRvZXMgbm90CnJlcXVpcmUgZXh0ZXJuYWwgbWV0YWRhdGEgKGkuZS4gYSBzY2hlbWEpIGluIG9yZGVyIHRvIGludGVycHJldCB0aGUgc3RydWN0dXJhbApjaGFyYWN0ZXJpc3RpY3Mgb2YgZGF0YSBkZW5vdGVkIGJ5IHRoZSBmb3JtYXQuIE5vdGFibHksIElvbiBwYXlsb2FkcyBhcmUgZnJlZQpmcm9tIGJ1aWxkLXRpbWUgYmluZGluZyB0aGF0IGluaGliaXRzIGluZGVwZW5kZW50IGlubm92YXRpb24gYW5kIGV2b2x1dGlvbgphY3Jvc3Mgc2VydmljZSBib3VuZGFyaWVzLiBUaGlzIHByb3ZpZGVzIGdyZWF0ZXIgZmxleGliaWxpdHkgb3ZlciBzY2hlbWEtYmFzZWQKZm9ybWF0cyBzdWNoIGFzIFtwcm90b2NvbCBidWZmZXJzXVszXSwgW1RocmlmdF1bNF0sIGFuZCBbQXZyb11bNV0sIGFzIGRhdGEgbWF5CmJlIHNwYXJzZWx5IGVuY29kZWQgYW5kIHRoZSBpbXBsaWNpdCBzY2hlbWEgbWF5IGJlIGNoYW5nZWQgd2l0aG91dCBleHBsaWNpdApyZW5lZ290aWF0aW9uIG9mIHRoZSBzY2hlbWEgYW1vbmcgYWxsIGNvbnN1bWVycy4gVGhlc2UgYmVuZWZpdHMgY29tZSBhdCB0aGUgY29zdApvZiBhIGxlc3MgY29tcGFjdCBlbmNvZGluZywgYnV0IGluIG91ciBleHBlcmllbmNlIHRoZSBwb3NpdGl2ZSBpbXBhY3Qgb24gYWdpbGl0eQpoYXMgYmVlbiBtb3JlIHZhbHVhYmxlIHRoYW4gYW4gZWZmaWNpZW50IGJ1dCBicml0dGxlIGNvbnRyYWN0LgoKIyMgUmVhZC1vcHRpbWl6ZWQgYmluYXJ5IGZvcm1hdAoKSW9uJ3MgYmluYXJ5IGZvcm1hdCBpcyBvcHRpbWl6ZWQgYWNjb3JkaW5nIHRvIHRoZSBmb2xsb3dpbmcgcHJpbmNpcGxlczoKCiAgKiBNb3N0IGRhdGEgaXMgcmVhZCBmYXIgbW9yZSBvZnRlbiB0aGFuIGl0IGlzIHdyaXR0ZW4uIEdlbmVyYWxseSwgd2l0aCB0aGUKICAgIGV4Y2VwdGlvbiBvZiBsb2dzLCBhbnkgZGF0YSB3aGljaCBpcyB3cml0dGVuIGlzIHJlYWQgYXQgbGVhc3Qgb25jZS4gIFJlYWQKICAgIG11bHRpcGxpZXJzIGFyZSBjb21tb24gaW4gcHJvY2Vzc2luZyBwaXBlbGluZXMsIHdvcmtmbG93cywgYW5kIHNoYXJlZCBkYXRhCiAgICBtYXJ0cy4KICAqIE1hbnkgcmVhZHMgYXJlIHNoYWxsb3cgb3Igc3BhcnNlLCBtZWFuaW5nIHRoYXQgdGhlIGFwcGxpY2F0aW9uIGlzIGZvY3VzZWQgb24KICAgIG9ubHkgYSBzdWJzZXQgb2YgdGhlIHZhbHVlcyBpbiB0aGUgc3RyZWFtLCBhbmQgdGhhdCBpdCBjYW4gcXVpY2tseSBkZXRlcm1pbmUKICAgIGlmIGZ1bGwgbWF0ZXJpYWxpemF0aW9uIG9mIGEgdmFsdWUgaXMgcmVxdWlyZWQuCgpJbiB0aGUgc3Bpcml0IG9mIHRoZXNlIHByaW5jaXBsZXMsIHRoZSBJb24gc3BlY2lmaWNhdGlvbiBpbmNsdWRlcyBmZWF0dXJlcyB0aGF0Cm1ha2UgSW9uJ3MgYmluYXJ5IGVuY29kaW5nIG1vcmUgZWZmaWNpZW50IHRvIHJlYWQgdGhhbiBvdGhlciBzY2hlbWEtZnJlZQpmb3JtYXRzLiBUaGVzZSBmZWF0dXJlcyBpbmNsdWRlIGxlbmd0aC1wcmVmaXhpbmcgb2YgYmluYXJ5IHZhbHVlcyBhbmQgSW9uJ3MgdXNlCm9mIHN5bWJvbCB0YWJsZXMuCgojIyMgTGVuZ3RoLXByZWZpeGluZwoKQmVjYXVzZSBtb3N0IHJlYWRzIGFyZSBzcGFyc2UsIGJpbmFyeSBJb24gaW52ZXN0cyBzb21lIGVuY29kaW5nIHNwYWNlIHRvCmxlbmd0aC1wcmVmaXggZWFjaCB2YWx1ZSBpbiBhIHN0cmVhbS4gVGhpcyBtYWtlcyBzZWVraW5nIHRvIHRoZSBuZXh0IHJlbGV2YW50CnZhbHVlIGZvciBhIHBhcnRpY3VsYXIgYXBwbGljYXRpb24gaW5leHBlbnNpdmUsIGFuZCBlbmFibGVzIGVmZmljaWVudApza2lwLXNjYW5uaW5nIG9mIGRhdGEuIFRoaXMgYWxsb3dzIGFwcGxpY2F0aW9ucyB0byBjaGVycnktcGljayBvbmx5IHRoZSByZWxldmFudAp2YWx1ZXMgZnJvbSB0aGUgc3RyZWFtIGZvciBkZWVwZXIgcGFyc2luZywgYW5kIHRvIGVjb25vbWl6ZSBwYXJzaW5nIG9mCmlycmVsZXZhbnQgdmFsdWVzLgoKIyMjIFN5bWJvbCB0YWJsZXMKCkluIGJpbmFyeSBJb24sIGNvbW1vbiB0ZXh0IHRva2VucyBzdWNoIGFzIHN0cnVjdCBmaWVsZCBuYW1lcyBhcmUgYXV0b21hdGljYWxseQpzdG9yZWQgaW4gYSBzeW1ib2wgdGFibGUuIFRoaXMgYWxsb3dzIHRoZXNlIHRva2VucyB0byBiZSBlZmZpY2llbnRseSBlbmNvZGVkIGFzCnRhYmxlIG9mZnNldHMgaW5zdGVhZCBvZiByZXBlYXRlZCBjb3BpZXMgb2YgdGhlIHNhbWUgdGV4dC4gQXMgYSBmdXJ0aGVyIHNwYWNlCm9wdGltaXphdGlvbiwgc3ltYm9sIHRhYmxlcyBjYW4gYmUgcHJlLXNoYXJlZCBiZXR3ZWVuIHByb2R1Y2VyIGFuZCBjb25zdW1lciBzbwp0aGF0IG9ubHkgdGhlIHRhYmxlIG5hbWUgYW5kIHZlcnNpb24gYXJlIGluY2x1ZGVkIGluIHRoZSBwYXlsb2FkLCBlbGltaW5hdGluZwp0aGUgb3ZlcmhlYWQgaW52b2x2ZWQgd2l0aCByZXBlYXRlZGx5IGRlZmluaW5nIHRoZSBzYW1lIHN5bWJvbHMgYWNyb3NzIG11bHRpcGxlCnBpZWNlcyBvZiBJb24gZGF0YS4KCiMjIFNlZSBhbHNvCgogICogW1RoZSBBbWF6b24gSW9uIDEuMCBTcGVjaWZpY2F0aW9uXVs4XQogICogW1RoZSBBbWF6b24gSW9uIDEuMCBDb29rYm9va11bOV0KICAqIFtUaGUgQW1hem9uIElvbiAxLjAgR2xvc3NhcnldWzExXQoKPCEtLSBSZWZlcmVuY2VzIC0tPgpbMV06IGh0dHA6Ly9qc29uLm9yZwpbMl06IGh0dHA6Ly9jYm9yLmlvClszXTogaHR0cHM6Ly9kZXZlbG9wZXJzLmdvb2dsZS5jb20vcHJvdG9jb2wtYnVmZmVycy8KWzRdOiBodHRwOi8vdGhyaWZ0LmFwYWNoZS5vcmcvCls1XTogaHR0cHM6Ly9hdnJvLmFwYWNoZS5vcmcvCls3XTogaHR0cDovL2pzb25uZXQub3JnLwpbOF06IHt7IHNpdGUuYmFzZXVybCB9fS9kb2NzL3NwZWMuaHRtbApbOV06IGNvb2tib29rLmh0bWwKWzEwXToge3sgc2l0ZS5iYXNldXJsIH19L2RvY3Mvc3BlYy5odG1sI3NleHAKWzExXToge3sgc2l0ZS5iYXNldXJsIH19L2RvY3MvZ2xvc3NhcnkuaHRtbApbMTJdOiB7eyBzaXRlLmJhc2V1cmwgfX0vZG9jcy9zcGVjLmh0bWwjdGltZXN0YW1wClsxM106IHt7IHNpdGUuYmFzZXVybCB9fS9kb2NzL3NwZWMuaHRtbCNibG9iClsxNF06IHt7IHNpdGUuYmFzZXVybCB9fS9kb2NzL3NwZWMuaHRtbCNjbG9iClsxNV06IHt7IHNpdGUuYmFzZXVybCB9fS9kb2NzLmh0bWw=
+}}
+
+{{'''
+ ---
+ title: Why Ion?
+ description: "Amazon Ion is a richly-typed, self-describing, hierarchical data serialization
+ format offering interchangeable binary and text representations. Ion was built to address rapid development, decoupling, and efficiency challenges faced every day while engineering large-scale, service-oriented architectures. Ion has been addressing these challenges within Amazon for nearly
+ a decade, and we believe others will benefit as well."
+ ---
+
+ # [Docs][15]/  {{ page.title }}
+
+   * Ion provides **[dual-format interoperability](#dual-format-interoperability)**, which enables users to take
+     advantage of the ease of use of the text format while capitalizing on the
+     efficiency of the binary format. The text form is easy to prototype, test,
+     and debug, while the binary format saves space and parsing effort.
+
+   * Ion's **[rich type system](#rich-type-system)** extends JSON's, adding support for types that
+     make Ion suitable for a wider variety of uses, including precision-sensitive
+     applications and portability across languages and runtimes.
+
+   * Ion is a **[self-describing](#self-describing)** format, giving its readers and writers the
+     flexibility to exchange Ion data without needing to agree on a schema in
+     advance. Ion's "open-content" supports discovery, deep component chaining,
+     and schema evolution.
+
+   * Because most data is read more often than it is written, Ion defines a
+     **[read-optimized binary format](#read-optimized-binary-format)**.
+
+ ## Dual-format interoperability
+
+ Applications can seamlessly consume Ion data in either its text or binary forms
+ without loss of data fidelity. While the expectation is that most Ion data is in
+ binary form, the text form promotes human readability, simplifying discovery and
+ diagnosis.
+
+ Notably, the text format is a superset of JSON, making all JSON data valid Ion
+ data.  You probably already know how to read and author Ion.
+
+ ### Ease of use
+
+ Like JSON, Ion's text format is concise and clearly legible. It is intelligible
+ to humans and may be edited using familiar tools like a text editor. This makes
+ Ion well-suited to rapid prototyping: developers can quickly mock up the their
+ data in text Ion, knowing that their application will ultimately seamlessly
+ process the more efficient binary Ion format. Once the application is up and
+ running, the users can debug it by intercepting the binary Ion data and
+ converting it to text Ion with full fidelity. After analysis, hand-edited
+ records can be re-inserted into a processing pipeline as needed to support
+ debugging and prototyping.
+
+ Text-only formats are more expensive to parse, which is why Ion offers the
+ option of the length-prefixed binary format. This binary format supports rapid
+ skip-scanning of data to materialize only key values within Ion streams.
+
+ ### Seamless transcoding
+
+ Ion's interoperable formats avoid the kinds of semantic mismatches encountered
+ when attempting to mix and match separate text and binary formats.
+
+ Standalone binary formats such as [CBOR][2] sacrifice human-readability in
+ favor of an encoding that is more compact and efficient to parse. Although CBOR
+ is based on JSON, transcoding between the two is not always straightforward
+ because CBOR's more expressive types do not necessarily map cleanly to JSON
+ types. For example, CBOR's `bignum` must be base-64 encoded and represented as
+ a JSON `string` in order to avoid numeric overflow when read by a JSON parser,
+ while a CBOR `map` may be directly converted to a JSON `object` only if all
+ its keys are UTF-8 strings.
+
+ ## Rich type system
+
+ Ion's type system is a superset of JSON's: in addition to strings, Booleans,
+ arrays (lists), objects (structs), and nulls, Ion adds support for
+ arbitrary-precision timestamps, embedded binary values (blobs and clobs), and
+ symbolic expressions. Ion also expands JSON's `number` specification by
+ defining distinct types for arbitrary-size integers, IEEE-754 binary floating
+ point numbers, and infinite-precision decimals. Decimals are particularly useful
+ for precision-sensitive applications such as financial transaction
+ record-keeping. JSON's `number` type is underspecified; in practice, many
+ implementations represent all JSON numbers as fixed-precision base-2 floats,
+ which are subject to rounding errors and other loss of precision.
+
+ ### Timestamps
+
+ Ion [timestamps][12] are W3C-compliant representations of calendar dates and
+ time, supporting variable precision including year, month, day, hours, minutes,
+ seconds, and fractional seconds.  Ion timestamps may optionally encode a time
+ zone offset.
+
+ By defining timestamps as a distinct type, Ion eliminated the ambiguity involved
+ with representing dates as strings, as the semantics are clearly defined. Unlike
+ a number, which counts from some "epoch", arbitrary precision timestamps also
+ allow applications to represent deliberate ambiguity.
+
+ ### Blobs and Clobs
+
+ Ion's [`blob`][13] and [`clob`][14] types allow applications to tunnel binary
+ data through Ion. This allows such applications to transmit opaque binary
+ payloads (e.g. media, code, and non-UTF-8 text) in Ion without the need to apply
+ additional processing to the payloads to make them conform to a different Ion
+ type.
+
+ For example, a `blob` could be used to transmit a bitmap image, while a `clob`
+ could be used to transmit Shift JIS text or an XML payload.
+
+ ### Symbolic expressions
+
+ The Ion specification defines a distinct syntax for [symbolic expression][10]s
+ (*S-expressions*), but does not define how they should be processed. This allows
+ applications to use S-expressions to convey domain-specific semantics in a
+ first-class Ion type.
+
+ Formats that lack S-expressions as a first-class type are often left to choose
+ between two imperfect options: adding a pre-processor (e.g. [Jsonnet][7] on top
+ of JSON) to work around the inability to represent expressions as data, or
+ tunneling domain-specific language text as opaque strings or binary payloads.
+
+ ### Annotations
+
+ The Ion specification provides a formal mechanism for applications to annotate
+ any Ion value without the need to enclose the value in a container. These
+ *annotations* are not interpreted by Ion readers and may be used, for example,
+ to add type information to a `struct`, time units to an integer or decimal
+ value, or a description of the contents of a blob value.
+
+ ## Self-describing
+
+ Like JSON and CBOR, Ion is a self-describing format, meaning that it does not
+ require external metadata (i.e. a schema) in order to interpret the structural
+ characteristics of data denoted by the format. Notably, Ion payloads are free
+ from build-time binding that inhibits independent innovation and evolution
+ across service boundaries. This provides greater flexibility over schema-based
+ formats such as [protocol buffers][3], [Thrift][4], and [Avro][5], as data may
+ be sparsely encoded and the implicit schema may be changed without explicit
+ renegotiation of the schema among all consumers. These benefits come at the cost
+ of a less compact encoding, but in our experience the positive impact on agility
+ has been more valuable than an efficient but brittle contract.
+
+ ## Read-optimized binary format
+
+ Ion's binary format is optimized according to the following principles:
+
+   * Most data is read far more often than it is written. Generally, with the
+     exception of logs, any data which is written is read at least once.  Read
+     multipliers are common in processing pipelines, workflows, and shared data
+     marts.
+   * Many reads are shallow or sparse, meaning that the application is focused on
+     only a subset of the values in the stream, and that it can quickly determine
+     if full materialization of a value is required.
+
+ In the spirit of these principles, the Ion specification includes features that
+ make Ion's binary encoding more efficient to read than other schema-free
+ formats. These features include length-prefixing of binary values and Ion's use
+ of symbol tables.
+
+ ### Length-prefixing
+
+ Because most reads are sparse, binary Ion invests some encoding space to
+ length-prefix each value in a stream. This makes seeking to the next relevant
+ value for a particular application inexpensive, and enables efficient
+ skip-scanning of data. This allows applications to cherry-pick only the relevant
+ values from the stream for deeper parsing, and to economize parsing of
+ irrelevant values.
+
+ ### Symbol tables
+
+ In binary Ion, common text tokens such as struct field names are automatically
+ stored in a symbol table. This allows these tokens to be efficiently encoded as
+ table offsets instead of repeated copies of the same text. As a further space
+ optimization, symbol tables can be pre-shared between producer and consumer so
+ that only the table name and version are included in the payload, eliminating
+ the overhead involved with repeatedly defining the same symbols across multiple
+ pieces of Ion data.
+
+ ## See also
+
+   * [The Amazon Ion 1.0 Specification][8]
+   * [The Amazon Ion 1.0 Cookbook][9]
+   * [The Amazon Ion 1.0 Glossary][11]
+
+ <!-- References -->
+ [1]: http://json.org
+ [2]: http://cbor.io
+ [3]: https://developers.google.com/protocol-buffers/
+ [4]: http://thrift.apache.org/
+ [5]: https://avro.apache.org/
+ [7]: http://jsonnet.org/
+ [8]: {{ site.baseurl }}/docs/spec.html
+ [9]: cookbook.html
+ [10]: {{ site.baseurl }}/docs/spec.html#sexp
+ [11]: {{ site.baseurl }}/docs/glossary.html
+ [12]: {{ site.baseurl }}/docs/spec.html#timestamp
+ [13]: {{ site.baseurl }}/docs/spec.html#blob
+ [14]: {{ site.baseurl }}/docs/spec.html#clob
+ [15]: {{ site.baseurl }}/docs.html
+'''}}
