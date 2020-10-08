@@ -7,6 +7,7 @@ import java.util.Map;
 
 import static com.amazon.ion.benchmark.Constants.ION_READER_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
+import static com.amazon.ion.benchmark.Constants.ION_USE_BIG_DECIMALS_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_USE_LOB_CHUNKS_NAME;
 import static com.amazon.ion.benchmark.Constants.PATHS_NAME;
 
@@ -41,6 +42,14 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
         parseAndCombine(
             optionsMatrix.get("--ion-use-lob-chunks"),
             ION_USE_LOB_CHUNKS_NAME,
+            OptionsMatrixBase::getTrueOrNull,
+            ION_SYSTEM::newBool,
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newBool(false)
+        );
+        parseAndCombine(
+            optionsMatrix.get("--ion-use-big-decimals"),
+            ION_USE_BIG_DECIMALS_NAME,
             OptionsMatrixBase::getTrueOrNull,
             ION_SYSTEM::newBool,
             optionsCombinationStructs,

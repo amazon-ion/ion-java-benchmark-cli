@@ -38,7 +38,7 @@ public class Main {
             + "[--ion-api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
             + "[--ion-use-symbol-tokens <bool>]... [--paths <file>] [--ion-reader <type>]... "
-            + "[--ion-use-lob-chunks <bool>]... <input_file>\n"
+            + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... <input_file>\n"
 
         + "  ion-java-benchmark --help\n"
 
@@ -66,8 +66,6 @@ public class Main {
             + "world to ensure the initialization cost is properly amortized.\n"
         + "\n";
 
-    // TODO add options for the following:
-    // TODO read decimals using bigDecimalValue() instead of decimalValue()
     private static final String OPTIONS =
         "Options:\n"
 
@@ -210,6 +208,11 @@ public class Main {
             + "allocates a properly-sized buffer on each invocation. Ignored unless one of the specified formats "
             + "is ion_binary or ion_text and --ion-api streaming is used. May be specified twice to compare both "
             + "settings. [default: false]\n"
+
+        + "  -D --ion-use-big-decimals <bool>       When true, read Ion decimal values into BigDecimal instances. When "
+            + "false, read decimal values into Decimal instances, which are capable of conveying negative zero. "
+            + "Ignored unless one of the specified formats is ion_binary or ion_text and --ion-api streaming is used. "
+            + "May be specified twice to compare both settings. [default: false]\n"
 
         + "\n";
 

@@ -18,6 +18,7 @@ class Constants {
     static final String ION_USE_SYMBOL_TOKENS_NAME = "k";
     static final String ION_FLOAT_WIDTH_NAME = "W";
     static final String ION_USE_LOB_CHUNKS_NAME = "e";
+    static final String ION_USE_BIG_DECIMALS_NAME = "D";
     static final String PATHS_NAME = "s";
     static final String ION_WRITER_BLOCK_SIZE_NAME = "b";
     static final String AUTO_VALUE = "auto";
