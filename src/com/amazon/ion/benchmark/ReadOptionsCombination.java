@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.amazon.ion.benchmark.Constants.ION_READER_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_USE_BIG_DECIMALS_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_USE_LOB_CHUNKS_NAME;
 import static com.amazon.ion.benchmark.Constants.PATHS_NAME;
 
@@ -24,6 +25,7 @@ class ReadOptionsCombination extends OptionsCombinationBase {
     final List<String> paths;
     final IonReaderType readerType;
     final boolean useLobChunks;
+    final boolean useBigDecimals;
 
     /**
      * @param serializedOptionsCombination text Ion representation of the options combination.
@@ -52,6 +54,7 @@ class ReadOptionsCombination extends OptionsCombinationBase {
             IonReaderType.NON_BLOCKING
         );
         useLobChunks = getOrDefault(optionsCombinationStruct, ION_USE_LOB_CHUNKS_NAME, val -> ((IonBool) val).booleanValue(), false);
+        useBigDecimals = getOrDefault(optionsCombinationStruct, ION_USE_BIG_DECIMALS_NAME, val -> ((IonBool) val).booleanValue(), false);
     }
 
     @Override

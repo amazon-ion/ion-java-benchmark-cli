@@ -169,6 +169,7 @@ public class OptionsTest {
         List<String> paths = null;
         IonReaderType readerType = IonReaderType.NON_BLOCKING;
         boolean useLobChunks = false;
+        boolean useBigDecimals = false;
 
         static ExpectedReadOptionsCombination defaultOptions() {
             return new ExpectedReadOptionsCombination();
@@ -189,12 +190,18 @@ public class OptionsTest {
             return this;
         }
 
+        final ExpectedReadOptionsCombination useBigDecimals(boolean useBigDecimals) {
+            this.useBigDecimals = useBigDecimals;
+            return this;
+        }
+
         @Override
         void assertOptionsEqual(ReadOptionsCombination that) {
             super.assertOptionsEqual(that);
             assertEquals(paths, that.paths);
             assertEquals(readerType, that.readerType);
             assertEquals(useLobChunks, that.useLobChunks);
+            assertEquals(useBigDecimals, that.useBigDecimals);
         }
     }
 
@@ -1213,6 +1220,38 @@ public class OptionsTest {
 
             assertReadTaskExecutesCorrectly("binaryLargeLobs.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
             assertReadTaskExecutesCorrectly("textLargeLobs.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);
+        }
+
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void readUsingBigDecimals() throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--ion-use-big-decimals",
+            "true",
+            "--ion-use-big-decimals",
+            "false",
+            "--format",
+            "ion_text",
+            "--format",
+            "ion_binary",
+            "binaryLargeLobs.10n"
+        );
+        assertEquals(4, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(4);
+
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().useBigDecimals(true).format(Format.ION_TEXT));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().useBigDecimals(false).format(Format.ION_TEXT));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().useBigDecimals(true).format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().useBigDecimals(false).format(Format.ION_BINARY));
+
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> candidate.useBigDecimals == optionsCombination.useBigDecimals && candidate.format == optionsCombination.format);
+
+            assertReadTaskExecutesCorrectly("binaryAllTypes.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
+            assertReadTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);
         }
 
         assertTrue(expectedCombinations.isEmpty());
