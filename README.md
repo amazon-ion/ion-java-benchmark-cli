@@ -1,15 +1,15 @@
 ## ion-java Benchmarking CLI
 
 This tool allows users to...
-1. Compare [ion-java](https://github.com/amzn/ion-java/) to Java implementations of other
+* Determine which ion-java configurations perform best
+* Compare [ion-java](https://github.com/amzn/ion-java/) to Java implementations of other
 serialization formats (not yet implemented)
-2. Determine which ion-java configurations perform best
 
 ...for the individual users' data and access patterns.
 
 Additionally, allows ion-java developers to...
-1. Determine the impact of a proposed change
-2. Decide where investments should be made in improving performance
+* Determine the impact of a proposed change
+* Decide where investments should be made in improving performance
 
 ...by generating results from a variety of real-world data and access patterns.
 
