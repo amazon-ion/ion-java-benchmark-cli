@@ -9,16 +9,18 @@ public class Main {
     private static final String TITLE = "IonJava Benchmarking Tool\n\n";
 
     private static final String DESCRIPTION =
-        "Description:\n"
+        "Description:\n\n"
+
         + "  Tool that allows users to...\n"
-        + "    1. Compare IonJava to Java implementations of other serialization formats (not yet implemented)\n"
-        + "    2. Determine which IonJava configurations perform best\n"
-        + "  ...for the individual users' data and access patterns.\n"
+        + "    * Determine which IonJava configurations perform best\n"
+        + "    * Compare IonJava to Java implementations of other serialization formats (not yet implemented)\n"
+        + "  ...for the individual users' data and access patterns.\n\n"
+
         + "  Additionally, allows IonJava developers to...\n"
-        + "    1. Determine the impact of a proposed change\n"
-        + "    2. Decide where investments should be made in improving performance\n"
+        + "    * Determine the impact of a proposed change\n"
+        + "    * Decide where investments should be made in improving performance\n"
         + "  ...by generating results from a variety of real-world data and access patterns.\n"
-        + "\n";
+        + "\n\n";
 
     private static final String USAGE =
         "Usage:\n"
@@ -202,7 +204,7 @@ public class Main {
         + "\n";
 
     private static final String EXAMPLES =
-        "Examples:\n" +
+        "Examples:\n\n" +
         "  Benchmark a full-traversal read of example.10n from file using the IonReader API, with 10 warmups, 10 " +
                 "iterations, and 1 fork, printing the results to stdout in JMH’s standard text format.\n" +
         "\n" +
@@ -257,7 +259,7 @@ public class Main {
         for (String message : messages) {
             System.out.println(message);
         }
-        System.out.println(TITLE + DESCRIPTION + COMMANDS + USAGE + OPTIONS + EXAMPLES);
+        System.out.println(TITLE + DESCRIPTION + (COMMANDS + USAGE + OPTIONS).replace("\n", "\n\n") + EXAMPLES);
         System.exit(0);
     }
 
