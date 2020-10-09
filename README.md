@@ -101,7 +101,7 @@ ion-java-benchmark write --ion-imports-for-benchmark tables.ion \
 Benchmark a full-traversal read of data equivalent to exampleWithImports.10n, which declares the shared
 symbol table imports provided by inputTables.ion, re-encoded (if necessary) using the shared symbol
 tables provided by benchmarkTables.ion, inputTables.ion, and no shared symbol tables. Produce
-results from using both the DOM and IonReader APIs.\n" +
+results from using both the DOM and IonReader APIs.
 
 ```
 ion-java-benchmark read --ion-imports-for-input inputTables.ion \
@@ -175,6 +175,9 @@ the `--ion-reader` option only applies to the `read` command when used with eith
 so the logic that uses the option is contained within `IonMeasurableReadTask`.
 5. In `OptionsTest`, add tests that exercise all values for this option (if enumerated) or a variety
 of values, for all commands to which it applies.
+
+Commit [d37b6fd](https://github.com/amzn/ion-java-benchmark-cli/commit/d37b6fdbff075fcb8159f51d37dd294b166e5624)
+demonstrates the steps required to add a new option.
 
 ### Adding a format
 
