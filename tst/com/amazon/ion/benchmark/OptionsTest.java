@@ -167,7 +167,6 @@ public class OptionsTest {
         extends ExpectedOptionsCombinationBase<ExpectedReadOptionsCombination, ReadOptionsCombination> {
 
         List<String> paths = null;
-        IonReaderType readerType = IonReaderType.NON_BLOCKING;
         boolean useLobChunks = false;
         boolean useBigDecimals = false;
 
@@ -177,11 +176,6 @@ public class OptionsTest {
 
         final ExpectedReadOptionsCombination paths(List<String> paths) {
             this.paths = paths;
-            return this;
-        }
-
-        final ExpectedReadOptionsCombination readerType(IonReaderType readerType) {
-            this.readerType = readerType;
             return this;
         }
 
@@ -199,7 +193,6 @@ public class OptionsTest {
         void assertOptionsEqual(ReadOptionsCombination that) {
             super.assertOptionsEqual(that);
             assertEquals(paths, that.paths);
-            assertEquals(readerType, that.readerType);
             assertEquals(useLobChunks, that.useLobChunks);
             assertEquals(useBigDecimals, that.useBigDecimals);
         }
@@ -820,8 +813,6 @@ public class OptionsTest {
             importsV2FileName,
             "--ion-imports-for-benchmark",
             "none",
-            "--ion-reader",
-            "blocking",
             "--ion-use-symbol-tokens",
             "true",
             "binaryStructsWithImports.10n"
@@ -1098,25 +1089,16 @@ public class OptionsTest {
             "ion_binary",
             "--format",
             "ion_text",
-            "--ion-reader",
-            "blocking",
-            "--ion-reader",
-            "non_blocking",
             "binaryAllTypes.10n"
         );
-        assertEquals(4, optionsCombinations.size());
-        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(4);
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
 
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.BLOCKING).format(Format.ION_BINARY));
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.BLOCKING).format(Format.ION_TEXT));
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.NON_BLOCKING).format(Format.ION_BINARY));
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.NON_BLOCKING).format(Format.ION_TEXT));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_TEXT));
 
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
-            expectedCombinations.removeIf(candidate -> {
-                return nullSafeEquals(candidate.format, optionsCombination.format)
-                    && candidate.readerType == optionsCombination.readerType;
-            });
+            expectedCombinations.removeIf(candidate -> nullSafeEquals(candidate.format, optionsCombination.format));
 
             assertReadTaskExecutesCorrectly("binaryAllTypes.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
             assertReadTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);

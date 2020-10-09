@@ -14,7 +14,6 @@ class Constants {
     static final String ION_IMPORTS_FOR_INPUT_NAME = "I";
     static final String ION_IMPORTS_FOR_BENCHMARK_NAME = "c";
     static final String FORMAT_NAME = "f";
-    static final String ION_READER_NAME = "R";
     static final String ION_USE_SYMBOL_TOKENS_NAME = "k";
     static final String ION_FLOAT_WIDTH_NAME = "W";
     static final String ION_USE_LOB_CHUNKS_NAME = "e";
