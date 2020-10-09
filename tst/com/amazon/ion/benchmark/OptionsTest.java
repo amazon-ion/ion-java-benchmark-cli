@@ -9,6 +9,7 @@ import com.amazon.ion.util.Equivalence;
 import com.amazon.ion.util.IonStreamUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -1175,6 +1176,7 @@ public class OptionsTest {
         assertTrue(expectedCombinations.isEmpty());
     }
 
+    @Ignore // TODO amzn/ion-java-benchmark-cli/issues/2
     @Test
     public void readUsingLobChunks() throws Exception {
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
