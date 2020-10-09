@@ -1176,7 +1176,7 @@ public class OptionsTest {
     }
 
     @Test
-    public void readUsingLogChunks() throws Exception {
+    public void readUsingLobChunks() throws Exception {
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
             "read",
             "--ion-use-lob-chunks",

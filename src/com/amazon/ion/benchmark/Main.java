@@ -83,7 +83,7 @@ public class Main {
             + "multiple values are specified for other options. Not enabled by default.\n"
 
         + "  -n --limit <int>                       Maximum number of entries to process. By default, all entries in "
-                + "each input file are processed.\n"
+            + "each input file are processed.\n"
 
         + "  -m --mode <mode>                       The JMH benchmark mode to use, from the set (SingleShotTime | "
             + "SampleTime | AverageTime | Throughput). SingleShotTime, in which each benchmark iteration writes "
