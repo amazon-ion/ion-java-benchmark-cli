@@ -3,7 +3,6 @@ package com.amazon.ion.benchmark;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
-import com.amazon.ion.impl.LookaheadIonReaderWrapper;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
@@ -18,21 +17,11 @@ import java.util.List;
  */
 class IonMeasurableReadTask extends MeasurableReadTask {
 
-    private static final int DEFAULT_NON_BLOCKING_BUFFER_SIZE = 64 * 1024;
     private static final int DEFAULT_REUSABLE_LOB_BUFFER_SIZE = 1024;
     private final IonReaderBuilder readerBuilder;
     private final PathExtractor<?> pathExtractor;
     private final IonSystem ionSystem;
     private final byte[] reusableLobBuffer;
-
-    /**
-     * Returns the next power of two greater than or equal to the given value.
-     * @param value the start value.
-     * @return the next power of two.
-     */
-    private static int nextPowerOfTwo(int value) {
-        return (int) Math.pow(2, Math.ceil(Math.log10(value) / Math.log10(2)));
-    }
 
     /**
      * Callback function for path extractor matches. Fully consumes the current value.
@@ -52,17 +41,7 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     IonMeasurableReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
         super(inputPath, options);
         ionSystem = IonUtilities.ionSystemForBenchmark(options);
-        readerBuilder = IonUtilities.newReaderBuilderForBenchmark(options).
-            withNonBlockingEnabled(options.readerType == IonReaderType.NON_BLOCKING);
-        if (readerBuilder.isNonBlockingEnabled()) {
-            // TODO configurable initial buffer size for non-blocking to take precedence over the auto-tuned value.
-            long inputSize = inputPath.toFile().length();
-            if (inputSize < DEFAULT_NON_BLOCKING_BUFFER_SIZE){
-                readerBuilder.withNonBlockingConfiguration(
-                    new LookaheadIonReaderWrapper.Builder().withInitialBufferSize(nextPowerOfTwo((int) inputSize))
-                );
-            }
-        }
+        readerBuilder = IonUtilities.newReaderBuilderForBenchmark(options);
         if (options.paths != null) {
             PathExtractorBuilder<?> pathExtractorBuilder = PathExtractorBuilder.standard();
             for (String path : options.paths) {

@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.amazon.ion.benchmark.Constants.ION_READER_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_USE_BIG_DECIMALS_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_USE_LOB_CHUNKS_NAME;
 import static com.amazon.ion.benchmark.Constants.PATHS_NAME;
@@ -23,7 +22,6 @@ import static com.amazon.ion.benchmark.Constants.PATHS_NAME;
 class ReadOptionsCombination extends OptionsCombinationBase {
 
     final List<String> paths;
-    final IonReaderType readerType;
     final boolean useLobChunks;
     final boolean useBigDecimals;
 
@@ -47,12 +45,6 @@ class ReadOptionsCombination extends OptionsCombinationBase {
                 }
             }
         }
-        readerType = getOrDefault(
-            optionsCombinationStruct,
-            ION_READER_NAME,
-            val -> IonReaderType.valueOf(((IonText) val).stringValue()),
-            IonReaderType.NON_BLOCKING
-        );
         useLobChunks = getOrDefault(optionsCombinationStruct, ION_USE_LOB_CHUNKS_NAME, val -> ((IonBool) val).booleanValue(), false);
         useBigDecimals = getOrDefault(optionsCombinationStruct, ION_USE_BIG_DECIMALS_NAME, val -> ((IonBool) val).booleanValue(), false);
     }
