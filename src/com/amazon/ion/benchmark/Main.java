@@ -37,8 +37,8 @@ public class Main {
             + "[--results-file <file>] [--io-type <type>]... [--io-buffer-size <int>]... [--format <type>]... "
             + "[--ion-api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
-            + "[--ion-use-symbol-tokens <bool>]... [--paths <file>] [--ion-use-lob-chunks <bool>]... "
-            + "[--ion-use-big-decimals <bool>]... <input_file>\n"
+            + "[--ion-use-symbol-tokens <bool>]... [--paths <file>] [--ion-reader <type>]... "
+            + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... <input_file>\n"
 
         + "  ion-java-benchmark --help\n"
 
@@ -197,6 +197,11 @@ public class Main {
             + "formats, the most efficient known API for performing sparse reads will be used. Ignored unless "
             + "--ion-api streaming is specified. By default, no search paths will be used, meaning the input data "
             + "will be fully traversed and materialized.)\n"
+
+        + "  -R --ion-reader <type>                 The IonReader type to use, from the set (blocking | non_blocking). "
+            + "May be specified multiple times to compare different readers. Note: because the DOM uses IonReader "
+            + "to parse data, this option is applicable for read benchmarks with both options for --ion-api. "
+            + "[default: non_blocking]\n"
 
         + "  -e --ion-use-lob-chunks <bool>         When true, read Ion blobs and clobs in chunks into a reusable "
             + "buffer of size 1024 bytes using `IonReader.getBytes`. When false, use `IonReader.newBytes`, which "
