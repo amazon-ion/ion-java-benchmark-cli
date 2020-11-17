@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
@@ -251,9 +249,11 @@ class IonUtilities {
             }
         }
         if (length < inputFile.length()) {
-            Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
-            try (FileChannel channel = FileChannel.open(output, StandardOpenOption.WRITE)) {
-                channel.truncate(length);
+            try (
+                FileChannel outputChannel = FileChannel.open(output, StandardOpenOption.WRITE);
+                FileChannel inputChannel = FileChannel.open(input, StandardOpenOption.READ)
+            ) {
+                outputChannel.transferFrom(inputChannel, 0, length);
             }
             return output;
         }
