@@ -1,9 +1,9 @@
 package com.amazon.ion.benchmark;
 
+import com.amazon.ion.IonBufferConfiguration;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
-import com.amazon.ion.impl.LookaheadIonReaderWrapper;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
@@ -18,7 +18,7 @@ import java.util.List;
  */
 class IonMeasurableReadTask extends MeasurableReadTask {
 
-    private static final int DEFAULT_NON_BLOCKING_BUFFER_SIZE = 64 * 1024;
+    private static final int DEFAULT_INCREMENTAL_BUFFER_SIZE = 64 * 1024;
     private static final int DEFAULT_REUSABLE_LOB_BUFFER_SIZE = 1024;
     private final IonReaderBuilder readerBuilder;
     private final PathExtractor<?> pathExtractor;
@@ -53,14 +53,19 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         super(inputPath, options);
         ionSystem = IonUtilities.ionSystemForBenchmark(options);
         readerBuilder = IonUtilities.newReaderBuilderForBenchmark(options).
-            withNonBlockingEnabled(options.readerType == IonReaderType.NON_BLOCKING);
-        if (readerBuilder.isNonBlockingEnabled()) {
-            // TODO configurable initial buffer size for non-blocking to take precedence over the auto-tuned value.
-            long inputSize = inputPath.toFile().length();
-            if (inputSize < DEFAULT_NON_BLOCKING_BUFFER_SIZE){
-                readerBuilder.withNonBlockingConfiguration(
-                    new LookaheadIonReaderWrapper.Builder().withInitialBufferSize(nextPowerOfTwo((int) inputSize))
+            withIncrementalReadingEnabled(options.readerType == IonReaderType.INCREMENTAL);
+        if (readerBuilder.isIncrementalReadingEnabled()) {
+            if (options.initialBufferSize != null) {
+                readerBuilder.withBufferConfiguration(
+                    new IonBufferConfiguration().withInitialBufferSize(options.initialBufferSize)
                 );
+            } else {
+                long inputSize = inputPath.toFile().length();
+                if (inputSize < DEFAULT_INCREMENTAL_BUFFER_SIZE) {
+                    readerBuilder.withBufferConfiguration(
+                        new IonBufferConfiguration().withInitialBufferSize(nextPowerOfTwo((int) inputSize))
+                    );
+                }
             }
         }
         if (options.paths != null) {

@@ -6,12 +6,12 @@ package com.amazon.ion.benchmark;
 enum IonReaderType {
 
     /**
-     * The default blocking reader for both text and binary.
+     * The default non-incremental reader for both text and binary.
      */
-    BLOCKING,
+    NON_INCREMENTAL,
 
     /**
-     * The opt-in non-blocking reader (binary only).
+     * The opt-in incremental reader (binary only).
      */
-    NON_BLOCKING
+    INCREMENTAL
 }

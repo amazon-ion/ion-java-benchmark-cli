@@ -38,7 +38,8 @@ public class Main {
             + "[--ion-api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
             + "[--ion-use-symbol-tokens <bool>]... [--paths <file>] [--ion-reader <type>]... "
-            + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... <input_file>\n"
+            + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... [--ion-reader-buffer-size <int>]... "
+            + "<input_file>\n"
 
         + "  ion-java-benchmark --help\n"
 
@@ -198,21 +199,26 @@ public class Main {
             + "--ion-api streaming is specified. By default, no search paths will be used, meaning the input data "
             + "will be fully traversed and materialized.)\n"
 
-        + "  -R --ion-reader <type>                 The IonReader type to use, from the set (blocking | non_blocking). "
-            + "May be specified multiple times to compare different readers. Note: because the DOM uses IonReader "
-            + "to parse data, this option is applicable for read benchmarks with both options for --ion-api. "
-            + "[default: non_blocking]\n"
+        + "  -R --ion-reader <type>                 The IonReader type to use, from the set (incremental | "
+            + "non_incremental). May be specified multiple times to compare different readers. Note: because the DOM "
+            + "uses IonReader to parse data, this option is applicable for read benchmarks with both options for "
+            + "--ion-api. [default: incremental]\n"
 
         + "  -e --ion-use-lob-chunks <bool>         When true, read Ion blobs and clobs in chunks into a reusable "
             + "buffer of size 1024 bytes using `IonReader.getBytes`. When false, use `IonReader.newBytes`, which "
-            + "allocates a properly-sized buffer on each invocation. Ignored unless one of the specified formats "
-            + "is ion_binary or ion_text and --ion-api streaming is used. May be specified twice to compare both "
-            + "settings. [default: false]\n"
+            + "allocates a properly-sized buffer on each invocation. Ignored unless --format is ion_binary or ion_text "
+            + "and --ion-api streaming is used. May be specified twice to compare both settings. [default: false]\n"
 
         + "  -D --ion-use-big-decimals <bool>       When true, read Ion decimal values into BigDecimal instances. When "
             + "false, read decimal values into Decimal instances, which are capable of conveying negative zero. "
-            + "Ignored unless one of the specified formats is ion_binary or ion_text and --ion-api streaming is used. "
-            + "May be specified twice to compare both settings. [default: false]\n"
+            + "Ignored unless --format is ion_binary or ion_text and --ion-api streaming is used. May be specified "
+            + "twice to compare both settings. [default: false]\n"
+
+        + "  -Z --ion-reader-buffer-size <int>      The initial size of the incremental reader's buffer, or 'auto', "
+            + "which uses either the incremental reader's default initial buffer size value or the total length of the "
+            + "stream (whichever is smaller). To avoid resizing, this value should be larger than the largest "
+            + "top-level value in the Ion stream. Ignored unless --format ion_binary and --ion-reader incremental are "
+            + "specified. May be specified multiple times to compare different settings.\n"
 
         + "\n";
 
