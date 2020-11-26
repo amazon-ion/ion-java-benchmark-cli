@@ -1112,13 +1112,13 @@ public class OptionsTest {
             "incremental",
             "binaryAllTypes.10n"
         );
-        assertEquals(4, optionsCombinations.size());
-        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(4);
+        assertEquals(3, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(3);
 
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.NON_INCREMENTAL).format(Format.ION_BINARY));
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.NON_INCREMENTAL).format(Format.ION_TEXT));
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.INCREMENTAL).format(Format.ION_BINARY));
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.INCREMENTAL).format(Format.ION_TEXT));
+        // --ion-reader does not apply to the text format.
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_TEXT));
 
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(candidate -> {
@@ -1178,14 +1178,13 @@ public class OptionsTest {
             "buffer",
             "binaryAllTypes.10n"
         );
-        assertEquals(6, optionsCombinations.size());
-        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(6);
+        assertEquals(4, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(4);
 
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.FILE).ioBufferSize(32));
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.FILE).ioBufferSize(16384));
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.FILE));
-        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.BUFFER).ioBufferSize(32));
-        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.BUFFER).ioBufferSize(16384));
+        // --io-buffer-size does not apply to the BUFFER IoType.
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().ioType(IoType.BUFFER));
 
         for (WriteOptionsCombination optionsCombination : optionsCombinations) {
@@ -1284,10 +1283,9 @@ public class OptionsTest {
             "incremental",
             "binaryLargeLobs.10n"
         );
-        assertEquals(5, optionsCombinations.size());
-        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(5);
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.INCREMENTAL).format(Format.ION_TEXT));
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.NON_INCREMENTAL).format(Format.ION_TEXT));
+        assertEquals(4, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(4);
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_TEXT));
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.INCREMENTAL).format(Format.ION_BINARY));
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.NON_INCREMENTAL).format(Format.ION_BINARY));
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().initialBufferSize(128).readerType(IonReaderType.INCREMENTAL).format(Format.ION_BINARY));

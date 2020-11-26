@@ -31,7 +31,7 @@ class WriteOptionsMatrix extends OptionsMatrixBase {
             ION_SYSTEM::newInt,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary
+            OPTION_ONLY_APPLIES_TO_ION_BINARY
         );
     }
 

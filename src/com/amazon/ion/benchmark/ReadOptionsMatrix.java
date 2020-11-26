@@ -5,7 +5,7 @@ import com.amazon.ion.IonStruct;
 import java.util.List;
 import java.util.Map;
 
-import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_API_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_READER_BUFFER_SIZE_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_READER_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
@@ -35,7 +35,13 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
                 optionsCombinationStructs,
                 PATHS_NAME,
                 ION_SYSTEM.newString(requireFileToExist(pathsFile)),
-                OPTION_ALWAYS_APPLIES // TODO for Ion, ignore unless --ion-api streaming is specified.
+                s -> {
+                    if (OPTION_ONLY_APPLIES_TO_ION.test(s)) {
+                        // For Ion, paths cannot be used with the DOM.
+                        return IonAPI.STREAMING.name().equals(getStringValue(s, ION_API_NAME));
+                    }
+                    return true;
+                }
             );
         }
         parseAndCombine(
@@ -45,7 +51,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
             (type) -> ION_SYSTEM.newSymbol(type.name()),
             optionsCombinationStructs,
             OptionsMatrixBase::noImplicitDefault,
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary or ion_text
+            OPTION_ONLY_APPLIES_TO_ION_BINARY
         );
         parseAndCombine(
             optionsMatrix.get("--ion-use-lob-chunks"),
@@ -54,7 +60,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
             ION_SYSTEM::newBool,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newBool(false),
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary or ion_text and --ion-api streaming
+            OPTION_ONLY_APPLIES_TO_ION_STREAMING
         );
         parseAndCombine(
             optionsMatrix.get("--ion-use-big-decimals"),
@@ -63,7 +69,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
             ION_SYSTEM::newBool,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newBool(false),
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary or ion_text and --ion-api streaming
+            OPTION_ONLY_APPLIES_TO_ION_STREAMING
         );
         parseAndCombine(
             optionsMatrix.get("--ion-reader-buffer-size"),
@@ -74,7 +80,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
             (struct) -> {
                 // Do not apply this option to any options combinations that do not specify the incremental reader.
-                return Format.ION_BINARY.name().equals(getStringValue(struct, FORMAT_NAME)) &&
+                return OPTION_ONLY_APPLIES_TO_ION_BINARY.test(struct) &&
                     IonReaderType.INCREMENTAL.name().equals(getStringValue(struct, ION_READER_NAME));
             }
         );

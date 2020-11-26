@@ -166,10 +166,10 @@ public class Main {
             + "setting behaves is as follows: for read benchmarks, if the other settings make it possible to use "
             + "the input data as-is, the input will not be re-encoded. If other settings require the input to be "
             + "re-encoded, then 2-byte preallocation will be used. For write benchmarks, 'auto' causes 2-byte "
-            + "preallocation to be used. [default: auto]\n"
+            + "preallocation to be used. Ignored unless --format is ion_binary. [default: auto]\n"
 
         + "  -W --ion-float-width <int>             The bit width of binary Ion float values (32 | 64 | auto). "
-            + "Ignored unless the format is ion_binary. May be specified multiple times to compare different "
+            + "Ignored unless --format is ion_binary. May be specified multiple times to compare different "
             + "settings. 'auto' behaves as follows: for write benchmarks, 64-bit floats are written; for read "
             + "benchmarks, the input file is read as-is unless the values of other options require it to be "
             + "re-written, in which case it will be re-written and later read using 64-bit floats. "
@@ -177,9 +177,9 @@ public class Main {
 
         + "  -k --ion-use-symbol-tokens <bool>      When reading and/or writing Ion field names, annotations, and "
             + "symbol values, determines whether to use Ion APIs that return and accept SymbolToken objects rather "
-            + "than Strings. Either 'true' or 'false'. Ignored unless --ion-api is streaming. Must be 'true' when "
-            + "the streaming APIs are used with Ion streams that contain symbols with unknown text. May be "
-            + "specified twice to compare both settings. [default: false]\n"
+            + "than Strings. Either 'true' or 'false'. Ignored unless --format is ion_text or ion_binary and --ion-api "
+            + "is streaming. Must be 'true' when the streaming APIs are used with Ion streams that contain symbols "
+            + "with unknown text. May be specified twice to compare both settings. [default: false]\n"
 
         // 'write' options:
 
@@ -202,7 +202,7 @@ public class Main {
         + "  -R --ion-reader <type>                 The IonReader type to use, from the set (incremental | "
             + "non_incremental). May be specified multiple times to compare different readers. Note: because the DOM "
             + "uses IonReader to parse data, this option is applicable for read benchmarks with both options for "
-            + "--ion-api. [default: incremental]\n"
+            + "--ion-api. Ignored unless --format is ion_binary. [default: incremental]\n"
 
         + "  -e --ion-use-lob-chunks <bool>         When true, read Ion blobs and clobs in chunks into a reusable "
             + "buffer of size 1024 bytes using `IonReader.getBytes`. When false, use `IonReader.newBytes`, which "

@@ -43,6 +43,16 @@ import static com.amazon.ion.benchmark.Constants.PREALLOCATION_NAME;
 abstract class OptionsMatrixBase {
 
     static final Predicate<IonStruct> OPTION_ALWAYS_APPLIES = s -> true;
+    static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_ION = s -> {
+        String formatString = getStringValue(s, FORMAT_NAME);
+        return Format.ION_BINARY.name().equals(formatString) || Format.ION_TEXT.name().equals(formatString);
+    };
+    static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_ION_BINARY = s -> {
+        return Format.ION_BINARY.name().equals(getStringValue(s, FORMAT_NAME));
+    };
+    static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_ION_STREAMING = s -> {
+        return OPTION_ONLY_APPLIES_TO_ION.test(s) && IonAPI.STREAMING.name().equals(getStringValue(s, ION_API_NAME));
+    };
 
     private final String inputFile;
     private final String[] serializedOptionsCombinations;
@@ -276,13 +286,22 @@ abstract class OptionsMatrixBase {
             int limit = Integer.parseInt(optionsMatrix.get("--limit").toString());
             addOptionTo(optionsCombinationStructs, LIMIT_NAME, ION_SYSTEM.newInt(limit), OPTION_ALWAYS_APPLIES);
         }
+        parseAndCombine(
+            optionsMatrix.get("--format"),
+            FORMAT_NAME,
+            (s) -> Format.valueOf(s.toUpperCase()),
+            (format) -> ION_SYSTEM.newSymbol(format.name()),
+            optionsCombinationStructs,
+            OptionsMatrixBase::noImplicitDefault,
+            OPTION_ALWAYS_APPLIES
+        );
         String importsForInput = getFileOrNone(optionsMatrix.get("--ion-imports-for-input").toString());
         if (importsForInput != null) {
             addOptionTo(
                 optionsCombinationStructs,
                 ION_IMPORTS_FOR_INPUT_NAME,
                 ION_SYSTEM.newString(importsForInput),
-                OPTION_ALWAYS_APPLIES
+                OPTION_ONLY_APPLIES_TO_ION
             );
         }
         parseAndCombine(
@@ -301,7 +320,7 @@ abstract class OptionsMatrixBase {
             ION_SYSTEM::newInt,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
-            OPTION_ALWAYS_APPLIES // TODO ignore when --io-type buffer is used.
+            s -> !IoType.BUFFER.name().equals(getStringValue(s, IO_TYPE_NAME))
         );
         parseAndCombine(
             optionsMatrix.get("--ion-imports-for-benchmark"),
@@ -310,7 +329,7 @@ abstract class OptionsMatrixBase {
             ION_SYSTEM::newString,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary or ion_text
+            OPTION_ONLY_APPLIES_TO_ION
         );
         parseAndCombine(
             optionsMatrix.get("--ion-length-preallocation"),
@@ -319,7 +338,7 @@ abstract class OptionsMatrixBase {
             ION_SYSTEM::newInt,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary or ion_text
+            OPTION_ONLY_APPLIES_TO_ION_BINARY
         );
         parseAndCombine(
             optionsMatrix.get("--ion-flush-period"),
@@ -328,7 +347,7 @@ abstract class OptionsMatrixBase {
             ION_SYSTEM::newInt,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary or ion_text
+            OPTION_ONLY_APPLIES_TO_ION
         );
         parseAndCombine(
             optionsMatrix.get("--ion-api"),
@@ -337,7 +356,7 @@ abstract class OptionsMatrixBase {
             (api) -> ION_SYSTEM.newSymbol(api.name()),
             optionsCombinationStructs,
             OptionsMatrixBase::noImplicitDefault,
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary or ion_text
+            OPTION_ONLY_APPLIES_TO_ION
         );
         parseAndCombine(
             optionsMatrix.get("--ion-use-symbol-tokens"),
@@ -346,16 +365,7 @@ abstract class OptionsMatrixBase {
             ION_SYSTEM::newBool,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newBool(false),
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary or ion_text and --ion-api is streaming
-        );
-        parseAndCombine(
-            optionsMatrix.get("--format"), // TODO move ahead of the Ion options so they can depend on it.
-            FORMAT_NAME,
-            (s) -> Format.valueOf(s.toUpperCase()),
-            (format) -> ION_SYSTEM.newSymbol(format.name()),
-            optionsCombinationStructs,
-            OptionsMatrixBase::noImplicitDefault,
-            OPTION_ALWAYS_APPLIES
+            OPTION_ONLY_APPLIES_TO_ION_STREAMING
         );
         parseAndCombine(
             optionsMatrix.get("--ion-float-width"),
@@ -369,7 +379,7 @@ abstract class OptionsMatrixBase {
             },
             optionsCombinationStructs,
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
-            OPTION_ALWAYS_APPLIES // TODO ignore unless --format is ion_binary or ion_text
+            OPTION_ONLY_APPLIES_TO_ION_BINARY
         );
         parseCommandSpecificOptions(optionsMatrix, optionsCombinationStructs);
         serializedOptionsCombinations = serializeOptionsCombinations(optionsCombinationStructs);
