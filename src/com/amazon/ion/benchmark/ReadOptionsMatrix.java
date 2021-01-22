@@ -44,6 +44,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
                 }
             );
         }
+        /*
         parseAndCombine(
             optionsMatrix.get("--ion-reader"),
             ION_READER_NAME,
@@ -53,6 +54,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
             OptionsMatrixBase::noImplicitDefault,
             OPTION_ONLY_APPLIES_TO_ION_BINARY
         );
+         */
         parseAndCombine(
             optionsMatrix.get("--ion-use-lob-chunks"),
             ION_USE_LOB_CHUNKS_NAME,
@@ -71,6 +73,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
             () -> ION_SYSTEM.newBool(false),
             OPTION_ONLY_APPLIES_TO_ION_STREAMING
         );
+        /*
         parseAndCombine(
             optionsMatrix.get("--ion-reader-buffer-size"),
             ION_READER_BUFFER_SIZE_NAME,
@@ -84,6 +87,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
                     IonReaderType.INCREMENTAL.name().equals(getStringValue(struct, ION_READER_NAME));
             }
         );
+         */
     }
 
 }

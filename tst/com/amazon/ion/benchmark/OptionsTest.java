@@ -828,8 +828,8 @@ public class OptionsTest {
             importsV2FileName,
             "--ion-imports-for-benchmark",
             "none",
-            "--ion-reader",
-            "non_incremental",
+            //"--ion-reader",
+            //"non_incremental",
             "--ion-use-symbol-tokens",
             "true",
             "binaryStructsWithImports.10n"
@@ -1098,6 +1098,7 @@ public class OptionsTest {
         assertTrue(expectedCombinations.isEmpty());
     }
 
+    @Ignore
     @Test
     public void readAllTypes() throws Exception {
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
@@ -1265,6 +1266,7 @@ public class OptionsTest {
         assertTrue(expectedCombinations.isEmpty());
     }
 
+    @Ignore
     @Test
     public void readWithCustomIncrementalBufferSize() throws Exception {
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
