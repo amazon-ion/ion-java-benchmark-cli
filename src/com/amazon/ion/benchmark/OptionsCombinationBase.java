@@ -21,13 +21,14 @@ import java.util.function.Function;
 
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
-import static com.amazon.ion.benchmark.Constants.ION_API_NAME;
+import static com.amazon.ion.benchmark.Constants.API_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_BUFFER_SIZE_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_TYPE_NAME;
+import static com.amazon.ion.benchmark.Constants.JSON_USE_BIG_DECIMALS_NAME;
 import static com.amazon.ion.benchmark.Constants.LIMIT_NAME;
 import static com.amazon.ion.benchmark.Constants.PREALLOCATION_NAME;
 
@@ -39,7 +40,7 @@ abstract class OptionsCombinationBase {
     final Integer preallocation;
     final Integer flushPeriod;
     final Format format;
-    final IonAPI api;
+    final API api;
     final IoType ioType;
     final Integer ioBufferSize;
     final String importsForInputFile;
@@ -47,6 +48,7 @@ abstract class OptionsCombinationBase {
     final Integer floatWidth;
     final boolean useSymbolTokens;
     final int limit;
+    final boolean jsonUseBigDecimals;
 
     /**
      * Retrieves and translates a value from the struct, if the field is present and is not the 'auto' value. Otherwise,
@@ -78,7 +80,7 @@ abstract class OptionsCombinationBase {
         preallocation = getOrDefault(optionsCombinationStruct, PREALLOCATION_NAME, val -> ((IonInt) val).intValue(), null);
         flushPeriod = getOrDefault(optionsCombinationStruct, FLUSH_PERIOD_NAME, val -> ((IonInt) val).intValue(), null);
         format = getOrDefault(optionsCombinationStruct, FORMAT_NAME, val -> Format.valueOf(((IonText) val).stringValue()), Format.ION_BINARY);
-        api = getOrDefault(optionsCombinationStruct, ION_API_NAME, val -> IonAPI.valueOf(((IonText) val).stringValue()), IonAPI.STREAMING);
+        api = getOrDefault(optionsCombinationStruct, API_NAME, val -> API.valueOf(((IonText) val).stringValue()), API.STREAMING);
         ioType = getOrDefault(optionsCombinationStruct, IO_TYPE_NAME, val -> IoType.valueOf(((IonText) val).stringValue()), IoType.FILE);
         ioBufferSize = getOrDefault(optionsCombinationStruct, IO_BUFFER_SIZE_NAME, val -> ((IonInt) val).intValue(), null);
         importsForInputFile = getOrDefault(optionsCombinationStruct, ION_IMPORTS_FOR_INPUT_NAME, val -> ((IonText) val).stringValue(), null);
@@ -86,6 +88,7 @@ abstract class OptionsCombinationBase {
         floatWidth = getOrDefault(optionsCombinationStruct, ION_FLOAT_WIDTH_NAME, val -> ((IonInt) val).intValue(), null);
         useSymbolTokens = getOrDefault(optionsCombinationStruct, ION_USE_SYMBOL_TOKENS_NAME, val -> ((IonBool) val).booleanValue(), false);
         limit = getOrDefault(optionsCombinationStruct, LIMIT_NAME, val -> ((IonInt) val).intValue(), Integer.MAX_VALUE);
+        jsonUseBigDecimals = getOrDefault(optionsCombinationStruct, JSON_USE_BIG_DECIMALS_NAME, val -> ((IonBool) val).booleanValue(), true);
     }
 
     /**

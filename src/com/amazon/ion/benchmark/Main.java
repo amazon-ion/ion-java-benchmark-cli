@@ -13,7 +13,7 @@ public class Main {
 
         + "  Tool that allows users to...\n"
         + "    * Determine which IonJava configurations perform best\n"
-        + "    * Compare IonJava to Java implementations of other serialization formats (not yet implemented)\n"
+        + "    * Compare IonJava to Java implementations of other serialization formats\n"
         + "  ...for the individual users' data and access patterns.\n\n"
 
         + "  Additionally, allows IonJava developers to...\n"
@@ -28,18 +28,19 @@ public class Main {
         + "  ion-java-benchmark write [--profile] [--limit <int>] [--mode <mode>] [--time-unit <unit>] "
             + "[--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
             + "[--results-file <file>] [--io-type <type>]... [--io-buffer-size <int>]... [--format <type>]... "
-            + "[--ion-api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
+            + "[--api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
-            + "[--ion-use-symbol-tokens <bool>]... [--ion-writer-block-size <int>]... <input_file>\n"
+            + "[--ion-use-symbol-tokens <bool>]... [--ion-writer-block-size <int>]... "
+            + "[--json-use-big-decimals <bool>]... <input_file>\n"
 
         + "  ion-java-benchmark read [--profile] [--limit <int>] [--mode <mode>] [--time-unit <unit>] "
             + "[--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
             + "[--results-file <file>] [--io-type <type>]... [--io-buffer-size <int>]... [--format <type>]... "
-            + "[--ion-api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
+            + "[--api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
             + "[--ion-use-symbol-tokens <bool>]... [--paths <file>] "
-            + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... "
-            + "<input_file>\n"
+            + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]..."
+            + "[--json-use-big-decimals <bool>]... <input_file>\n"
 
         + "  ion-java-benchmark --help\n"
 
@@ -124,11 +125,13 @@ public class Main {
             + "because this mode reads the entire input directly from a properly-sized buffer. May be specified "
             + "multiple times to compare different settings. [default: auto]\n"
 
-        + "  -f --format <type>                     Format to benchmark, from the set (ion_binary | ion_text). May be "
-            + "specified multiple times to compare different formats. [default: ion_binary]\n"
+        + "  -f --format <type>                     Format to benchmark, from the set (ion_binary | ion_text | json). "
+            + "May be specified multiple times to compare different formats. [default: ion_binary]\n"
 
-        + "  -a --ion-api <api>                     The Ion API to exercise (dom or streaming). Ignored unless one of "
-            + "the specified --formats is ion-binary or ion-text. May be specified multiple times to compare both "
+        + "  -a --api <api>                         The API to exercise (dom or streaming). For the ion-binary or "
+            + "ion-text formats, 'streaming' causes IonReader/IonWriter to be used while 'dom' causes IonLoader to be "
+            + "used. For Jackson JSON, 'streaming' causes JsonParser/JsonGenerator to be used while 'dom' causes "
+            + "ObjectMapper to materialize JsonNode instances. May be specified multiple times to compare both "
             + "APIs. [default: streaming]\n"
 
         + "  -I --ion-imports-for-input <file>      A file containing a sequence of Ion symbol tables, or the string "
@@ -180,6 +183,10 @@ public class Main {
             + "than Strings. Either 'true' or 'false'. Ignored unless --format is ion_text or ion_binary and --ion-api "
             + "is streaming. Must be 'true' when the streaming APIs are used with Ion streams that contain symbols "
             + "with unknown text. May be specified twice to compare both settings. [default: false]\n"
+
+        + "  -g --json-use-big-decimals <bool>      When reading and/or writing JSON non-integer numeric values, use "
+            + "BigDecimal in order to preserve precision. When false, `double` will be used and precision may be lost. "
+            + "May be specified twice to compare both settings. [default: true]\n"
 
         // 'write' options:
 
@@ -265,9 +272,26 @@ public class Main {
         + "                          --ion-imports-for-benchmark benchmarkTables.ion \\\n"
         + "                          --ion-imports-for-benchmark auto \\\n"
         + "                          --ion-imports-for-benchmark none \\\n"
-        + "                          --ion-api dom \\\n"
-        + "                          --ion-api streaming \\\n"
-        + "                          exampleWithImports.10n\n\n";
+        + "                          --api dom \\\n"
+        + "                          --api streaming \\\n"
+        + "                          exampleWithImports.10n\n\n"
+
+        + "  Benchmark a full-traversal read of data equivalent to example.json using both the Jackson JsonParser and "
+            + "ion-java IonReader.\n\n"
+
+        + "  ion-java-benchmark read --format json \\\n"
+        + "                          --format ion_binary \\\n"
+        + "                          example.json\n\n"
+
+        + "  Benchmark a write of example.10n to JSON using Jackson ObjectMapper and to binary Ion using the"
+            + "ion-java DOM. If example.10n contains Ion types that have no JSON equivalent, the data will be "
+            + "down-converted using the rules provided here: "
+            + "https://amzn.github.io/ion-docs/guides/cookbook.html#down-converting-to-json\n\n"
+
+        + "  ion-java-benchmark write --format json \\\n"
+        + "                           --format ion_binary \\\n"
+        + "                           --api dom \\\n"
+        + "                           example.10n\n\n";
 
     private static void printHelpAndExit(String... messages) {
         for (String message : messages) {

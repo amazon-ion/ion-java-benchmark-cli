@@ -27,7 +27,7 @@ class ReadOptionsCombination extends OptionsCombinationBase {
     final List<String> paths;
     final IonReaderType readerType;
     final boolean useLobChunks;
-    final boolean useBigDecimals;
+    final boolean ionUseBigDecimals;
     final Integer initialBufferSize;
 
     /**
@@ -57,7 +57,7 @@ class ReadOptionsCombination extends OptionsCombinationBase {
             IonReaderType.INCREMENTAL
         );
         useLobChunks = getOrDefault(optionsCombinationStruct, ION_USE_LOB_CHUNKS_NAME, val -> ((IonBool) val).booleanValue(), false);
-        useBigDecimals = getOrDefault(optionsCombinationStruct, ION_USE_BIG_DECIMALS_NAME, val -> ((IonBool) val).booleanValue(), false);
+        ionUseBigDecimals = getOrDefault(optionsCombinationStruct, ION_USE_BIG_DECIMALS_NAME, val -> ((IonBool) val).booleanValue(), false);
         initialBufferSize = getOrDefault(optionsCombinationStruct, ION_READER_BUFFER_SIZE_NAME, val -> ((IonInt) val).intValue(), null);
     }
 

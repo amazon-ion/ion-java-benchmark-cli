@@ -7,6 +7,9 @@ import com.amazon.ion.SymbolTable;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.util.Equivalence;
 import com.amazon.ion.util.IonStreamUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NumericNode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -21,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -66,6 +70,80 @@ public class OptionsTest {
     }
 
     /**
+     * The JSON data model only has a single number type, but the default implementation of JsonNode.equals requires
+     * values to have been read into the same Java type even if their values are equivalent. This causes problems
+     * with certain Ion translations (e.g. decimal negative zero to float zero), so we will use a custom comparator
+     * that up-converts all numbers to BigDecimal (thereby preserving precision) before comparison.
+     */
+    private static final Comparator<JsonNode> UNIFIED_NUMBER_TYPE_JSON_NODE_COMPARATOR = (o1, o2) -> {
+        if (o1.equals(o2)) {
+            return 0;
+        }
+        if ((o1 instanceof NumericNode) && (o2 instanceof NumericNode)) {
+            return o1.decimalValue().compareTo(o2.decimalValue());
+        }
+        return 1;
+    };
+
+    /**
+     * Asserts JSON data model equality using the given options.
+     * @param expected the expected JSON data.
+     * @param actual the actual JSON data.
+     * @param options the options, which include the maximum number of values to compare.
+     * @throws IOException if thrown while trying to read a file.
+     */
+    private static void assertJsonEquals(File expected, byte[] actual, OptionsCombinationBase options) throws IOException {
+        ObjectMapper mapper = JsonJacksonUtilities.newObjectMapper(
+            JsonJacksonUtilities.newJsonFactoryForInput(options),
+            options
+        );
+        List<JsonNode> expectedValues = new ArrayList<>();
+        mapper.reader()
+            .createParser(options.newInputStream(expected))
+            .readValuesAs(JsonNode.class)
+            .forEachRemaining(expectedValues::add);
+        List<JsonNode> actualValues = new ArrayList<>();
+        mapper.reader()
+            .createParser(actual)
+            .readValuesAs(JsonNode.class)
+            .forEachRemaining(actualValues::add);
+        if (options.limit == Integer.MAX_VALUE) {
+            assertEquals(expectedValues.size(), actualValues.size());
+            for (int i = 0; i < expectedValues.size(); i++) {
+                assertTrue(expectedValues.get(i).equals(UNIFIED_NUMBER_TYPE_JSON_NODE_COMPARATOR, actualValues.get(i)));
+            }
+        } else {
+            assertEquals(options.limit, actualValues.size());
+            for (int i = 0; i < options.limit; i++) {
+                assertTrue(expectedValues.get(i).equals(UNIFIED_NUMBER_TYPE_JSON_NODE_COMPARATOR, actualValues.get(i)));
+            }
+        }
+    }
+
+    /**
+     * Asserts that the expected data is equivalent to the actual data, using the given Format's definition of
+     * equivalence.
+     * @param format the format supplying the equivalence definition for the data.
+     * @param expected the expected data.
+     * @param actual the actual data.
+     * @param options the options to use during comparison.
+     * @throws IOException if thrown while trying to read a file.
+     */
+    private static void assertDataEquals(Format format, File expected, byte[] actual, OptionsCombinationBase options) throws IOException {
+        switch (format) {
+            case ION_BINARY:
+            case ION_TEXT:
+                assertIonEquals(expected, actual, options);
+                break;
+            case JSON:
+                assertJsonEquals(expected, actual, options);
+                break;
+            default:
+                throw new IllegalStateException("Equality function must be added for " + format);
+        }
+    }
+
+    /**
      * Asserts that the given data is in the expected format.
      * @param buffer buffer containing the data to test.
      * @param expectedFormat the format to assert.
@@ -83,7 +161,7 @@ public class OptionsTest {
         Integer preallocation = null;
         Integer flushPeriod = null;
         Format format = Format.ION_BINARY;
-        IonAPI api = IonAPI.STREAMING;
+        API api = API.STREAMING;
         Integer ioBufferSize = null;
         IoType ioType = IoType.FILE;
         String importsForInputFile = null;
@@ -91,6 +169,7 @@ public class OptionsTest {
         int limit = Integer.MAX_VALUE;
         boolean useSymbolTokens = false;
         Integer floatWidth = null;
+        boolean jsonUseBigDecimals = true;
 
         final T preallocation(Integer preallocation) {
             this.preallocation = preallocation;
@@ -107,7 +186,7 @@ public class OptionsTest {
             return (T) this;
         }
 
-        final T api(IonAPI api) {
+        final T api(API api) {
             this.api = api;
             return (T) this;
         }
@@ -147,6 +226,11 @@ public class OptionsTest {
             return (T) this;
         }
 
+        final T jsonUseBigDecimals(boolean jsonUseBigDecimals) {
+            this.jsonUseBigDecimals = jsonUseBigDecimals;
+            return (T) this;
+        }
+
         void assertOptionsEqual(U that) {
             assertEquals(flushPeriod, that.flushPeriod);
             assertEquals(api, that.api);
@@ -158,6 +242,7 @@ public class OptionsTest {
             assertEquals(ioType, that.ioType);
             assertEquals(ioBufferSize, that.ioBufferSize);
             assertEquals(floatWidth, that.floatWidth);
+            assertEquals(jsonUseBigDecimals, that.jsonUseBigDecimals);
         }
     }
 
@@ -208,7 +293,7 @@ public class OptionsTest {
             assertEquals(paths, that.paths);
             assertEquals(readerType, that.readerType);
             assertEquals(useLobChunks, that.useLobChunks);
-            assertEquals(useBigDecimals, that.useBigDecimals);
+            assertEquals(useBigDecimals, that.ionUseBigDecimals);
             assertEquals(initialBufferSize, that.initialBufferSize);
         }
     }
@@ -283,7 +368,7 @@ public class OptionsTest {
         boolean isConversionRequired
     ) throws Exception {
         Path inputPath = fileInTestDirectory(inputFileName);
-        IonMeasurableReadTask task = (IonMeasurableReadTask) optionsCombination.createMeasurableTask(
+        MeasurableReadTask task = (MeasurableReadTask) optionsCombination.createMeasurableTask(
             inputPath
         );
         task.setUpTrial();
@@ -297,7 +382,11 @@ public class OptionsTest {
             streamBytes = task.buffer;
         }
         assertFormat(streamBytes, expectedFormat);
-        assertIonEquals(inputPath.toFile(), streamBytes, optionsCombination);
+        if (expectedFormat.canParse(Format.classify(inputPath))) {
+            // If this is a conversion between two formats with the same data model (e.g. text Ion to binary Ion),
+            // then they should compare equivalent.
+            assertDataEquals(expectedFormat, inputPath.toFile(), streamBytes, optionsCombination);
+        }
         assertEquals(optionsCombination.importsForBenchmarkFile != null, streamIncludesImports(streamBytes));
         if (optionsCombination.importsForBenchmarkFile != null) {
             assertImportsEqual(optionsCombination.importsForBenchmarkFile, streamBytes);
@@ -334,11 +423,17 @@ public class OptionsTest {
         IoType expectedIoType
     ) throws Exception {
         Path inputPath = fileInTestDirectory(inputFileName);
-        IonMeasurableWriteTask task = (IonMeasurableWriteTask) optionsCombination.createMeasurableTask(
+        MeasurableWriteTask<?> task = (MeasurableWriteTask<?>) optionsCombination.createMeasurableTask(
             inputPath
         );
         task.setUpTrial();
-        assertEquals(inputPath.toFile(), task.inputFile);
+        if (expectedOutputFormat.canParse(Format.classify(inputPath))) {
+            assertEquals(inputPath.toFile(), task.inputFile);
+        } else {
+            // If the input file's format cannot be read by parsers of the target format, then the input file must
+            // first be converted to the target format.
+            assertEquals(expectedOutputFormat, Format.classify(task.inputFile.toPath()));
+        }
         // Ensure that the task executes without error.
         Callable<Void> callable = task.getTask();
         task.setUpIteration();
@@ -364,7 +459,7 @@ public class OptionsTest {
             outputBytes = task.currentBuffer.toByteArray();
         }
         assertFormat(outputBytes, expectedOutputFormat);
-        assertIonEquals(inputPath.toFile(), outputBytes, optionsCombination);
+        assertDataEquals(expectedOutputFormat, task.inputFile, outputBytes, optionsCombination);
         assertEquals(optionsCombination.importsForBenchmarkFile != null, streamIncludesImports(outputBytes));
         if (optionsCombination.importsForBenchmarkFile != null) {
             assertImportsEqual(optionsCombination.importsForBenchmarkFile, outputBytes);
@@ -468,7 +563,7 @@ public class OptionsTest {
             "write",
             "--format",
             "ion_text",
-            "--ion-api",
+            "--api",
             "dom",
             "--io-type",
             "buffer",
@@ -480,19 +575,19 @@ public class OptionsTest {
         assertEquals(2, optionsCombinations.size());
         List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions()
-            .api(IonAPI.DOM)
+            .api(API.DOM)
             .format(Format.ION_TEXT)
             .ioType(IoType.BUFFER)
         );
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions()
-            .api(IonAPI.DOM)
+            .api(API.DOM)
             .format(Format.ION_TEXT)
             .ioType(IoType.FILE)
         );
 
         for (WriteOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(candidate -> {
-                return candidate.api == IonAPI.DOM
+                return candidate.api == API.DOM
                     && candidate.format == Format.ION_TEXT
                     && candidate.ioType == optionsCombination.ioType;
             });
@@ -513,9 +608,9 @@ public class OptionsTest {
             "ion_binary",
             "--io-type",
             "buffer",
-            "--ion-api",
+            "--api",
             "dom",
-            "--ion-api",
+            "--api",
             "streaming",
             "binaryStructs.10n"
         );
@@ -525,22 +620,22 @@ public class OptionsTest {
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions()
             .ioType(IoType.BUFFER)
             .format(Format.ION_TEXT)
-            .api(IonAPI.DOM)
+            .api(API.DOM)
         );
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions()
             .ioType(IoType.BUFFER)
             .format(Format.ION_TEXT)
-            .api(IonAPI.STREAMING)
+            .api(API.STREAMING)
         );
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions()
             .ioType(IoType.BUFFER)
             .format(Format.ION_BINARY)
-            .api(IonAPI.DOM)
+            .api(API.DOM)
         );
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions()
             .ioType(IoType.BUFFER)
             .format(Format.ION_BINARY)
-            .api(IonAPI.STREAMING)
+            .api(API.STREAMING)
         );
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(candidate -> candidate.format == optionsCombination.format
@@ -606,14 +701,14 @@ public class OptionsTest {
             "ion_text",
             "--format",
             "ion_binary",
-            "--ion-api",
+            "--api",
             "dom",
             "binaryStructs.10n"
         );
         assertEquals(2, optionsCombinations.size());
         List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).api(IonAPI.DOM).format(Format.ION_BINARY));
-        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).api(IonAPI.DOM).format(Format.ION_TEXT));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).api(API.DOM).format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).api(API.DOM).format(Format.ION_TEXT));
 
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(candidate -> candidate.format == optionsCombination.format);
@@ -631,16 +726,16 @@ public class OptionsTest {
             "write",
             "--limit",
             "1",
-            "--ion-api",
+            "--api",
             "dom",
-            "--ion-api",
+            "--api",
             "streaming",
             "binaryStructs.10n"
         );
         assertEquals(2, optionsCombinations.size());
         List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
-        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().limit(1).api(IonAPI.DOM));
-        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().limit(1).api(IonAPI.STREAMING));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().limit(1).api(API.DOM));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().limit(1).api(API.STREAMING));
 
         for (WriteOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(candidate -> candidate.api == optionsCombination.api);
@@ -659,9 +754,9 @@ public class OptionsTest {
             () -> parseOptionsCombinations(
                 "read",
                 "--profile",
-                "--ion-api",
+                "--api",
                 "dom",
-                "--ion-api",
+                "--api",
                 "streaming",
                 "binaryStructs.10n"
             )
@@ -1257,7 +1352,7 @@ public class OptionsTest {
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().useBigDecimals(false).format(Format.ION_BINARY));
 
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
-            expectedCombinations.removeIf(candidate -> candidate.useBigDecimals == optionsCombination.useBigDecimals && candidate.format == optionsCombination.format);
+            expectedCombinations.removeIf(candidate -> candidate.useBigDecimals == optionsCombination.ionUseBigDecimals && candidate.format == optionsCombination.format);
 
             assertReadTaskExecutesCorrectly("binaryAllTypes.10n", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_TEXT);
             assertReadTaskExecutesCorrectly("textAllTypes.ion", optionsCombination, optionsCombination.format, optionsCombination.format == Format.ION_BINARY);
@@ -1306,4 +1401,287 @@ public class OptionsTest {
         assertTrue(expectedCombinations.isEmpty());
     }
 
+    @Test
+    public void writeJson() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "json",
+            "objects.json"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.JSON,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readJson() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "json",
+            "object.json"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.JSON,
+            false
+        );
+    }
+
+    @Test
+    public void writeJsonToBufferWithLimit() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "json",
+            "--limit",
+            "1",
+            "--io-type",
+            "buffer",
+            "objects.json"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.JSON,
+            IoType.BUFFER
+        );
+    }
+
+    @Test
+    public void readJsonToBufferWithLimit() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "json",
+            "--limit",
+            "1",
+            "--io-type",
+            "buffer",
+            "objects.json"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.JSON,
+            true
+        );
+    }
+
+    @Test
+    public void writeJsonFromDomWithLimit() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "json",
+            "--limit",
+            "1",
+            "--api",
+            "dom",
+            "objects.json"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.JSON,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readJsonFromDomWithoutLimit() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "json",
+            "--api",
+            "dom",
+            "--io-type",
+            "buffer",
+            "objects.json"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.JSON,
+            false
+        );
+    }
+
+    @Test
+    public void readJsonFromDomWithLimit() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "json",
+            "--limit",
+            "1",
+            "--api",
+            "dom",
+            "--io-type",
+            "file",
+            "objects.json"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.JSON,
+            true
+        );
+    }
+
+    @Test
+    public void writeJsonFromIon() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "json",
+            "textAllTypes.ion"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "textAllTypes.ion",
+            optionsCombination,
+            Format.JSON,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readJsonFromIon() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "json",
+            "textAllTypes.ion"
+        );
+        assertReadTaskExecutesCorrectly(
+            "textAllTypes.ion",
+            optionsCombination,
+            Format.JSON,
+            true
+        );
+    }
+
+    @Test
+    public void writeIonFromJson() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "ion_binary",
+            "objects.json"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.ION_BINARY,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readIonFromJson() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "ion_binary",
+            "objects.json"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.ION_BINARY,
+            true
+        );
+    }
+
+    @Test
+    public void traverseJsonDoesNotFail() throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--format",
+            "json",
+            "--paths",
+            fileInTestDirectory("paths.ion").toString(),
+            "--io-type",
+            "buffer",
+            "--io-type",
+            "file",
+            "objects.json"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.JSON).limit(1).api(API.DOM).ioType(IoType.BUFFER));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.JSON).limit(1).api(API.DOM).ioType(IoType.FILE));
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> candidate.ioType == optionsCombination.ioType);
+            assertReadTaskExecutesCorrectly(
+                "objects.json",
+                optionsCombination,
+                Format.JSON,
+                false
+            );
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void readJsonWithAndWithoutBigDecimals() throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--format",
+            "json",
+            "--json-use-big-decimals",
+            "true",
+            "--json-use-big-decimals",
+            "false",
+            "objects.json"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.JSON).jsonUseBigDecimals(true));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.JSON).jsonUseBigDecimals(false));
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> candidate.jsonUseBigDecimals == optionsCombination.jsonUseBigDecimals);
+            assertReadTaskExecutesCorrectly(
+                "objects.json",
+                optionsCombination,
+                Format.JSON,
+                false
+            );
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void writeJsonWithAndWithoutBigDecimals() throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "write",
+            "--format",
+            "json",
+            "--json-use-big-decimals",
+            "true",
+            "--json-use-big-decimals",
+            "false",
+            "objects.json"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.JSON).jsonUseBigDecimals(true));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.JSON).jsonUseBigDecimals(false));
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> candidate.jsonUseBigDecimals == optionsCombination.jsonUseBigDecimals);
+            assertWriteTaskExecutesCorrectly(
+                "objects.json",
+                optionsCombination,
+                Format.JSON,
+                IoType.FILE
+            );
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
 }

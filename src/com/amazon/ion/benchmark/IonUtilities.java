@@ -187,7 +187,28 @@ class IonUtilities {
      * @throws IOException if thrown when parsing shared symbol tables.
      */
     static IonWriterSupplier newTextWriterSupplier(OptionsCombinationBase options) throws IOException {
-        return IonTextWriterBuilder.standard().withImports(parseImportsFromFile(options.importsForBenchmarkFile))::build;
+        return newTextWriterSupplier(options, IonTextWriterBuilder.standard());
+    }
+
+    /**
+     * Creates a new IonWriterSupplier of IonWriter instances that down-convert to JSON.
+     * @param options the options to use when creating writers.
+     * @return a new instance.
+     * @throws IOException if thrown when parsing shared symbol tables.
+     */
+    static IonWriterSupplier newJsonWriterSupplier(OptionsCombinationBase options) throws IOException {
+        return newTextWriterSupplier(options, IonTextWriterBuilder.json());
+    }
+
+    /**
+     * Creates a new IonWriterSupplier for text IonWriters.
+     * @param options the options to use when creating writers.
+     * @param builder the builder to use to construct new writers.
+     * @return a new instance.
+     * @throws IOException if thrown when parsing shared symbol tables.
+     */
+    private static IonWriterSupplier newTextWriterSupplier(OptionsCombinationBase options, IonTextWriterBuilder builder) throws IOException {
+        return builder.withImports(parseImportsFromFile(options.importsForBenchmarkFile))::build;
     }
 
     /**

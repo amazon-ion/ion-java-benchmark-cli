@@ -119,7 +119,7 @@ abstract class MeasurableReadTask implements MeasurableTask {
                     return null;
                 };
             }
-        } else if (options.api == IonAPI.STREAMING) {
+        } else if (options.api == API.STREAMING) {
             if (buffer != null) {
                 return () -> {
                     fullyTraverseFromBuffer();
@@ -131,7 +131,7 @@ abstract class MeasurableReadTask implements MeasurableTask {
                     return null;
                 };
             }
-        } else if (options.api == IonAPI.DOM) {
+        } else if (options.api == API.DOM) {
             if (buffer != null) {
                 return () -> {
                     fullyReadDomFromBuffer();

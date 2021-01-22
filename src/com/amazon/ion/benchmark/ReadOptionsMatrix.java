@@ -5,7 +5,7 @@ import com.amazon.ion.IonStruct;
 import java.util.List;
 import java.util.Map;
 
-import static com.amazon.ion.benchmark.Constants.ION_API_NAME;
+import static com.amazon.ion.benchmark.Constants.API_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_READER_BUFFER_SIZE_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_READER_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
@@ -38,7 +38,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
                 s -> {
                     if (OPTION_ONLY_APPLIES_TO_ION.test(s)) {
                         // For Ion, paths cannot be used with the DOM.
-                        return IonAPI.STREAMING.name().equals(getStringValue(s, ION_API_NAME));
+                        return API.STREAMING.name().equals(getStringValue(s, API_NAME));
                     }
                     return true;
                 }

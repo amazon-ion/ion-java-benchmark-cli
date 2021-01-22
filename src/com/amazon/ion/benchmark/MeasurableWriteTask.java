@@ -36,7 +36,16 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
      * @param options options to use while writing.
      */
     MeasurableWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
-        this.inputFile = inputPath.toFile();
+        Format inputFormat = Format.classify(inputPath);
+        if (options.format.canParse(inputFormat)) {
+            this.inputFile = inputPath.toFile();
+        } else {
+            this.inputFile = options.format.convert(
+                inputPath,
+                TemporaryFiles.newTempFile(inputPath.toFile().getName(), options.format.getSuffix()),
+                options
+            ).toFile();
+        }
         this.options = options;
         if (Format.classify(inputPath).isIon()
             && !IonUtilities.importsEqual(options.importsForInputFile, inputPath.toFile())) {

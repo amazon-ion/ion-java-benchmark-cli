@@ -134,7 +134,7 @@ class IonMeasurableReadTask extends MeasurableReadTask {
                     reader.doubleValue();
                     break;
                 case DECIMAL:
-                    if (options.useBigDecimals) {
+                    if (options.ionUseBigDecimals) {
                         reader.bigDecimalValue();
                     } else {
                         reader.decimalValue();
