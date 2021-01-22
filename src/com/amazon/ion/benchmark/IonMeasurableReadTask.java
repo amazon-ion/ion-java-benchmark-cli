@@ -1,6 +1,5 @@
 package com.amazon.ion.benchmark;
 
-import com.amazon.ion.IonBufferConfiguration;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
