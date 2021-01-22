@@ -39,8 +39,18 @@ enum Format {
                 case ION_TEXT:
                     IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newBinaryWriterSupplier);
                     break;
+                case JSON:
+                    // TODO add an option to "upconvert" from JSON. For example, detect timestamps contained in
+                    // JSON strings and write them as Ion timestamps.
+                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newBinaryWriterSupplier);
+                    break;
             }
             return output;
+        }
+
+        @Override
+        boolean canParse(Format otherFormat) {
+            return otherFormat.isIon() || otherFormat == Format.JSON;
         }
 
         @Override
@@ -78,8 +88,18 @@ enum Format {
                 case ION_BINARY:
                     IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newTextWriterSupplier);
                     break;
+                case JSON:
+                    // TODO add an option to "upconvert" from JSON. For example, detect timestamps contained in
+                    // JSON strings and write them as Ion timestamps.
+                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newTextWriterSupplier);
+                    break;
             }
             return output;
+        }
+
+        @Override
+        boolean canParse(Format otherFormat) {
+            return otherFormat.isIon() || otherFormat == Format.JSON;
         }
 
         @Override
@@ -101,10 +121,56 @@ enum Format {
         boolean isIon() {
             return true;
         }
+    },
+    JSON() {
+        @Override
+        Path convert(Path input, Path output, OptionsCombinationBase options) throws IOException {
+            Format sourceFormat = classify(input);
+            switch (sourceFormat) {
+                case ION_TEXT:
+                case ION_BINARY:
+                    // Down-convert to JSON.
+                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newJsonWriterSupplier);
+                    break;
+                case JSON:
+                    if (options.limit == Integer.MAX_VALUE) {
+                        // The input is already JSON and it is not being limited.
+                        return input;
+                    }
+                    JsonJacksonUtilities.rewriteJsonFile(input, output, options);
+                    break;
+            }
+            return output;
+        }
+
+        @Override
+        boolean canParse(Format otherFormat) {
+            return otherFormat == Format.JSON;
+        }
+
+        @Override
+        String getSuffix() {
+            return ".json";
+        }
+
+        @Override
+        MeasurableReadTask createReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
+            return new JsonJacksonMeasurableReadTask(inputPath, options);
+        }
+
+        @Override
+        MeasurableWriteTask createWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
+            return new JsonJacksonMeasurableWriteTask(inputPath, options);
+        }
+
+        @Override
+        boolean isIon() {
+            return false;
+        }
     };
 
     /**
-     * Convert the input data using the given options.
+     * Convert the input data to this format using the given options.
      * @param input the input data.
      * @param output the destination for the converted data.
      * @param options the options to use for the conversion.
@@ -113,6 +179,12 @@ enum Format {
      * @throws IOException if thrown during conversion.
      */
     abstract Path convert(Path input, Path output, OptionsCombinationBase options) throws IOException;
+
+    /**
+     * @param otherFormat a Format.
+     * @return if data in the given format can be read natively by parsers of this Format.
+     */
+    abstract boolean canParse(Format otherFormat);
 
     /**
      * @return the file suffix associated with this format.
@@ -166,6 +238,9 @@ enum Format {
         // No format headers matched. Fall back on file suffix.
         if (file.getName().endsWith(".ion")) {
             return Format.ION_TEXT;
+        }
+        if (file.getName().endsWith(".json")) {
+            return Format.JSON;
         }
         throw new IllegalArgumentException("Unknown file format.");
     }

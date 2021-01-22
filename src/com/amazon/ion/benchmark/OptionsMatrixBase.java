@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
-import static com.amazon.ion.benchmark.Constants.ION_API_NAME;
+import static com.amazon.ion.benchmark.Constants.API_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
@@ -34,6 +34,7 @@ import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_BUFFER_SIZE_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_TYPE_NAME;
+import static com.amazon.ion.benchmark.Constants.JSON_USE_BIG_DECIMALS_NAME;
 import static com.amazon.ion.benchmark.Constants.LIMIT_NAME;
 import static com.amazon.ion.benchmark.Constants.PREALLOCATION_NAME;
 
@@ -51,7 +52,10 @@ abstract class OptionsMatrixBase {
         return Format.ION_BINARY.name().equals(getStringValue(s, FORMAT_NAME));
     };
     static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_ION_STREAMING = s -> {
-        return OPTION_ONLY_APPLIES_TO_ION.test(s) && IonAPI.STREAMING.name().equals(getStringValue(s, ION_API_NAME));
+        return OPTION_ONLY_APPLIES_TO_ION.test(s) && API.STREAMING.name().equals(getStringValue(s, API_NAME));
+    };
+    static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_JSON = s -> {
+        return Format.JSON.name().equals(getStringValue(s, FORMAT_NAME));
     };
 
     private final String inputFile;
@@ -231,11 +235,21 @@ abstract class OptionsMatrixBase {
     }
 
     /**
+     * Returns either `true` or `null`. To be used when the implicit default (represented by `null`) is `false`.
      * @param valueString a String representation of a boolean.
      * @return `true` if valueString represents `true`; otherwise, null.
      */
     static Boolean getTrueOrNull(String valueString) {
         return Boolean.parseBoolean(valueString.toLowerCase()) ? true : null;
+    }
+
+    /**
+     * Returns either `false` or `null`. To be used when the implicit default (represented by `null`) is `true`.
+     * @param valueString a String representation of a boolean.
+     * @return `false` if valueString represents `false`; otherwise, null.
+     */
+    static Boolean getFalseOrNull(String valueString) {
+        return Boolean.parseBoolean(valueString.toLowerCase()) ? null : false;
     }
 
     /**
@@ -350,13 +364,13 @@ abstract class OptionsMatrixBase {
             OPTION_ONLY_APPLIES_TO_ION
         );
         parseAndCombine(
-            optionsMatrix.get("--ion-api"),
-            ION_API_NAME,
-            (s) -> IonAPI.valueOf(s.toUpperCase()),
+            optionsMatrix.get("--api"),
+            API_NAME,
+            (s) -> API.valueOf(s.toUpperCase()),
             (api) -> ION_SYSTEM.newSymbol(api.name()),
             optionsCombinationStructs,
             OptionsMatrixBase::noImplicitDefault,
-            OPTION_ONLY_APPLIES_TO_ION
+            OPTION_ALWAYS_APPLIES
         );
         parseAndCombine(
             optionsMatrix.get("--ion-use-symbol-tokens"),
@@ -380,6 +394,15 @@ abstract class OptionsMatrixBase {
             optionsCombinationStructs,
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
             OPTION_ONLY_APPLIES_TO_ION_BINARY
+        );
+        parseAndCombine(
+            optionsMatrix.get("--json-use-big-decimals"),
+            JSON_USE_BIG_DECIMALS_NAME,
+            OptionsMatrixBase::getFalseOrNull,
+            ION_SYSTEM::newBool,
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newBool(true),
+            OPTION_ONLY_APPLIES_TO_JSON
         );
         parseCommandSpecificOptions(optionsMatrix, optionsCombinationStructs);
         serializedOptionsCombinations = serializeOptionsCombinations(optionsCombinationStructs);
