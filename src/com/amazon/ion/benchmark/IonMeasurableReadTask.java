@@ -1,5 +1,6 @@
 package com.amazon.ion.benchmark;
 
+import com.amazon.ion.IonBufferConfiguration;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
@@ -51,9 +52,8 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     IonMeasurableReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
         super(inputPath, options);
         ionSystem = IonUtilities.ionSystemForBenchmark(options);
-        readerBuilder = IonUtilities.newReaderBuilderForBenchmark(options)/*.
-            withIncrementalReadingEnabled(options.readerType == IonReaderType.INCREMENTAL)*/;
-        /*
+        readerBuilder = IonUtilities.newReaderBuilderForBenchmark(options).
+            withIncrementalReadingEnabled(options.readerType == IonReaderType.INCREMENTAL);
         if (readerBuilder.isIncrementalReadingEnabled()) {
             if (options.initialBufferSize != null) {
                 readerBuilder.withBufferConfiguration(
@@ -68,7 +68,6 @@ class IonMeasurableReadTask extends MeasurableReadTask {
                 }
             }
         }
-         */
         if (options.paths != null) {
             PathExtractorBuilder<?> pathExtractorBuilder = PathExtractorBuilder.standard();
             for (String path : options.paths) {
