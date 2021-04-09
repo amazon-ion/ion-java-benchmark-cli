@@ -18,12 +18,13 @@ import java.util.List;
  */
 class IonMeasurableReadTask extends MeasurableReadTask {
 
-    private static final int DEFAULT_INCREMENTAL_BUFFER_SIZE = 64 * 1024;
+    private static final int DEFAULT_INCREMENTAL_BUFFER_SIZE = 32 * 1024;
     private static final int DEFAULT_REUSABLE_LOB_BUFFER_SIZE = 1024;
-    private final IonReaderBuilder readerBuilder;
     private final PathExtractor<?> pathExtractor;
     private final IonSystem ionSystem;
     private final byte[] reusableLobBuffer;
+    private IonReaderBuilder readerBuilder;
+    private SideEffectConsumer sideEffectConsumer = null;
 
     /**
      * Returns the next power of two greater than or equal to the given value.
@@ -52,22 +53,6 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     IonMeasurableReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
         super(inputPath, options);
         ionSystem = IonUtilities.ionSystemForBenchmark(options);
-        readerBuilder = IonUtilities.newReaderBuilderForBenchmark(options).
-            withIncrementalReadingEnabled(options.readerType == IonReaderType.INCREMENTAL);
-        if (readerBuilder.isIncrementalReadingEnabled()) {
-            if (options.initialBufferSize != null) {
-                readerBuilder.withBufferConfiguration(
-                    new IonBufferConfiguration().withInitialBufferSize(options.initialBufferSize)
-                );
-            } else {
-                long inputSize = inputPath.toFile().length();
-                if (inputSize < DEFAULT_INCREMENTAL_BUFFER_SIZE) {
-                    readerBuilder.withBufferConfiguration(
-                        new IonBufferConfiguration().withInitialBufferSize(nextPowerOfTwo((int) inputSize))
-                    );
-                }
-            }
-        }
         if (options.paths != null) {
             PathExtractorBuilder<?> pathExtractorBuilder = PathExtractorBuilder.standard();
             for (String path : options.paths) {
@@ -85,6 +70,33 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     }
 
     @Override
+    public void setUpTrial() throws IOException {
+        super.setUpTrial();
+        // Create the reader builder after any file conversion is done so that the buffer configuration can be
+        // chosen with knowledge of the actual size of the data.
+        readerBuilder = IonUtilities.newReaderBuilderForBenchmark(options).
+            withIncrementalReadingEnabled(options.readerType == IonReaderType.INCREMENTAL);
+        if (readerBuilder.isIncrementalReadingEnabled()) {
+            if (options.initialBufferSize != null) {
+                readerBuilder.withBufferConfiguration(
+                    IonBufferConfiguration.Builder.standard()
+                        .withInitialBufferSize(options.initialBufferSize)
+                        .build()
+                );
+            } else {
+                long inputSize = inputFile.length();
+                if (inputSize < DEFAULT_INCREMENTAL_BUFFER_SIZE) {
+                    readerBuilder.withBufferConfiguration(
+                        IonBufferConfiguration.Builder.standard()
+                            .withInitialBufferSize(nextPowerOfTwo((int) inputSize))
+                            .build()
+                    );
+                }
+            }
+        }
+    }
+
+    @Override
     public void setUpIteration() {
         // Nothing to do.
     }
@@ -97,60 +109,60 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     private void consumeCurrentValue(IonReader reader, boolean isInStruct) {
         if (isInStruct) {
             if (options.useSymbolTokens) {
-                reader.getFieldNameSymbol();
+                sideEffectConsumer.consume(reader.getFieldNameSymbol());
             } else {
-                reader.getFieldName();
+                sideEffectConsumer.consume(reader.getFieldName());
             }
         }
         if (options.useSymbolTokens) {
-            reader.getTypeAnnotationSymbols();
+            sideEffectConsumer.consume(reader.getTypeAnnotationSymbols());
         } else {
             Iterator<String> annotationsIterator = reader.iterateTypeAnnotations();
             while (annotationsIterator.hasNext()) {
-                annotationsIterator.next();
+                sideEffectConsumer.consume(annotationsIterator.next());
             }
         }
         IonType type = reader.getType();
         if (!reader.isNullValue()) {
             switch (type) {
                 case BOOL:
-                    reader.booleanValue();
+                    sideEffectConsumer.consume(reader.booleanValue());
                     break;
                 case INT:
                     switch (reader.getIntegerSize()) {
                         case INT:
-                            reader.intValue();
+                            sideEffectConsumer.consume(reader.intValue());
                             break;
                         case LONG:
-                            reader.longValue();
+                            sideEffectConsumer.consume(reader.longValue());
                             break;
                         case BIG_INTEGER:
-                            reader.bigIntegerValue();
+                            sideEffectConsumer.consume(reader.bigIntegerValue());
                             break;
                     }
                     break;
                 case FLOAT:
-                    reader.doubleValue();
+                    sideEffectConsumer.consume(reader.doubleValue());
                     break;
                 case DECIMAL:
                     if (options.ionUseBigDecimals) {
-                        reader.bigDecimalValue();
+                        sideEffectConsumer.consume(reader.bigDecimalValue());
                     } else {
-                        reader.decimalValue();
+                        sideEffectConsumer.consume(reader.decimalValue());
                     }
                     break;
                 case TIMESTAMP:
-                    reader.timestampValue();
+                    sideEffectConsumer.consume(reader.timestampValue());
                     break;
                 case SYMBOL:
                     if (options.useSymbolTokens) {
-                        reader.symbolValue();
+                        sideEffectConsumer.consume(reader.symbolValue());
                     } else {
-                        reader.stringValue();
+                        sideEffectConsumer.consume(reader.stringValue());
                     }
                     break;
                 case STRING:
-                    reader.stringValue();
+                    sideEffectConsumer.consume(reader.stringValue());
                     break;
                 case CLOB:
                 case BLOB:
@@ -163,8 +175,9 @@ class IonMeasurableReadTask extends MeasurableReadTask {
                                 Math.min(bytesRemaining, reusableLobBuffer.length)
                             );
                         }
+                        sideEffectConsumer.consume(reusableLobBuffer[0]);
                     } else {
-                        reader.newBytes();
+                        sideEffectConsumer.consume(reader.newBytes());
                     }
                     break;
                 case LIST:
@@ -192,42 +205,48 @@ class IonMeasurableReadTask extends MeasurableReadTask {
 
 
     @Override
-    void fullyTraverseFromBuffer() throws IOException {
+    void fullyTraverseFromBuffer(SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(buffer);
         fullyTraverse(reader, false);
         reader.close();
     }
 
     @Override
-    public void fullyTraverseFromFile() throws IOException {
+    public void fullyTraverseFromFile(SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
         fullyTraverse(reader, false);
         reader.close();
     }
 
     @Override
-    void traverseFromBuffer(List<String> paths) throws IOException {
+    void traverseFromBuffer(List<String> paths, SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(buffer);
         pathExtractor.match(reader);
         reader.close();
     }
 
     @Override
-    public void traverseFromFile(List<String> paths) throws IOException {
+    public void traverseFromFile(List<String> paths, SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
         pathExtractor.match(reader);
         reader.close();
     }
 
     @Override
-    public void fullyReadDomFromBuffer() throws IOException {
+    public void fullyReadDomFromBuffer(SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(buffer);
         ionSystem.newLoader().load(reader);
         reader.close();
     }
 
     @Override
-    public void fullyReadDomFromFile() throws IOException {
+    public void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
         ionSystem.newLoader().load(reader);
         reader.close();

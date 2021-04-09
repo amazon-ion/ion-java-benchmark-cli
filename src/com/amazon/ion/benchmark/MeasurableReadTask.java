@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 /**
  * A MeasurableTask for read benchmarks.
@@ -40,7 +39,7 @@ abstract class MeasurableReadTask implements MeasurableTask {
      * may be initialized outside of the timed block in {@link #setUpIteration()}.
      * @throws IOException if thrown during reading.
      */
-    abstract void fullyTraverseFromBuffer() throws IOException;
+    abstract void fullyTraverseFromBuffer(SideEffectConsumer consumer) throws IOException;
 
     /**
      * Initialize the reader and perform a fully-materialized deep read of the data from a file. The "reader"
@@ -48,7 +47,7 @@ abstract class MeasurableReadTask implements MeasurableTask {
      * may be initialized outside of the timed block in {@link #setUpIteration()}.
      * @throws IOException if thrown during reading.
      */
-    abstract void fullyTraverseFromFile() throws IOException;
+    abstract void fullyTraverseFromFile(SideEffectConsumer consumer) throws IOException;
 
     /**
      * Initialize the reader and perform a sparse read of the data from a byte buffer, only materializing the values at
@@ -58,7 +57,7 @@ abstract class MeasurableReadTask implements MeasurableTask {
      * @param paths the paths of values to materialize.
      * @throws IOException if thrown during reading.
      */
-    abstract void traverseFromBuffer(List<String> paths) throws IOException;
+    abstract void traverseFromBuffer(List<String> paths, SideEffectConsumer consumer) throws IOException;
 
     /**
      * Initialize the reader and perform a sparse read of the data from a file, only materializing the values at the
@@ -67,7 +66,7 @@ abstract class MeasurableReadTask implements MeasurableTask {
      * @param paths the paths of values to materialize.
      * @throws IOException if thrown during reading.
      */
-    abstract void traverseFromFile(List<String> paths) throws IOException;
+    abstract void traverseFromFile(List<String> paths, SideEffectConsumer consumer) throws IOException;
 
     /**
      * Initialize the loader and perform a fully-materialized deep read of the data from a byte buffer into a DOM
@@ -75,7 +74,7 @@ abstract class MeasurableReadTask implements MeasurableTask {
      * across arbitrarily-many streams may be initialized outside of the timed block in {@link #setUpIteration()}.
      * @throws IOException if thrown during reading.
      */
-    abstract void fullyReadDomFromBuffer() throws IOException;
+    abstract void fullyReadDomFromBuffer(SideEffectConsumer consumer) throws IOException;
 
     /**
      * Initialize the loader and perform a fully-materialized deep read of the data from a file into a DOM
@@ -83,7 +82,7 @@ abstract class MeasurableReadTask implements MeasurableTask {
      * across arbitrarily-many streams may be initialized outside of the timed block in {@link #setUpIteration()}.
      * @throws IOException if thrown during reading.
      */
-    abstract void fullyReadDomFromFile() throws IOException;
+    abstract void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException;
 
     @Override
     public void setUpTrial() throws IOException {
@@ -106,42 +105,24 @@ abstract class MeasurableReadTask implements MeasurableTask {
     }
 
     @Override
-    public final Callable<Void> getTask() {
+    public final Task getTask() {
         if (options.paths != null) {
             if (buffer != null) {
-                return () -> {
-                    traverseFromBuffer(options.paths);
-                    return null;
-                };
+                return (consumer) -> traverseFromBuffer(options.paths, consumer);
             } else {
-                return () -> {
-                    traverseFromFile(options.paths);
-                    return null;
-                };
+                return (consumer) -> traverseFromFile(options.paths, consumer);
             }
         } else if (options.api == API.STREAMING) {
             if (buffer != null) {
-                return () -> {
-                    fullyTraverseFromBuffer();
-                    return null;
-                };
+                return this::fullyTraverseFromBuffer;
             } else {
-                return () -> {
-                    fullyTraverseFromFile();
-                    return null;
-                };
+                return this::fullyTraverseFromFile;
             }
         } else if (options.api == API.DOM) {
             if (buffer != null) {
-                return () -> {
-                    fullyReadDomFromBuffer();
-                    return null;
-                };
+                return this::fullyReadDomFromBuffer;
             } else {
-                return () -> {
-                    fullyReadDomFromFile();
-                    return null;
-                };
+                return this::fullyReadDomFromFile;
             }
         } else {
             throw new IllegalStateException("Illegal combination of options.");

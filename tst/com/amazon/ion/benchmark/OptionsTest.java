@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -392,9 +391,9 @@ public class OptionsTest {
             assertImportsEqual(optionsCombination.importsForBenchmarkFile, streamBytes);
         }
         // Ensure that the task executes without error.
-        Callable<Void> callable = task.getTask();
+        MeasurableTask.Task callable = task.getTask();
         task.setUpIteration();
-        callable.call();
+        callable.run(SideEffectConsumer.NO_OP);
         task.tearDownIteration();
         task.tearDownTrial();
         if (isConversionRequired && optionsCombination.ioType == IoType.FILE) {
@@ -435,7 +434,7 @@ public class OptionsTest {
             assertEquals(expectedOutputFormat, Format.classify(task.inputFile.toPath()));
         }
         // Ensure that the task executes without error.
-        Callable<Void> callable = task.getTask();
+        MeasurableTask.Task callable = task.getTask();
         task.setUpIteration();
         if (expectedIoType == IoType.FILE) {
             assertTrue(task.currentFile.exists());
@@ -445,7 +444,7 @@ public class OptionsTest {
             // No preparation is needed for the buffer.
             assertNull(task.currentBuffer);
         }
-        callable.call();
+        callable.run(SideEffectConsumer.NO_OP);
         File outputFile = null;
         byte[] outputBytes;
         if (expectedIoType == IoType.FILE) {
