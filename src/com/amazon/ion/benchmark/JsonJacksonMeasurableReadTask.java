@@ -16,6 +16,7 @@ import java.util.List;
 public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
 
     private final JsonFactory jsonFactory;
+    private SideEffectConsumer sideEffectConsumer = null;
 
     /**
      * @param inputPath the JSON data to read.
@@ -35,35 +36,35 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
 
     private boolean consumeCurrentValue(JsonParser parser, boolean isInStruct) throws IOException {
         if (isInStruct) {
-            parser.getCurrentName();
+            sideEffectConsumer.consume(parser.getCurrentName());
         }
         switch(parser.getCurrentToken()) {
             case VALUE_TRUE:
             case VALUE_FALSE:
-                parser.getBooleanValue();
+                sideEffectConsumer.consume(parser.getBooleanValue());
                 break;
             case VALUE_NUMBER_INT:
                 switch (parser.getNumberType()) {
                     case INT:
-                        parser.getIntValue();
+                        sideEffectConsumer.consume(parser.getIntValue());
                         break;
                     case LONG:
-                        parser.getLongValue();
+                        sideEffectConsumer.consume(parser.getLongValue());
                         break;
                     case BIG_INTEGER:
-                        parser.getBigIntegerValue();
+                        sideEffectConsumer.consume(parser.getBigIntegerValue());
                         break;
                 }
                 break;
             case VALUE_NUMBER_FLOAT:
                 if (options.jsonUseBigDecimals) {
-                    parser.getDecimalValue();
+                    sideEffectConsumer.consume(parser.getDecimalValue());
                 } else {
-                    parser.getDoubleValue();
+                    sideEffectConsumer.consume(parser.getDoubleValue());
                 }
                 break;
             case VALUE_STRING:
-                parser.getValueAsString();
+                sideEffectConsumer.consume(parser.getValueAsString());
                 break;
             case START_ARRAY:
                 fullyTraverse(parser, false);
@@ -100,46 +101,48 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
     }
 
     @Override
-    void fullyTraverseFromBuffer() throws IOException {
+    void fullyTraverseFromBuffer(SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
         JsonParser parser = jsonFactory.createParser(buffer);
         fullyTraverse(parser, false);
         parser.close();
     }
 
     @Override
-    void fullyTraverseFromFile() throws IOException {
+    void fullyTraverseFromFile(SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
         JsonParser parser = jsonFactory.createParser(options.newInputStream(inputFile));
         fullyTraverse(parser, false);
         parser.close();
     }
 
     @Override
-    void traverseFromBuffer(List<String> paths) throws IOException {
+    void traverseFromBuffer(List<String> paths, SideEffectConsumer consumer) throws IOException {
         // If Jackson provides a path extraction API for sparse reads, use that.
-        fullyTraverseFromBuffer();
+        fullyTraverseFromBuffer(consumer);
     }
 
     @Override
-    void traverseFromFile(List<String> paths) throws IOException {
+    void traverseFromFile(List<String> paths, SideEffectConsumer consumer) throws IOException {
         // If Jackson provides a path extraction API for sparse reads, use that.
-        fullyTraverseFromFile();
+        fullyTraverseFromFile(consumer);
     }
 
     @Override
-    void fullyReadDomFromBuffer() throws IOException {
+    void fullyReadDomFromBuffer(SideEffectConsumer consumer) throws IOException {
         ObjectMapper mapper = JsonJacksonUtilities.newObjectMapper(jsonFactory, options);
         Iterator<JsonNode> iterator = mapper.reader().createParser(buffer).readValuesAs(JsonNode.class);
         while (iterator.hasNext()) {
-            iterator.next();
+            consumer.consume(iterator.next());
         }
     }
 
     @Override
-    void fullyReadDomFromFile() throws IOException {
+    void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
         ObjectMapper mapper = JsonJacksonUtilities.newObjectMapper(jsonFactory, options);
         Iterator<JsonNode> iterator = mapper.reader().createParser(options.newInputStream(inputFile)).readValuesAs(JsonNode.class);
         while (iterator.hasNext()) {
-            iterator.next();
+            consumer.consume(iterator.next());
         }
     }
 }

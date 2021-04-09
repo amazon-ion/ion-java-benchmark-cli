@@ -1,12 +1,16 @@
 package com.amazon.ion.benchmark;
 
 import java.io.IOException;
-import java.util.concurrent.Callable;
 
 /**
  * A task to benchmark.
  */
 public interface MeasurableTask {
+
+    @FunctionalInterface
+    interface Task {
+        void run(SideEffectConsumer consumer) throws Exception;
+    }
 
     /**
      * Set up the trial, which is the complete set of iterations.
@@ -35,5 +39,5 @@ public interface MeasurableTask {
     /**
      * @return the piece of code to benchmark.
      */
-    Callable<Void> getTask();
+    Task getTask();
 }

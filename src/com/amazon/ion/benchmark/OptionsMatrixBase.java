@@ -18,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -472,11 +471,11 @@ abstract class OptionsMatrixBase {
             OptionsCombinationBase options = OptionsCombinationBase.from(serializedOptionsCombinations[0]);
             MeasurableTask measurableTask = options.createMeasurableTask(Paths.get(inputFile));
             measurableTask.setUpTrial();
-            Callable<Void> task = measurableTask.getTask();
+            MeasurableTask.Task task = measurableTask.getTask();
             System.out.println("Entering profiling mode. Type q (followed by Enter/Return) to terminate after the next complete iteration.");
             while (System.in.available() <= 0 || System.in.read() != 'q') {
                 measurableTask.setUpIteration();
-                task.call();
+                task.run(SideEffectConsumer.NO_OP);
                 measurableTask.tearDownIteration();
             }
             measurableTask.tearDownTrial();

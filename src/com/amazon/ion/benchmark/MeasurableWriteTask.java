@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 /**
@@ -30,6 +29,7 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
     final WriteOptionsCombination options;
     File currentFile = null;
     ByteArrayOutputStream currentBuffer = null;
+    SideEffectConsumer sideEffectConsumer = null;
 
     /**
      * @param inputPath path to the data to write.
@@ -122,30 +122,32 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
             serializedSize = currentBuffer.size();
             currentBuffer = null;
         }
+        sideEffectConsumer.consume(serializedSize);
         SerializedSizeProfiler.setSize(serializedSize);
     }
 
     @Override
-    public final Callable<Void> getTask() {
+    public final Task getTask() {
         switch (options.ioType) {
             case BUFFER:
-                return () -> {
+                return (consumer) -> {
+                    sideEffectConsumer = consumer;
                     currentBuffer = options.newByteArrayOutputStream();
                     T writer = newWriter(currentBuffer);
                     for (WriteInstruction<T> instruction : writeInstructions) {
                         instruction.execute(writer);
                     }
                     closeWriter(writer);
-                    return null;
+                    consumer.consume(currentBuffer.size());
                 };
             case FILE:
-                return () -> {
+                return (consumer) -> {
+                    sideEffectConsumer = consumer;
                     T writer = newWriter(options.newOutputStream(currentFile));
                     for (WriteInstruction<T> instruction : writeInstructions) {
                         instruction.execute(writer);
                     }
                     closeWriter(writer);
-                    return null;
                 };
             default:
                 throw new IllegalStateException("Write support missing for IO type " + options.ioType);

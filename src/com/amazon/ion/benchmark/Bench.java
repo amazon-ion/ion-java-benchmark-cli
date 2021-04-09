@@ -7,10 +7,10 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.concurrent.Callable;
 
 /**
  * JMH benchmark for a single options combination.
@@ -31,7 +31,7 @@ public class Bench {
     private String options;
 
     MeasurableTask measurableTask = null;
-    Callable<Void> taskToMeasure = null;
+    MeasurableTask.Task taskToMeasure = null;
 
     @Setup(Level.Trial)
     public void setUpTrial() throws Exception {
@@ -57,7 +57,7 @@ public class Bench {
     }
 
     @Benchmark
-    public void run() throws Exception {
-        taskToMeasure.call();
+    public void run(Blackhole blackhole) throws Exception {
+        taskToMeasure.run(new BlackholeSideEffectConsumer(blackhole));
     }
 }
