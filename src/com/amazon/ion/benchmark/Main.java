@@ -2,6 +2,7 @@ package com.amazon.ion.benchmark;
 
 import org.docopt.Docopt;
 
+import java.beans.beancontext.BeanContextServicesListener;
 import java.util.Map;
 
 public class Main {
@@ -41,7 +42,8 @@ public class Main {
             + "[--ion-use-symbol-tokens <bool>]... [--paths <file>] "
             + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]..."
             + "[--json-use-big-decimals <bool>]... <input_file>\n"
-
+        
+        + "  ion-java-benchmark generate <size> <type> <file>\n" // generate command 
         + "  ion-java-benchmark --help\n"
 
         + "  ion-java-benchmark --version\n\n";
@@ -66,6 +68,7 @@ public class Main {
             + "DOM loader is included in each timed benchmark invocation. Therefore, it is important to provide "
             + "data that closely matches the size of data read by a single reader/loader instance in the real "
             + "world to ensure the initialization cost is properly amortized.\n"
+        + " generate\n"///
         + "\n";
 
     private static final String OPTIONS =
@@ -313,9 +316,18 @@ public class Main {
         if (optionsMap.get("--help").equals(true)) {
             printHelpAndExit();
         }
+       
         try {
-            OptionsMatrixBase options = OptionsMatrixBase.from(optionsMap);
-            options.executeBenchmark();
+        	 if (optionsMap.get("generate").equals(true)) {
+        		 try {
+        				WriteRandomIonValues.writeRandomDecimals(Integer.valueOf(optionsMap.get("<size>").toString()),optionsMap.get("<file>").toString());
+        			} catch (Exception e) {
+        				e.printStackTrace();
+        			}
+        	 }else {
+        		 OptionsMatrixBase options = OptionsMatrixBase.from(optionsMap);
+               options.executeBenchmark();
+			}
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
