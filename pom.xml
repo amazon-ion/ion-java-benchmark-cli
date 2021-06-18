@@ -65,6 +65,11 @@
             <artifactId>jackson-databind</artifactId>
             <version>[2.12.1,]</version>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-cbor</artifactId>
+            <version>[2.12.3,]</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.openjdk.jmh/jmh-core -->
         <dependency>
             <groupId>org.openjdk.jmh</groupId>

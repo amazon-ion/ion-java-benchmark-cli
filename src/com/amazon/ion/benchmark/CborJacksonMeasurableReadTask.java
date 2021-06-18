@@ -1,9 +1,11 @@
 package com.amazon.ion.benchmark;
 
-import com.fasterxml.jackson.core.JsonFactory;
+import com.amazon.ion.Timestamp;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
+import com.fasterxml.jackson.dataformat.cbor.CBORParser;
+import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -11,11 +13,11 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * A MeasurableReadTask for reading data in the JSON format using the Jackson library.
+ * A MeasurableReadTask for reading data in the CBOR format using the Jackson library.
  */
-public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
+public class CborJacksonMeasurableReadTask extends MeasurableReadTask {
 
-    private final JsonFactory jsonFactory;
+    private final CBORFactory cborFactory;
     private SideEffectConsumer sideEffectConsumer = null;
 
     /**
@@ -23,9 +25,9 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
      * @param options the options to use when reading.
      * @throws IOException if thrown when handling the options.
      */
-    JsonJacksonMeasurableReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
+    CborJacksonMeasurableReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
         super(inputPath, options);
-        jsonFactory = JacksonUtilities.newJsonFactoryForInput(options);
+        cborFactory = JacksonUtilities.newCborFactoryForInput(options);
         if (options.paths != null) {
             System.out.println(
                 "WARNING: Jackson does not provide a path-based value extraction API for efficient sparse reads. "
@@ -34,11 +36,14 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
         }
     }
 
-    private boolean consumeCurrentValue(JsonParser parser, boolean isInStruct) throws IOException {
+    private boolean consumeCurrentValue(CBORParser parser, boolean isInStruct) throws IOException {
         if (isInStruct) {
             sideEffectConsumer.consume(parser.getCurrentName());
         }
         switch(parser.getCurrentToken()) {
+            case VALUE_NULL:
+                // There is nothing to do for null.
+                break;
             case VALUE_TRUE:
             case VALUE_FALSE:
                 sideEffectConsumer.consume(parser.getBooleanValue());
@@ -57,14 +62,21 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
                 }
                 break;
             case VALUE_NUMBER_FLOAT:
-                if (options.jsonUseBigDecimals) {
+                if (parser.getNumberType() == JsonParser.NumberType.BIG_DECIMAL) {
                     sideEffectConsumer.consume(parser.getDecimalValue());
                 } else {
                     sideEffectConsumer.consume(parser.getDoubleValue());
                 }
                 break;
             case VALUE_STRING:
-                sideEffectConsumer.consume(parser.getValueAsString());
+                if (parser.getCurrentTag() == 0) {
+                    sideEffectConsumer.consume(Timestamp.valueOf(parser.getValueAsString()));
+                } else {
+                    sideEffectConsumer.consume(parser.getValueAsString());
+                }
+                break;
+            case VALUE_EMBEDDED_OBJECT:
+                sideEffectConsumer.consume(parser.getBinaryValue());
                 break;
             case START_ARRAY:
                 fullyTraverse(parser, false);
@@ -76,13 +88,12 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
             case END_OBJECT:
                 return true;
             default:
-                // Note: includes null values.
                 break;
         }
         return false;
     }
 
-    private void fullyTraverse(JsonParser parser, boolean isInStruct) throws IOException {
+    private void fullyTraverse(CBORParser parser, boolean isInStruct) throws IOException {
         while (parser.nextValue() != null) {
             if (consumeCurrentValue(parser, isInStruct)) {
                 break;
@@ -103,7 +114,7 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
     @Override
     void fullyTraverseFromBuffer(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
-        JsonParser parser = jsonFactory.createParser(buffer);
+        CBORParser parser = cborFactory.createParser(buffer);
         fullyTraverse(parser, false);
         parser.close();
     }
@@ -111,7 +122,7 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
     @Override
     void fullyTraverseFromFile(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
-        JsonParser parser = jsonFactory.createParser(options.newInputStream(inputFile));
+        CBORParser parser = cborFactory.createParser(options.newInputStream(inputFile));
         fullyTraverse(parser, false);
         parser.close();
     }
@@ -130,7 +141,7 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
 
     @Override
     void fullyReadDomFromBuffer(SideEffectConsumer consumer) throws IOException {
-        ObjectMapper mapper = JacksonUtilities.newJsonObjectMapper(jsonFactory, options);
+        CBORMapper mapper = JacksonUtilities.newCborObjectMapper(cborFactory, options);
         Iterator<JsonNode> iterator = mapper.reader().createParser(buffer).readValuesAs(JsonNode.class);
         while (iterator.hasNext()) {
             consumer.consume(iterator.next());
@@ -139,7 +150,7 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
 
     @Override
     void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
-        ObjectMapper mapper = JacksonUtilities.newJsonObjectMapper(jsonFactory, options);
+        CBORMapper mapper = JacksonUtilities.newCborObjectMapper(cborFactory, options);
         Iterator<JsonNode> iterator = mapper.reader().createParser(options.newInputStream(inputFile)).readValuesAs(JsonNode.class);
         while (iterator.hasNext()) {
             consumer.consume(iterator.next());

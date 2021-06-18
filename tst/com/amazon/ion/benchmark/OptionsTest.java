@@ -69,6 +69,16 @@ public class OptionsTest {
     }
 
     /**
+     * Basic comparator used to compare Jackson JsonNodes, which are used to represent both JSON and CBOR data.
+     */
+    private static final Comparator<JsonNode> BASIC_JSON_NODE_COMPARATOR = (o1, o2) -> {
+        if (o1.equals(o2)) {
+            return 0;
+        }
+        return 1;
+    };
+
+    /**
      * The JSON data model only has a single number type, but the default implementation of JsonNode.equals requires
      * values to have been read into the same Java type even if their values are equivalent. This causes problems
      * with certain Ion translations (e.g. decimal negative zero to float zero), so we will use a custom comparator
@@ -85,17 +95,21 @@ public class OptionsTest {
     };
 
     /**
-     * Asserts JSON data model equality using the given options.
+     * Asserts Jackson JsonNode equality using the given options.
      * @param expected the expected JSON data.
      * @param actual the actual JSON data.
      * @param options the options, which include the maximum number of values to compare.
+     * @param mapper the ObjectMapper to use to read the data into JsonNodes.
+     * @param comparator the JsonNode comparator.
      * @throws IOException if thrown while trying to read a file.
      */
-    private static void assertJsonEquals(File expected, byte[] actual, OptionsCombinationBase options) throws IOException {
-        ObjectMapper mapper = JsonJacksonUtilities.newObjectMapper(
-            JsonJacksonUtilities.newJsonFactoryForInput(options),
-            options
-        );
+    private static void assertEqualsWithJackson(
+        File expected,
+        byte[] actual,
+        OptionsCombinationBase options,
+        ObjectMapper mapper,
+        Comparator<JsonNode> comparator
+    ) throws IOException {
         List<JsonNode> expectedValues = new ArrayList<>();
         mapper.reader()
             .createParser(options.newInputStream(expected))
@@ -109,14 +123,44 @@ public class OptionsTest {
         if (options.limit == Integer.MAX_VALUE) {
             assertEquals(expectedValues.size(), actualValues.size());
             for (int i = 0; i < expectedValues.size(); i++) {
-                assertTrue(expectedValues.get(i).equals(UNIFIED_NUMBER_TYPE_JSON_NODE_COMPARATOR, actualValues.get(i)));
+                assertTrue(expectedValues.get(i).equals(comparator, actualValues.get(i)));
             }
         } else {
             assertEquals(options.limit, actualValues.size());
             for (int i = 0; i < options.limit; i++) {
-                assertTrue(expectedValues.get(i).equals(UNIFIED_NUMBER_TYPE_JSON_NODE_COMPARATOR, actualValues.get(i)));
+                assertTrue(expectedValues.get(i).equals(comparator, actualValues.get(i)));
             }
         }
+    }
+
+    /**
+     * Asserts JSON data model equality using the given options.
+     * @param expected the expected JSON data.
+     * @param actual the actual JSON data.
+     * @param options the options, which include the maximum number of values to compare.
+     * @throws IOException if thrown while trying to read a file.
+     */
+    private static void assertJsonEquals(File expected, byte[] actual, OptionsCombinationBase options) throws IOException {
+        ObjectMapper mapper = JacksonUtilities.newJsonObjectMapper(
+            JacksonUtilities.newJsonFactoryForInput(options),
+            options
+        );
+        assertEqualsWithJackson(expected, actual, options, mapper, UNIFIED_NUMBER_TYPE_JSON_NODE_COMPARATOR);
+    }
+
+    /**
+     * Asserts CBOR data model equality using the given options.
+     * @param expected the expected CBOR data.
+     * @param actual the actual CBOR data.
+     * @param options the options, which include the maximum number of values to compare.
+     * @throws IOException if thrown while trying to read a file.
+     */
+    private static void assertCborEquals(File expected, byte[] actual, OptionsCombinationBase options) throws IOException {
+        ObjectMapper mapper = JacksonUtilities.newCborObjectMapper(
+            JacksonUtilities.newCborFactoryForInput(options),
+            options
+        );
+        assertEqualsWithJackson(expected, actual, options, mapper, BASIC_JSON_NODE_COMPARATOR);
     }
 
     /**
@@ -137,6 +181,9 @@ public class OptionsTest {
             case JSON:
                 assertJsonEquals(expected, actual, options);
                 break;
+            case CBOR:
+                assertCborEquals(expected, actual, options);
+                break;
             default:
                 throw new IllegalStateException("Equality function must be added for " + format);
         }
@@ -149,6 +196,7 @@ public class OptionsTest {
      */
     private static void assertFormat(byte[] buffer, Format expectedFormat) {
         assertEquals(expectedFormat == Format.ION_BINARY, IonStreamUtils.isIonBinary(buffer));
+        assertEquals(expectedFormat == Format.CBOR, CborUtilities.isCbor(buffer));
     }
 
     /**
@@ -386,7 +434,11 @@ public class OptionsTest {
             // then they should compare equivalent.
             assertDataEquals(expectedFormat, inputPath.toFile(), streamBytes, optionsCombination);
         }
-        assertEquals(optionsCombination.importsForBenchmarkFile != null, streamIncludesImports(streamBytes));
+        if (Format.ION_BINARY.canParse(expectedFormat)) {
+            assertEquals(optionsCombination.importsForBenchmarkFile != null, streamIncludesImports(streamBytes));
+        } else {
+            assertNull(optionsCombination.importsForBenchmarkFile);
+        }
         if (optionsCombination.importsForBenchmarkFile != null) {
             assertImportsEqual(optionsCombination.importsForBenchmarkFile, streamBytes);
         }
@@ -459,7 +511,11 @@ public class OptionsTest {
         }
         assertFormat(outputBytes, expectedOutputFormat);
         assertDataEquals(expectedOutputFormat, task.inputFile, outputBytes, optionsCombination);
-        assertEquals(optionsCombination.importsForBenchmarkFile != null, streamIncludesImports(outputBytes));
+        if (Format.ION_BINARY.canParse(expectedOutputFormat)) {
+            assertEquals(optionsCombination.importsForBenchmarkFile != null, streamIncludesImports(outputBytes));
+        } else {
+            assertNull(optionsCombination.importsForBenchmarkFile);
+        }
         if (optionsCombination.importsForBenchmarkFile != null) {
             assertImportsEqual(optionsCombination.importsForBenchmarkFile, outputBytes);
         }
@@ -1677,6 +1733,298 @@ public class OptionsTest {
                 optionsCombination,
                 Format.JSON,
                 IoType.FILE
+            );
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void writeCbor() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "cbor",
+            "objects.cbor"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.CBOR,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readCbor() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "cbor",
+            "object.cbor"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.CBOR,
+            false
+        );
+    }
+
+    @Test
+    public void writeCborToBufferWithLimit() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "cbor",
+            "--limit",
+            "1",
+            "--io-type",
+            "buffer",
+            "objects.cbor"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.CBOR,
+            IoType.BUFFER
+        );
+    }
+
+    @Test
+    public void readCborToBufferWithLimit() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "cbor",
+            "--limit",
+            "1",
+            "--io-type",
+            "buffer",
+            "objects.cbor"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.CBOR,
+            true
+        );
+    }
+
+    @Test
+    public void writeCborFromDomWithLimit() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "cbor",
+            "--limit",
+            "1",
+            "--api",
+            "dom",
+            "objects.cbor"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.CBOR,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readCborFromDomWithoutLimit() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "cbor",
+            "--api",
+            "dom",
+            "--io-type",
+            "buffer",
+            "objects.cbor"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.CBOR,
+            false
+        );
+    }
+
+    @Test
+    public void readCborFromDomWithLimit() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "cbor",
+            "--limit",
+            "1",
+            "--api",
+            "dom",
+            "--io-type",
+            "file",
+            "objects.cbor"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.CBOR,
+            true
+        );
+    }
+
+    @Test
+    public void writeCborFromIon() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "cbor",
+            "textAllTypes.ion"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "textAllTypes.ion",
+            optionsCombination,
+            Format.CBOR,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readCborFromIon() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "cbor",
+            "textAllTypes.ion"
+        );
+        assertReadTaskExecutesCorrectly(
+            "textAllTypes.ion",
+            optionsCombination,
+            Format.CBOR,
+            true
+        );
+    }
+
+    @Test
+    public void writeIonFromCbor() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "ion_binary",
+            "objects.cbor"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.ION_BINARY,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readIonFromCbor() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "ion_binary",
+            "objects.cbor"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.ION_BINARY,
+            true
+        );
+    }
+
+    @Test
+    public void writeCborFromJson() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "cbor",
+            "objects.json"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.CBOR,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readCborFromJson() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "cbor",
+            "objects.json"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.json",
+            optionsCombination,
+            Format.CBOR,
+            true
+        );
+    }
+
+    @Test
+    public void writeJsonFromCbor() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "json",
+            "objects.cbor"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.JSON,
+            IoType.FILE
+        );
+    }
+
+    @Test
+    public void readJsonFromCbor() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "json",
+            "objects.cbor"
+        );
+        assertReadTaskExecutesCorrectly(
+            "objects.cbor",
+            optionsCombination,
+            Format.JSON,
+            true
+        );
+    }
+
+    @Test
+    public void traverseCborDoesNotFail() throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--format",
+            "cbor",
+            "--paths",
+            fileInTestDirectory("paths.ion").toString(),
+            "--io-type",
+            "buffer",
+            "--io-type",
+            "file",
+            "objects.cbor"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.CBOR).limit(1).api(API.DOM).ioType(IoType.BUFFER));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.CBOR).limit(1).api(API.DOM).ioType(IoType.FILE));
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> candidate.ioType == optionsCombination.ioType);
+            assertReadTaskExecutesCorrectly(
+                "objects.cbor",
+                optionsCombination,
+                Format.CBOR,
+                false
             );
         }
         assertTrue(expectedCombinations.isEmpty());

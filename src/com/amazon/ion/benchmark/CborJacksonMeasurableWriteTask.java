@@ -1,10 +1,11 @@
 package com.amazon.ion.benchmark;
 
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
+import com.fasterxml.jackson.dataformat.cbor.CBORParser;
+import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -15,20 +16,20 @@ import java.util.Iterator;
 import java.util.function.Consumer;
 
 /**
- * A MeasurableWriteTask for writing data in the JSON format using the Jackson library.
+ * A MeasurableWriteTask for writing data in the CBOR format using the Jackson library.
  */
-class JsonJacksonMeasurableWriteTask extends MeasurableWriteTask<JsonGenerator> {
+public class CborJacksonMeasurableWriteTask extends MeasurableWriteTask<CBORGenerator> {
 
-    private final JacksonUtilities.JsonGeneratorSupplier generatorSupplier;
+    private final JacksonUtilities.CborGeneratorSupplier generatorSupplier;
 
     /**
      * @param inputPath path to the data to re-write.
      * @param options options to use when writing.
      * @throws IOException if thrown when handling the options.
      */
-    JsonJacksonMeasurableWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
+    CborJacksonMeasurableWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
         super(inputPath, options);
-        generatorSupplier = JacksonUtilities.newJsonGeneratorSupplier(options);
+        generatorSupplier = JacksonUtilities.newCborGeneratorSupplier(options);
     }
 
     /**
@@ -37,8 +38,8 @@ class JsonJacksonMeasurableWriteTask extends MeasurableWriteTask<JsonGenerator> 
      * @param instructionsSink sink for the generated WriteInstructions.
      */
     private void fullyTraverse(
-        JsonParser parser,
-        Consumer<WriteInstruction<JsonGenerator>> instructionsSink,
+        CBORParser parser,
+        Consumer<WriteInstruction<CBORGenerator>> instructionsSink,
         boolean isTopLevel
     ) throws IOException {
         int numberOfTopLevelValues = 0;
@@ -53,7 +54,7 @@ class JsonJacksonMeasurableWriteTask extends MeasurableWriteTask<JsonGenerator> 
             }
             switch (parser.getCurrentToken()) {
                 case VALUE_NULL:
-                    instructionsSink.accept(JsonGenerator::writeNull);
+                    instructionsSink.accept(CBORGenerator::writeNull);
                     break;
                 case VALUE_TRUE:
                 case VALUE_FALSE:
@@ -77,7 +78,7 @@ class JsonJacksonMeasurableWriteTask extends MeasurableWriteTask<JsonGenerator> 
                     }
                     break;
                 case VALUE_NUMBER_FLOAT:
-                    if (options.jsonUseBigDecimals) {
+                    if (parser.getNumberType() == JsonParser.NumberType.BIG_DECIMAL) {
                         BigDecimal bigDecimalValue = parser.getDecimalValue();
                         instructionsSink.accept(generator -> generator.writeNumber(bigDecimalValue));
                     } else {
@@ -87,17 +88,24 @@ class JsonJacksonMeasurableWriteTask extends MeasurableWriteTask<JsonGenerator> 
                     break;
                 case VALUE_STRING:
                     String stringValue = parser.getValueAsString();
+                    if (parser.getCurrentTag() == 0) {
+                        instructionsSink.accept(generator -> generator.writeTag(0));
+                    }
                     instructionsSink.accept(generator -> generator.writeString(stringValue));
                     break;
+                case VALUE_EMBEDDED_OBJECT:
+                    byte[] byteValue = parser.getBinaryValue();
+                    instructionsSink.accept(generator -> generator.writeBinary(byteValue));
+                    break;
                 case START_ARRAY:
-                    instructionsSink.accept(JsonGenerator::writeStartArray);
+                    instructionsSink.accept(CBORGenerator::writeStartArray);
                     fullyTraverse(parser, instructionsSink, false);
-                    instructionsSink.accept(JsonGenerator::writeEndArray);
+                    instructionsSink.accept(CBORGenerator::writeEndArray);
                     break;
                 case START_OBJECT:
-                    instructionsSink.accept(JsonGenerator::writeStartObject);
+                    instructionsSink.accept(CBORGenerator::writeStartObject);
                     fullyTraverse(parser, instructionsSink, false);
-                    instructionsSink.accept(JsonGenerator::writeEndObject);
+                    instructionsSink.accept(CBORGenerator::writeEndObject);
                     break;
                 default:
                     throw new IllegalStateException("Found an unexpected token: " + parser.getCurrentToken());
@@ -112,15 +120,15 @@ class JsonJacksonMeasurableWriteTask extends MeasurableWriteTask<JsonGenerator> 
     }
 
     @Override
-    void generateWriteInstructionsStreaming(Consumer<WriteInstruction<JsonGenerator>> instructionsSink) throws IOException {
-        try (JsonParser parser = JacksonUtilities.newJsonFactoryForInput(options).createParser(options.newInputStream(inputFile))) {
+    void generateWriteInstructionsStreaming(Consumer<WriteInstruction<CBORGenerator>> instructionsSink) throws IOException {
+        try (CBORParser parser = JacksonUtilities.newCborFactoryForInput(options).createParser(options.newInputStream(inputFile))) {
             fullyTraverse(parser, instructionsSink, true);
         }
     }
 
     @Override
-    void generateWriteInstructionsDom(Consumer<WriteInstruction<JsonGenerator>> instructionsSink) throws IOException {
-        ObjectMapper mapper = JacksonUtilities.newJsonObjectMapper(JacksonUtilities.newJsonFactoryForInput(options), options);
+    void generateWriteInstructionsDom(Consumer<WriteInstruction<CBORGenerator>> instructionsSink) throws IOException {
+        CBORMapper mapper = JacksonUtilities.newCborObjectMapper(JacksonUtilities.newCborFactoryForInput(options), options);
         Iterator<JsonNode> iterator = mapper.reader().createParser(options.newInputStream(inputFile)).readValuesAs(JsonNode.class);
         int numberOfValues = 0;
         while (iterator.hasNext()) {
@@ -134,12 +142,12 @@ class JsonJacksonMeasurableWriteTask extends MeasurableWriteTask<JsonGenerator> 
     }
 
     @Override
-    JsonGenerator newWriter(OutputStream outputStream) throws IOException {
+    CBORGenerator newWriter(OutputStream outputStream) throws IOException {
         return generatorSupplier.get(outputStream);
     }
 
     @Override
-    void closeWriter(JsonGenerator generator) throws IOException {
+    void closeWriter(CBORGenerator generator) throws IOException {
         generator.close();
     }
 }
