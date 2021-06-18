@@ -181,6 +181,17 @@ class IonUtilities {
     }
 
     /**
+     * Creates an IonWriterSupplier of {@link IonWriterSupplier} instances, which allow CBOR data to be written via
+     * the IonWriter interface. This is useful for converting Ion data to CBOR.
+     * @param options the options to use when creating writers.
+     * @return a new instance.
+     */
+    static IonWriterSupplier newCborWriterSupplier(OptionsCombinationBase options) {
+        JacksonUtilities.CborGeneratorSupplier supplier = JacksonUtilities.newCborGeneratorSupplier(options);
+        return out -> new IonWriterToCbor(supplier.get(out));
+    }
+
+    /**
      * Creates a new IonWriterSupplier of text IonWriter instances.
      * @param options the options to use when creating writers.
      * @return a new instance.
@@ -340,6 +351,28 @@ class IonUtilities {
             if (reader != null) {
                 reader.close();
             }
+        }
+    }
+
+    /**
+     * Rewrite the given CBOR file to Ion using the given options.
+     * @param input path to the file to re-write.
+     * @param output path to the destination file.
+     * @param options the options to use when rewriting.
+     * @param writerSupplierFactory IonWriterSupplierFactory for retrieving suppliers of IonWriters with the given options.
+     * @throws IOException if thrown when reading or writing.
+     */
+    static void rewriteCborToIon(
+        Path input,
+        Path output,
+        OptionsCombinationBase options,
+        IonUtilities.IonWriterSupplierFactory writerSupplierFactory
+    ) throws IOException {
+        try (
+            IonReader reader = new IonReaderFromCbor(JacksonUtilities.newCborFactoryForInput(options).createParser(input.toFile()));
+            IonWriter writer = writerSupplierFactory.get(options).get(options.newOutputStream(output.toFile()));
+        ) {
+            writeValuesWithOptions(reader, writer, options);
         }
     }
 

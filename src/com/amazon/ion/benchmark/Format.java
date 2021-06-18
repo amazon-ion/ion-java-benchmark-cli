@@ -44,6 +44,10 @@ enum Format {
                     // JSON strings and write them as Ion timestamps.
                     IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newBinaryWriterSupplier);
                     break;
+                case CBOR:
+                    // TODO add an option to "upconvert" from CBOR. For example, detect symbol values.
+                    IonUtilities.rewriteCborToIon(input, output, options, IonUtilities::newBinaryWriterSupplier);
+                    break;
             }
             return output;
         }
@@ -93,6 +97,10 @@ enum Format {
                     // JSON strings and write them as Ion timestamps.
                     IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newTextWriterSupplier);
                     break;
+                case CBOR:
+                    // TODO add an option to "upconvert" from CBOR. For example, detect symbol values.
+                    IonUtilities.rewriteCborToIon(input, output, options, IonUtilities::newTextWriterSupplier);
+                    break;
             }
             return output;
         }
@@ -137,7 +145,10 @@ enum Format {
                         // The input is already JSON and it is not being limited.
                         return input;
                     }
-                    JsonJacksonUtilities.rewriteJsonFile(input, output, options);
+                    JacksonUtilities.rewriteJsonFile(input, output, options);
+                    break;
+                case CBOR:
+                    JacksonUtilities.rewriteCborToJson(input, output, options);
                     break;
             }
             return output;
@@ -161,6 +172,54 @@ enum Format {
         @Override
         MeasurableWriteTask createWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
             return new JsonJacksonMeasurableWriteTask(inputPath, options);
+        }
+
+        @Override
+        boolean isIon() {
+            return false;
+        }
+    },
+    CBOR() {
+        @Override
+        Path convert(Path input, Path output, OptionsCombinationBase options) throws IOException {
+            Format sourceFormat = classify(input);
+            switch (sourceFormat) {
+                case ION_BINARY:
+                case ION_TEXT:
+                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newCborWriterSupplier);
+                    break;
+                case JSON:
+                    JacksonUtilities.rewriteJsonToCbor(input, output, options);
+                    break;
+                case CBOR:
+                    if (options.limit == Integer.MAX_VALUE) {
+                        // The input is already CBOR and it is not being limited.
+                        return input;
+                    }
+                    JacksonUtilities.rewriteCborFile(input, output, options);
+                    break;
+            }
+            return output;
+        }
+
+        @Override
+        boolean canParse(Format otherFormat) {
+            return otherFormat == Format.CBOR;
+        }
+
+        @Override
+        String getSuffix() {
+            return ".cbor";
+        }
+
+        @Override
+        MeasurableReadTask createReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
+            return new CborJacksonMeasurableReadTask(inputPath, options);
+        }
+
+        @Override
+        MeasurableWriteTask createWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
+            return new CborJacksonMeasurableWriteTask(inputPath, options);
         }
 
         @Override
@@ -215,6 +274,26 @@ enum Format {
     abstract boolean isIon();
 
     /**
+     * Determine whether the given file starts with the given format header.
+     * @param formatHeader the format header to match.
+     * @param file the file.
+     * @return true if the first bytes in the file match the given format header; otherwise, false.
+     * @throws IOException if thrown while reading the file.
+     */
+    static boolean isFormatHeaderPresent(byte[] formatHeader, File file) throws IOException {
+        byte[] firstBytes = new byte[formatHeader.length];
+        try (InputStream inputStream = new FileInputStream(file)) {
+            int bytesRead = inputStream.read(firstBytes);
+            if (bytesRead == formatHeader.length) {
+                if (Arrays.equals(formatHeader, firstBytes)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Determine which Format the data at the given path represents.
      * @param path the path to the data to be classified.
      * @return the Format of the data.
@@ -223,23 +302,17 @@ enum Format {
      */
     static Format classify(Path path) throws IOException {
         File file = path.toFile();
-        // Note: use the length of the longest format header once support for other formats is added.
-        byte[] firstBytes = new byte[_Private_IonConstants.BINARY_VERSION_MARKER_SIZE];
-        try (InputStream inputStream = new FileInputStream(file)) {
-            int bytesRead = inputStream.read(firstBytes);
-            if (bytesRead == _Private_IonConstants.BINARY_VERSION_MARKER_SIZE) {
-                if (Arrays.equals(_Private_IonConstants.BINARY_VERSION_MARKER_1_0, firstBytes)) {
-                    return Format.ION_BINARY;
-                }
-            }
-            // Note: compare against other formats that have self-identifying headers once support for other formats
-            // is added.
+        if (isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_0, file)) {
+            return Format.ION_BINARY;
+        }
+        if (isFormatHeaderPresent(CborUtilities.CBOR_SELF_IDENTIFICATION_TAG, file)) {
+            return Format.CBOR;
         }
         // No format headers matched. Fall back on file suffix.
-        if (file.getName().endsWith(".ion")) {
+        if (file.getName().endsWith(Format.ION_TEXT.getSuffix())) {
             return Format.ION_TEXT;
         }
-        if (file.getName().endsWith(".json")) {
+        if (file.getName().endsWith(Format.JSON.getSuffix())) {
             return Format.JSON;
         }
         throw new IllegalArgumentException("Unknown file format.");

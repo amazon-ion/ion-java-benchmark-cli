@@ -144,8 +144,8 @@ public class Main {
             + "because this mode reads the entire input directly from a properly-sized buffer. May be specified "
             + "multiple times to compare different settings. [default: auto]\n"
 
-        + "  -f --format <type>                     Format to benchmark, from the set (ion_binary | ion_text | json). "
-            + "May be specified multiple times to compare different formats. [default: ion_binary]\n"
+        + "  -f --format <type>                     Format to benchmark, from the set (ion_binary | ion_text | json | "
+            + "cbor). May be specified multiple times to compare different formats. [default: ion_binary]\n"
 
         + "  -a --api <api>                         The API to exercise (dom or streaming). For the ion-binary or "
             + "ion-text formats, 'streaming' causes IonReader/IonWriter to be used while 'dom' causes IonLoader to be "
