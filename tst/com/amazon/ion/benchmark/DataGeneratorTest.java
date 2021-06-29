@@ -190,16 +190,6 @@ public class DataGeneratorTest {
     }
 
     /**
-     * This test is not available now.
-     */
-    @Test
-    public void testSchema() throws Exception {
-        Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--input-ion-schema", "textStructs.isl", "--format", "ion_text", "test8.ion");
-        outputFile = optionsMap.get("<output_file>").toString();
-        GeneratorOptions.executeGenerator(optionsMap);
-    }
-
-    /**
      * Delete all files generated in the test process.
      * @throws IOException if an error occur when deleting files.
      */

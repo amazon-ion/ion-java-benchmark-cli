@@ -666,7 +666,7 @@ class WriteRandomIonValues {
                 Timestamp.Precision precision = value.getPrecision();
                 timestamp = WriteRandomIonValues.writeTimestamp(precision, value);
             }
-            templateReader.stepOut();
+            templateReader.close();
             if (templateReader.next() != null) throw new IllegalStateException("Only one template list is needed");
         } else {
             Random random = new Random();

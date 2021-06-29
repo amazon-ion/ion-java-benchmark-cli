@@ -5,6 +5,9 @@ import com.amazon.ion.IonType;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Decide which data generating method should be executed based on the specifications in the HashMap.
+ */
 public class GeneratorOptions {
     /**
      * Call the relevant methods which can generate scalar type of Ion data based on the input hashmap.
