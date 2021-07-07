@@ -16,10 +16,10 @@ import java.util.Set;
  */
 public class GeneratorOptionsValidator {
 
-    final public static Set<String> invalidForTimestamp = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range")));
-    final public static Set<String> invalidForString = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-M", "--timestamps-template", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range")));
-    final public static Set<String> invalidForDecimal = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-M", "--timestamps-template")));
-
+    final public static Set<String> invalidForTimestamp = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range", "-Q", "--input-ion-schema")));
+    final public static Set<String> invalidForString = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-M", "--timestamps-template", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range", "-Q", "--input-ion-schema")));
+    final public static Set<String> invalidForDecimal = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-M", "--timestamps-template", "-Q", "--input-ion-schema")));
+    final public static Set<String> invalidForIonSchema = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range","-M", "--timestamps-template", "-T", "--data-type")));
     /**
      * The method combine all options which are not available for the current data type, and check
      * if the current command line which aim to generate the current type of data contain those options or not.
@@ -56,6 +56,8 @@ public class GeneratorOptionsValidator {
                 default:
                     throw new IllegalStateException("Unexpected value: " + type);
             }
+        } else {
+            GeneratorOptionsValidator.throwException(invalidForIonSchema, commandLine);
         }
     }
 }
