@@ -1,10 +1,16 @@
 package com.amazon.ion.benchmark;
 
+import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonReader;
+import com.amazon.ion.IonStruct;
+import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
+import com.amazon.ion.IonValue;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.system.IonReaderBuilder;
+import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.util.IonStreamUtils;
+import com.amazon.ionschema.*;
 import org.junit.After;
 import org.junit.Test;
 
@@ -20,14 +26,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class DataGeneratorTest {
-
-    public static String outputFile;
+    private static String OUTPUT_FILE;
+    private final static IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().build();
+    private final static IonSystem SYSTEM = IonSystemBuilder.standard().build();
 
     /**
      * Construct IonReader for current output file in order to finish the following test process
@@ -36,9 +45,9 @@ public class DataGeneratorTest {
      * @throws Exception if errors occur during executing data generator process.
      */
     public static IonReader executeAndRead(Map<String, Object> optionsMap) throws Exception {
-        outputFile = optionsMap.get("<output_file>").toString();
+        OUTPUT_FILE = optionsMap.get("<output_file>").toString();
         GeneratorOptions.executeGenerator(optionsMap);
-        return IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFile)));
+        return IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(OUTPUT_FILE)));
     }
 
     /**
@@ -103,8 +112,8 @@ public class DataGeneratorTest {
             Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--data-type", "float", "--format", inputs.get(i), "test4.ion");
             GeneratorOptions.executeGenerator(optionsMap);
             String format = ((List<String>)optionsMap.get("--format")).get(0);
-            outputFile = optionsMap.get("<output_file>").toString();
-            Path path = Paths.get(outputFile);
+            OUTPUT_FILE = optionsMap.get("<output_file>").toString();
+            Path path = Paths.get(OUTPUT_FILE);
             byte[] buffer = Files.readAllBytes(path);
             assertEquals(Format.valueOf(format.toUpperCase()) == Format.ION_BINARY, IonStreamUtils.isIonBinary(buffer));
         }
@@ -179,8 +188,8 @@ public class DataGeneratorTest {
         Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--data-type", "timestamp", "--timestamps-template","[2021T]","test7.10n");
         GeneratorOptions.executeGenerator(optionsMap);
         int expectedSize = Integer.parseInt(optionsMap.get("--data-size").toString());
-        outputFile = optionsMap.get("<output_file>").toString();
-        Path filePath = Paths.get(outputFile);
+        OUTPUT_FILE = optionsMap.get("<output_file>").toString();
+        Path filePath = Paths.get(OUTPUT_FILE);
         FileChannel fileChannel;
         fileChannel = FileChannel.open(filePath);
         int fileSize = (int)fileChannel.size();
@@ -189,13 +198,56 @@ public class DataGeneratorTest {
         assertTrue(difference <= 0.1 * expectedSize);
     }
 
+
+    /**
+     * Test if there's violation by comparing every single data with the Ion schema constraint.
+     * @throws Exception if error occur
+     */
+    @Test
+    public void testViolation() throws Exception {
+        Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--format", "ion_text", "--input-ion-schema", "./tst/com/amazon/ion/benchmark/testStruct.isl", "test8.ion");
+        String inputFilePath = optionsMap.get("--input-ion-schema").toString();
+        Path classSchemaFile = Paths.get(inputFilePath);
+        OUTPUT_FILE = optionsMap.get("<output_file>").toString();
+        try (
+                IonReader readerInput = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(inputFilePath)));
+                IonReader reader = DataGeneratorTest.executeAndRead(optionsMap);
+                Stream<String> lines = Files.lines(classSchemaFile)
+        ) {
+            // Get the name of Ion Schema.
+            IonDatagram schema = ReadGeneralConstraints.LOADER.load(readerInput);
+            String ionSchemaName = null;
+            for (int i = 0; i < schema.size(); i++) {
+                IonValue schemaValue = schema.get(i);
+                if (schemaValue.getType().equals(IonType.STRUCT) && schemaValue.getTypeAnnotations()[0].equals(IonSchemaUtilities.KEYWORD_TYPE)) {
+                    IonStruct constraintStruct = (IonStruct) schemaValue;
+                    ionSchemaName = constraintStruct.get(IonSchemaUtilities.KEYWORD_NAME).toString();
+                    break;
+                }
+            }
+            // Construct new schema amd get the type of the Ion Schema.
+            String content = lines.collect(Collectors.joining(System.lineSeparator()));
+            Schema newSchema = ISS.newSchema(content);
+            Type type = newSchema.getType(ionSchemaName);
+            while (reader.next() != null) {
+                IonValue value = SYSTEM.newValue(reader);
+                Violations violations = type.validate(value);
+                if (!violations.isValid()) {
+                    System.out.println(value);
+                    System.out.println(violations);
+                }
+                assertTrue(violations.isValid());
+            }
+        }
+    }
+
     /**
      * Delete all files generated in the test process.
      * @throws IOException if an error occur when deleting files.
      */
     @After
     public void deleteGeneratedFile() throws IOException {
-        Path filePath = Paths.get(outputFile);
+        Path filePath = Paths.get(OUTPUT_FILE);
         if(Files.exists(filePath)) {
             Files.delete(filePath);
         }
