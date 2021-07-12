@@ -341,7 +341,14 @@ public class Main {
         + "                              --decimal-exponent-range '[-12,10]'\\\n"
         + "                              --decimal-coefficient-digit-range '[1,20]'\\\n"
         + "                              --format ion_text\\\n"
-        + "                              example.10n\n\n";
+        + "                              example.ion\n\n"
+
+        + " Generate approximately 500 bytes of text Ion Lists which conform with the constraints in Ion Schema file testList.isl .\n\n"
+
+        + "  ion-java-benchmark generate --data-size 500 \\\n"
+        + "                              --input-ion-schema './tst/com/amazon/ion/benchmark/testList.isl'\\\n"
+        + "                              --format ion_text\\\n"
+        + "                              example.ion\n\n";
 
 
 

@@ -73,6 +73,8 @@ public class ReadGeneralConstraints {
                         case LIST:
                             WriteRandomIonValues.writeRandomListValues(size, format, outputFile, constraintStruct, annotationMap);
                             break;
+                        default:
+                            throw new IllegalStateException(type + " is not supported when generating IonValue based on Ion Schema.");
                     }
                 }
             }
