@@ -26,8 +26,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -37,8 +35,8 @@ public class DataGeneratorTest {
     private static String outputFile;
     private final static IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().build();
     private final static IonSystem SYSTEM = IonSystemBuilder.standard().build();
-    private final static List<String> SCHEMA_FILES = new ArrayList<>(Arrays.asList("./tst/com/amazon/ion/benchmark/testStruct.isl", "./tst/com/amazon/ion/benchmark/testList.isl"));
-
+    private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testStruct.isl";
+    private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/benchmark/testList.isl";
 
     /**
      * Construct IonReader for current output file in order to finish the following test process
@@ -50,6 +48,41 @@ public class DataGeneratorTest {
         outputFile = optionsMap.get("<output_file>").toString();
         GeneratorOptions.executeGenerator(optionsMap);
         return IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFile)));
+    }
+
+    /**
+     * Detect if violation occurs by comparing every single data in the generated file with Ion Schema constraints.
+     * @param inputFile is the Ion Schema file.
+     * @throws Exception if error occurs when checking if there is violation in the generated data.
+     */
+    public static void violationDetect(String inputFile) throws Exception {
+        Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--format", "ion_text", "--input-ion-schema", inputFile, "test8.ion");
+        String inputFilePath = optionsMap.get("--input-ion-schema").toString();
+        outputFile = optionsMap.get("<output_file>").toString();
+        try (
+                IonReader readerInput = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(inputFilePath)));
+                IonReader reader = DataGeneratorTest.executeAndRead(optionsMap);
+        ) {
+            // Get the name of Ion Schema.
+            IonDatagram schema = ReadGeneralConstraints.LOADER.load(readerInput);
+            String ionSchemaName = null;
+            for (int i = 0; i < schema.size(); i++) {
+                IonValue schemaValue = schema.get(i);
+                if (schemaValue.getType().equals(IonType.STRUCT) && schemaValue.getTypeAnnotations()[0].equals(IonSchemaUtilities.KEYWORD_TYPE)) {
+                    IonStruct constraintStruct = (IonStruct) schemaValue;
+                    ionSchemaName = constraintStruct.get(IonSchemaUtilities.KEYWORD_NAME).toString();
+                    break;
+                }
+            }
+            // Construct new schema amd get the type of the Ion Schema.
+            Schema newSchema = ISS.newSchema(schema.iterator());
+            Type type = newSchema.getType(ionSchemaName);
+            while (reader.next() != null) {
+                IonValue value = SYSTEM.newValue(reader);
+                Violations violations = type.validate(value);
+                assertTrue("Violations " + violations + "found in value " + value, violations.isValid());
+            }
+        }
     }
 
     /**
@@ -202,40 +235,21 @@ public class DataGeneratorTest {
 
 
     /**
-     * Test if there's violation by comparing every single data with the Ion schema constraint.
-     * @throws Exception if error occur
+     * Test if there's violation when generating Ion Struct based on Ion Schema.
+     * @throws Exception if error occurs during the violation detecting process.
      */
     @Test
     public void testViolationOfIonStruct() throws Exception {
-        for (int index = 0; index < SCHEMA_FILES.size(); index++) {
-            Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--format", "ion_text", "--input-ion-schema", SCHEMA_FILES.get(index), "test8.ion");
-            String inputFilePath = optionsMap.get("--input-ion-schema").toString();
-            outputFile = optionsMap.get("<output_file>").toString();
-            try (
-                    IonReader readerInput = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(inputFilePath)));
-                    IonReader reader = DataGeneratorTest.executeAndRead(optionsMap);
-            ) {
-                // Get the name of Ion Schema.
-                IonDatagram schema = ReadGeneralConstraints.LOADER.load(readerInput);
-                String ionSchemaName = null;
-                for (int i = 0; i < schema.size(); i++) {
-                    IonValue schemaValue = schema.get(i);
-                    if (schemaValue.getType().equals(IonType.STRUCT) && schemaValue.getTypeAnnotations()[0].equals(IonSchemaUtilities.KEYWORD_TYPE)) {
-                        IonStruct constraintStruct = (IonStruct) schemaValue;
-                        ionSchemaName = constraintStruct.get(IonSchemaUtilities.KEYWORD_NAME).toString();
-                        break;
-                    }
-                }
-                // Construct new schema amd get the type of the Ion Schema.
-                Schema newSchema = ISS.newSchema(schema.iterator());
-                Type type = newSchema.getType(ionSchemaName);
-                while (reader.next() != null) {
-                    IonValue value = SYSTEM.newValue(reader);
-                    Violations violations = type.validate(value);
-                    assertTrue("Violations " + violations + "found in value " + value, violations.isValid());
-                }
-            }
-        }
+        DataGeneratorTest.violationDetect(INPUT_ION_STRUCT_FILE_PATH);
+    }
+
+    /**
+     * Test if there's violation when generating Ion List based on Ion Schema.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testViolationOfIonList() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_ION_LIST_FILE_PATH);
     }
 
     /**

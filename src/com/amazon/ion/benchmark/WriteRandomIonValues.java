@@ -48,17 +48,17 @@ import java.util.Set;
  * Generate specific scalar type of Ion data randomly, for some specific type, e.g. String, Decimal, Timestamp, users can put specifications on these types of Ion data.
  */
 class WriteRandomIonValues {
-    final static private IonSystem system = IonSystemBuilder.standard().build();
-    final static private List<Integer> defaultRange = WriteRandomIonValues.parseRange("[0, 1114111]");
-    final static private Timestamp.Precision[] precisions = Timestamp.Precision.values();
-    static private int codePointLength = 0;
-    static private List<Integer> pointRange;
-    static private List<Integer> expValRange;
-    static private List<Integer> coefficientDigitRange;
-    static private String timestampTemplate;
-    static private IonStruct fields;
-    static private Map<String, Object> annotationMap;
-    static private IonStruct constraintStruct;
+    final static private IonSystem SYSTEM = IonSystemBuilder.standard().build();
+    final static private List<Integer> DEFAULT_RANGE = WriteRandomIonValues.parseRange("[0, 1114111]");
+    final static private Timestamp.Precision[] PRECISIONS = Timestamp.Precision.values();
+    final static private int NO_CODE_POINT_LENGTH = 0;
+    final static private List<Integer> NO_POINT_RANGE = null;
+    final static private List<Integer> NO_EXPONENT_VALUE_RANGE = null;
+    final static private List<Integer> NO_COEFFICIENT_DIGIT_RANGE = null;
+    final static private String NO_TIMESTAMP_TEMPLATE = null;
+    final static private IonStruct NO_FIELDS = null;
+    final static private Map<String, Object> NO_ANNOTATION_MAP = null;
+    final static private IonStruct NO_CONSTRAINT_STRUCT = null;
 
     /**
      * Build up the writer based on the provided format (ion_text|ion_binary)
@@ -142,7 +142,7 @@ class WriteRandomIonValues {
 
             if (pointRange.get(0) < 0) throw new IllegalStateException("Please provide the valid range inside of [0, 1114111]");
             if (pointRange.get(1) > Character.MAX_CODE_POINT) throw new IllegalStateException("Please provide the valid range inside of [0, 1114111]");
-            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, codePointLength, pointRange, expValRange, coefficientDigitRange, timestampTemplate, fields, annotationMap, constraintStruct);
+            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, codePointLength, pointRange, NO_EXPONENT_VALUE_RANGE, NO_COEFFICIENT_DIGIT_RANGE, NO_TIMESTAMP_TEMPLATE, NO_FIELDS, NO_ANNOTATION_MAP, NO_CONSTRAINT_STRUCT);
         }
         WriteRandomIonValues.printInfo(path);
     }
@@ -164,7 +164,7 @@ class WriteRandomIonValues {
             List<Integer> expValRange = WriteRandomIonValues.parseRange(expRange);
             List<Integer> coefficientDigitRange = WriteRandomIonValues.parseRange(coefficientDigit);
             if (coefficientDigitRange.get(0) <= 0) throw new IllegalStateException ("The coefficient digits should be positive integer");
-            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, codePointLength, pointRange, expValRange, coefficientDigitRange, timestampTemplate, fields, annotationMap, constraintStruct);
+            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, NO_CODE_POINT_LENGTH, NO_POINT_RANGE, expValRange, coefficientDigitRange, NO_TIMESTAMP_TEMPLATE, NO_FIELDS, NO_ANNOTATION_MAP, NO_CONSTRAINT_STRUCT);
         }
         WriteRandomIonValues.printInfo(path);
     }
@@ -180,7 +180,7 @@ class WriteRandomIonValues {
     public static void writeRandomInts(int size, IonType type, String format, String path) throws Exception {
         File file = new File(path);
         try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
-           WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, codePointLength, pointRange, expValRange, coefficientDigitRange, timestampTemplate, fields, annotationMap, constraintStruct);
+           WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, NO_CODE_POINT_LENGTH, NO_POINT_RANGE, NO_EXPONENT_VALUE_RANGE, NO_COEFFICIENT_DIGIT_RANGE, NO_TIMESTAMP_TEMPLATE, NO_FIELDS, NO_ANNOTATION_MAP, NO_CONSTRAINT_STRUCT);
         }
         WriteRandomIonValues.printInfo(path);
     }
@@ -196,7 +196,7 @@ class WriteRandomIonValues {
     public static void writeRandomFloats(int size, IonType type, String format, String path) throws Exception {
         File file = new File(path);
         try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
-            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, codePointLength, pointRange, expValRange, coefficientDigitRange, timestampTemplate, fields, annotationMap, constraintStruct);
+            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, NO_CODE_POINT_LENGTH, NO_POINT_RANGE, NO_EXPONENT_VALUE_RANGE, NO_COEFFICIENT_DIGIT_RANGE, NO_TIMESTAMP_TEMPLATE, NO_FIELDS, NO_ANNOTATION_MAP, NO_CONSTRAINT_STRUCT);
         }
         WriteRandomIonValues.printInfo(path);
     }
@@ -289,7 +289,7 @@ class WriteRandomIonValues {
     public static void writeRandomTimestamps(int size, IonType type, String path, String timestampTemplate, String format) throws Exception {
         File file = new File(path);
         try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
-            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, codePointLength, pointRange, expValRange, coefficientDigitRange, timestampTemplate, fields, annotationMap, constraintStruct);
+            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, NO_CODE_POINT_LENGTH, NO_POINT_RANGE, NO_EXPONENT_VALUE_RANGE, NO_COEFFICIENT_DIGIT_RANGE, timestampTemplate, NO_FIELDS, NO_ANNOTATION_MAP, NO_CONSTRAINT_STRUCT);
         }
         WriteRandomIonValues.printInfo(path);
     }
@@ -664,7 +664,7 @@ class WriteRandomIonValues {
             if (templateReader.next() != null) throw new IllegalStateException("Only one template list is needed");
         } else {
             Random random = new Random();
-            Timestamp.Precision precision = precisions[random.nextInt(precisions.length)];
+            Timestamp.Precision precision = PRECISIONS[random.nextInt(PRECISIONS.length)];
             timestamp = WriteRandomIonValues.writeTimestamp(precision, null);
         }
         return timestamp;
@@ -705,7 +705,7 @@ class WriteRandomIonValues {
         File file = new File(path);
         IonType type = IonType.STRUCT;
         try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
-            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, codePointLength, pointRange, expValRange, coefficientDigitRange, timestampTemplate, fields, annotationMap, constraintStruct);
+            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, NO_CODE_POINT_LENGTH, NO_POINT_RANGE, NO_EXPONENT_VALUE_RANGE, NO_COEFFICIENT_DIGIT_RANGE, NO_TIMESTAMP_TEMPLATE, fields, annotationMap, NO_CONSTRAINT_STRUCT);
             WriteRandomIonValues.printInfo(path);
         }
     }
@@ -728,7 +728,7 @@ class WriteRandomIonValues {
             writer.stepIn(IonType.STRUCT);
             while (reader.next() != null) {
                 String fieldName = reader.getFieldName();
-                IonValue struct = system.newValue(reader);
+                IonValue struct = SYSTEM.newValue(reader);
                 IonStruct value = (IonStruct) struct;
                 // If the value of "occurs" is optional, the integer represents this value is 1 or 0.
                 int occurTime = IonSchemaUtilities.parseConstraints(value, IonSchemaUtilities.KEYWORD_OCCURS);
@@ -744,12 +744,12 @@ class WriteRandomIonValues {
                         if (value.get(IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH) != null) {
                             codePointsLengthBound = IonSchemaUtilities.parseConstraints(value, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
                         }
-                        String stringValue = WriteRandomIonValues.constructString(defaultRange, codePointsLengthBound);
+                        String stringValue = WriteRandomIonValues.constructString(DEFAULT_RANGE, codePointsLengthBound);
                         writer.writeString(stringValue);
                         break;
                     case TIMESTAMP:
                         // Call the function that extract the precision of the timestamp
-                        Timestamp.Precision precision = precisions[random.nextInt(precisions.length)];
+                        Timestamp.Precision precision = PRECISIONS[random.nextInt(PRECISIONS.length)];
                         if (value.get(IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION) != null) {
                             precision = IonSchemaUtilities.getTimestampPrecisionTemplate(value);
                         }
@@ -777,7 +777,7 @@ class WriteRandomIonValues {
         File file = new File(path);
         IonType type = IonType.LIST;
         try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
-            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, codePointLength, pointRange, expValRange, coefficientDigitRange, timestampTemplate, fields, annotationMap, constraintStruct);
+            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, NO_CODE_POINT_LENGTH, NO_POINT_RANGE, NO_EXPONENT_VALUE_RANGE, NO_COEFFICIENT_DIGIT_RANGE, NO_TIMESTAMP_TEMPLATE, NO_FIELDS, NO_ANNOTATION_MAP, constraintStruct);
             WriteRandomIonValues.printInfo(path);
         }
     }
@@ -845,7 +845,7 @@ class WriteRandomIonValues {
             switch (valueType) {
                 // If more scalar types of Ion data are supported, this is the point to add more cases.
                 case STRING:
-                    writer.writeString(WriteRandomIonValues.constructString(defaultRange, 20));
+                    writer.writeString(WriteRandomIonValues.constructString(DEFAULT_RANGE, 20));
                     break;
                 case INT:
                     writer.writeInt(WriteRandomIonValues.constructInt());
