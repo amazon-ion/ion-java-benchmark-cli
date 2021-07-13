@@ -94,6 +94,11 @@
           <version>4.13.1</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.amazon.ion</groupId>
+            <artifactId>ion-schema-kotlin</artifactId>
+            <version>1.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>

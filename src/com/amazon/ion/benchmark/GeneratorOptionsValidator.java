@@ -15,11 +15,11 @@ import java.util.Set;
  * e.g. The specific options only follow the specific data type, "--text-code-point-range" cannot follow the type "decimal"
  */
 public class GeneratorOptionsValidator {
+    final public static Set<String> INVALID_FOR_TIMESTAMP = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range", "-Q", "--input-ion-schema")));
+    final public static Set<String> INVALID_FOR_STRING = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-M", "--timestamps-template", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range", "-Q", "--input-ion-schema")));
+    final public static Set<String> INVALID_FOR_DECIMAL = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-M", "--timestamps-template", "-Q", "--input-ion-schema")));
+    final public static Set<String> INVALID_FOR_ION_SCHEMA = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range","-M", "--timestamps-template", "-T", "--data-type")));
 
-    final public static Set<String> invalidForTimestamp = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range", "-Q", "--input-ion-schema")));
-    final public static Set<String> invalidForString = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-M", "--timestamps-template", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range", "-Q", "--input-ion-schema")));
-    final public static Set<String> invalidForDecimal = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-M", "--timestamps-template", "-Q", "--input-ion-schema")));
-    final public static Set<String> invalidForIonSchema = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range","-M", "--timestamps-template", "-T", "--data-type")));
     /**
      * The method combine all options which are not available for the current data type, and check
      * if the current command line which aim to generate the current type of data contain those options or not.
@@ -45,19 +45,19 @@ public class GeneratorOptionsValidator {
             IonType type = IonType.valueOf(optionsMap.get("--data-type").toString().toUpperCase());
             switch (type) {
                 case TIMESTAMP:
-                    GeneratorOptionsValidator.throwException(invalidForTimestamp, commandLine);
+                    GeneratorOptionsValidator.throwException(INVALID_FOR_TIMESTAMP, commandLine);
                     break;
                 case STRING:
-                    GeneratorOptionsValidator.throwException(invalidForString, commandLine);
+                    GeneratorOptionsValidator.throwException(INVALID_FOR_STRING, commandLine);
                     break;
                 case DECIMAL:
-                    GeneratorOptionsValidator.throwException(invalidForDecimal, commandLine);
+                    GeneratorOptionsValidator.throwException(INVALID_FOR_DECIMAL, commandLine);
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + type);
             }
         } else {
-            GeneratorOptionsValidator.throwException(invalidForIonSchema, commandLine);
+            GeneratorOptionsValidator.throwException(INVALID_FOR_ION_SCHEMA, commandLine);
         }
     }
 }
