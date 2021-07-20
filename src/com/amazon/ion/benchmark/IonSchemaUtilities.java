@@ -147,9 +147,9 @@ public class IonSchemaUtilities {
         if (!constraint.contains(IonSchemaUtilities.KEYWORD_ORDERED)) {
             List<IonValue> annotations = annotationList.stream().collect(Collectors.toList());
             Collections.shuffle(annotations);
-            try (IonReader shuffledAnnotationReader = IonReaderBuilder.standard().build(annotations.toString())) {
-                shuffledAnnotationReader.next();
-                result = (IonList) ReadGeneralConstraints.SYSTEM.newValue(shuffledAnnotationReader);
+            result = ReadGeneralConstraints.SYSTEM.newEmptyList();
+            for (int index = 0; index < annotations.size(); index++) {
+                result.add(index, annotations.get(index).clone());
             }
         }
         return checkRequired(constraint, result,random);
@@ -170,9 +170,9 @@ public class IonSchemaUtilities {
             int randomValueTwo = random.nextInt(annotationList.size());
             List<IonValue> subAnnotationList = annotationList.subList(Math.min(randomValueOne, randomValueTwo), Math.max(randomValueOne, randomValueTwo));
             if (subAnnotationList != null) {
-                try (IonReader annotationReader = IonReaderBuilder.standard().build(subAnnotationList.toString())) {
-                    annotationReader.next();
-                    result = (IonList) ReadGeneralConstraints.SYSTEM.newValue(annotationReader);
+                result = ReadGeneralConstraints.SYSTEM.newEmptyList();
+                for (int index = 0; index < subAnnotationList.size(); index++) {
+                    result.add(index, subAnnotationList.get(index).clone());
                 }
             } else {
                 result = null;
