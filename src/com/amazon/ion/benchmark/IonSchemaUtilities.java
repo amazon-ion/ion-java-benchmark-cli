@@ -32,6 +32,8 @@ public class IonSchemaUtilities {
     public static final String KEYWORD_ORDERED = "ordered";
     public static final String KEYWORD_NAME = "name";
     public static final String KEYWORD_CONTAINER_LENGTH = "container_length";
+    public static final String KEYWORD_MIN = "min";
+    public static final String KEYWORD_MAX = "max";
 
     /**
      * Extract the value of the constraints, select from the set (occurs | container_length | codepoint_length).
@@ -43,7 +45,7 @@ public class IonSchemaUtilities {
     public static int parseConstraints(IonStruct value, String keyWord) throws IOException {
         Random random = new Random();
         int result = 0;
-        int min = 0;
+        int min;
         int max;
         try (IonReader reader = IonReaderBuilder.standard().build(value)) {
             reader.next();
@@ -67,12 +69,22 @@ public class IonSchemaUtilities {
                         case LIST:
                             reader.stepIn();
                             reader.next();
-                            if (reader.getType() != IonType.SYMBOL) {
+                            if (reader.getType() == IonType.SYMBOL) {
+                                if (reader.symbolValue().equals(KEYWORD_MIN)) {
+                                    min = 0;
+                                } else {
+                                    throw new IllegalStateException("The lower bound symbol value is not supported in Ion Schema");
+                                }
+                            } else {
                                 min = reader.intValue();
                             }
                             reader.next();
                             if (reader.getType() == IonType.SYMBOL) {
-                                max = Integer.MAX_VALUE;
+                                if (reader.symbolValue().equals(KEYWORD_MAX)) {
+                                    max = Integer.MAX_VALUE;
+                                } else {
+                                    throw new IllegalStateException("The upper bound symbol value is not supported in Ion Schema");
+                                }
                             } else {
                                 max = reader.intValue();
                             }
