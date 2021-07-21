@@ -3,7 +3,7 @@
  type::{
       name: Customer,
       type: struct,
-      Annotations:[corporate, gold_class, club_member],
+      annotations:[corporate, gold_class, club_member],
       fields: {
         firstName: { type: string, occurs: required },
         lastName: { type: string, occurs: optional },

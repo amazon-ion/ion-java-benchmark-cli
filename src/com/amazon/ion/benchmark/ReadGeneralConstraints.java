@@ -12,7 +12,6 @@ import com.amazon.ion.system.IonSystemBuilder;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
-import java.util.Map;
 
 /**
  * Parse Ion Schema file and get the general constraints in the file then pass the constraints to the Ion data generator.
@@ -40,13 +39,11 @@ public class ReadGeneralConstraints {
                     IonStruct constraintStruct = (IonStruct) schemaValue;
                     // Get general constraints:
                     IonType type = IonType.valueOf(constraintStruct.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
-                    Map<String, Object> annotationMap = IonSchemaUtilities.getAnnotation(constraintStruct);
                     // If more types of Ion data added in the future, developers can add more types under the switch logic.
                     switch (type) {
                         case STRUCT:
                             // If more constraints relevant to Ion Struct needed to be processed, developers should call functions here.
-                            IonStruct fields = (IonStruct) constraintStruct.get(IonSchemaUtilities.KEYWORD_FIELDS);
-                            WriteRandomIonValues.writeRandomStructValues(size, format, outputFile, fields, annotationMap);
+                            WriteRandomIonValues.writeRandomStructValues(size, format, outputFile, constraintStruct);
                             break;
                         case TIMESTAMP:
                             WriteRandomIonValues.writeRandomTimestamps(size, type, outputFile, null, format);
@@ -71,7 +68,7 @@ public class ReadGeneralConstraints {
                             WriteRandomIonValues.writeRandomSymbolValues(size, format, outputFile);
                             break;
                         case LIST:
-                            WriteRandomIonValues.writeRandomListValues(size, format, outputFile, constraintStruct, annotationMap);
+                            WriteRandomIonValues.writeRandomListValues(size, format, outputFile, constraintStruct);
                             break;
                         default:
                             throw new IllegalStateException(type + " is not supported when generating IonValue based on Ion Schema.");
