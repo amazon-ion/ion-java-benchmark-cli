@@ -11,6 +11,8 @@ import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.util.IonStreamUtils;
 import com.amazon.ionschema.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,6 +39,7 @@ public class DataGeneratorTest {
     private final static IonSystem SYSTEM = IonSystemBuilder.standard().build();
     private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testStruct.isl";
     private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/benchmark/testList.isl";
+    private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/benchmark/testNestedStruct.isl";
 
     /**
      * Construct IonReader for current output file in order to finish the following test process
@@ -250,6 +253,45 @@ public class DataGeneratorTest {
     @Test
     public void testViolationOfIonList() throws Exception {
         DataGeneratorTest.violationDetect(INPUT_ION_LIST_FILE_PATH);
+    }
+
+    /**
+     * Test if there's violation when generating nested Ion Struct based on Ion Schema.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testViolationOfNestedIonStruct() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_NESTED_ION_STRUCT_PATH);
+    }
+
+    /**
+     * Test the accuracy of the calculated results in the generated file.
+     * @throws Exception if error occurs when reading the input file.
+     */
+    @Test
+    public void testParseBenchmark() throws Exception {
+        Map<String, Object> optionsMap = Main.parseArguments("compare", "--benchmark-result-previous", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultPrevious.ion", "--benchmark-result-new", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultNew.ion", "test11.ion");
+        ParseAndCompareBenchmarkResults.compareResult(optionsMap);
+        outputFile = optionsMap.get("<output_file>").toString();
+        try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFile)))) {
+            reader.next();
+            reader.stepIn();
+            while (reader.next() != null) {
+                if (reader.getFieldName().equals("scoreDifference")) {
+                    reader.stepIn();
+                    while (reader.next() != null) {
+                        String benchmarkResultPrevious = optionsMap.get("--benchmark-result-previous").toString();
+                        String benchmarkResultNew = optionsMap.get("--benchmark-result-new").toString();
+                        BigDecimal previousScore = ParseAndCompareBenchmarkResults.getScore(benchmarkResultPrevious, reader.getFieldName());
+                        BigDecimal newScore = ParseAndCompareBenchmarkResults.getScore(benchmarkResultNew, reader.getFieldName());
+                        BigDecimal scoreDifference = newScore.subtract(previousScore);
+                        BigDecimal relativeDifference = scoreDifference.divide(previousScore, RoundingMode.HALF_UP);
+                        assertTrue(relativeDifference.equals(reader.decimalValue()));
+                    }
+                    reader.stepOut();
+                }
+            }
+        }
     }
 
     /**

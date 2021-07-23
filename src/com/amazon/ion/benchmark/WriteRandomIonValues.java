@@ -682,7 +682,7 @@ class WriteRandomIonValues {
      * @param writer writes Ion struct data.
      * @throws IOException if errors occur when writing data.
      */
-    public static void constructIonStruct(IonStruct constraintStruct, IonList annotations, IonWriter writer) throws IOException {
+    public static void constructIonStruct(IonStruct constraintStruct, IonList annotations, IonWriter writer) throws Exception {
         Random random = new Random();
         IonStruct fields = (IonStruct) constraintStruct.get(IonSchemaUtilities.KEYWORD_FIELDS);
         try (IonReader reader = IonReaderBuilder.standard().build(fields)) {
@@ -721,6 +721,10 @@ class WriteRandomIonValues {
                         }
                         Timestamp timestampValue = WriteRandomIonValues.writeTimestamp(precision, null);
                         writer.writeTimestamp(timestampValue);
+                        break;
+                    case LIST:
+                        IonList annotationList = IonSchemaUtilities.getAnnotation(value);
+                        WriteRandomIonValues.constructIonList(writer, value, annotationList);
                         break;
                     default:
                         throw new IllegalStateException(type + " is not supported when generating Ion Struct based on Ion Schema.");
@@ -775,6 +779,7 @@ class WriteRandomIonValues {
                         occurrences = 1;
                         WriteRandomIonValues.constructScalarTypeData(type, writer, occurrences);
                     }
+                    break;
                 } else if (constraints.get(IonSchemaUtilities.KEYWORD_ORDERED_ELEMENTS) != null) {
                     IonList orderedElement = (IonList) constraints.get(IonSchemaUtilities.KEYWORD_ORDERED_ELEMENTS);
                     for (int index = 0; index < orderedElement.size(); index++) {
@@ -797,9 +802,11 @@ class WriteRandomIonValues {
                                 break;
                         }
                     }
+                    writer.stepOut();
+                    return;
                 }
-                writer.stepOut();
             }
+            writer.stepOut();
         }
     }
 
