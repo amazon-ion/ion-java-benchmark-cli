@@ -4,6 +4,7 @@ import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonDecimal;
 import com.amazon.ion.IonFloat;
 import com.amazon.ion.IonReader;
+import com.amazon.ion.IonString;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
@@ -105,10 +106,16 @@ public class ParseAndCompareBenchmarkResults {
     private static IonStruct readHelper(String benchmarkResultFilePath) throws Exception {
         try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(benchmarkResultFilePath)))) {
             reader.next();
-            reader.stepIn();
-            reader.next();
-            IonDatagram benchmarkResult = ReadGeneralConstraints.LOADER.load(reader);
-            return (IonStruct) benchmarkResult.get(0);
+            if (reader.getType().equals(IonType.LIST)) {
+                reader.stepIn();
+                reader.next();
+                if (reader.getType().equals(IonType.STRUCT)) {
+                    IonDatagram benchmarkResultDatagram = ReadGeneralConstraints.LOADER.load(reader);
+                    IonStruct benchmarkResult = (IonStruct) benchmarkResultDatagram.get(0);
+                    return benchmarkResult;
+                }
+            }
+            throw new IllegalStateException("The content of benchmark result is not supported.");
         }
     }
 
@@ -132,7 +139,7 @@ public class ParseAndCompareBenchmarkResults {
      */
     private static void writeResult(String benchmarkResult, String outputFilePath, Map<String, BigDecimal> scoreMap) throws Exception {
         File file = new File(outputFilePath);
-        String inputFileName = getParameter(benchmarkResult, INPUT).toString();
+        IonString inputFileName = (IonString)getParameter(benchmarkResult, INPUT);
         String parameters = getParameter(benchmarkResult, OPTIONS).toString();
         try (
                 IonWriter writer = IonTextWriterBuilder.standard().build(new BufferedOutputStream(new FileOutputStream(file)));
@@ -140,7 +147,7 @@ public class ParseAndCompareBenchmarkResults {
         ) {
             writer.stepIn(IonType.STRUCT);
             writer.setFieldName(INPUT);
-            writer.writeString(inputFileName.replace("\"", ""));
+            writer.writeString(inputFileName.stringValue());
             writer.setFieldName(PARAMETERS);
             writer.stepIn(IonType.STRUCT);
             reader.next();
