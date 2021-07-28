@@ -10,7 +10,11 @@ import com.amazon.ion.Timestamp;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.util.IonStreamUtils;
-import com.amazon.ionschema.*;
+import com.amazon.ionschema.IonSchemaSystem;
+import com.amazon.ionschema.IonSchemaSystemBuilder;
+import com.amazon.ionschema.Schema;
+import com.amazon.ionschema.Type;
+import com.amazon.ionschema.Violations;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -40,6 +44,7 @@ public class DataGeneratorTest {
     private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testStruct.isl";
     private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/benchmark/testList.isl";
     private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/benchmark/testNestedStruct.isl";
+    private final static String SCORE_DIFFERENCE = "scoreDifference";
 
     /**
      * Construct IonReader for current output file in order to finish the following test process
@@ -270,14 +275,14 @@ public class DataGeneratorTest {
      */
     @Test
     public void testParseBenchmark() throws Exception {
-        Map<String, Object> optionsMap = Main.parseArguments("compare", "--benchmark-result-previous", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultPrevious.ion", "--benchmark-result-new", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultNew.ion", "test11.ion");
+        Map<String, Object> optionsMap = Main.parseArguments("compare", "--benchmark-result-previous", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultPrevious.ion", "--benchmark-result-new", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultNew.ion", "--threshold", "./tst/com/amazon/ion/benchmark/threshold.ion", "test11.ion");
         ParseAndCompareBenchmarkResults.compareResult(optionsMap);
         outputFile = optionsMap.get("<output_file>").toString();
         try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFile)))) {
             reader.next();
             reader.stepIn();
             while (reader.next() != null) {
-                if (reader.getFieldName().equals("scoreDifference")) {
+                if (reader.getFieldName().equals(SCORE_DIFFERENCE)) {
                     reader.stepIn();
                     while (reader.next() != null) {
                         String benchmarkResultPrevious = optionsMap.get("--benchmark-result-previous").toString();
