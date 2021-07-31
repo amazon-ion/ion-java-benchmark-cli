@@ -1,6 +1,8 @@
 package com.amazon.ion.benchmark;
 
 import com.amazon.ion.IonDatagram;
+import com.amazon.ion.IonDecimal;
+import com.amazon.ion.IonFloat;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonSystem;
@@ -15,12 +17,16 @@ import com.amazon.ionschema.IonSchemaSystemBuilder;
 import com.amazon.ionschema.Schema;
 import com.amazon.ionschema.Type;
 import com.amazon.ionschema.Violations;
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.After;
 import org.junit.Test;
 
@@ -44,6 +50,7 @@ public class DataGeneratorTest {
     private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testStruct.isl";
     private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/benchmark/testList.isl";
     private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/benchmark/testNestedStruct.isl";
+    private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/benchmark/testComparisonReport.ion";
     private final static String SCORE_DIFFERENCE = "scoreDifference";
 
     /**
@@ -297,6 +304,40 @@ public class DataGeneratorTest {
                 }
             }
         }
+    }
+
+    /**
+     * Test whether the detecting regression process can return the expected result.
+     * In this unit test we use an Ion file which contain regression on [·gc.alloc.rate] as input to test the detectRegression method.
+     * @throws Exception if error occur when reading Ion data.
+     */
+    @Test
+    public void testRegressionDetecting() throws Exception {
+        outputFile = COMPARISON_REPORT;
+        Map<String, BigDecimal> scoreMap = new HashMap<>();
+        IonStruct scoresStruct;
+        try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFile)))) {
+            reader.next();
+            if (reader.getType().equals(IonType.STRUCT)) {
+                IonStruct comparisonResult = (IonStruct) ReadGeneralConstraints.LOADER.load(reader).get(0);
+                scoresStruct = (IonStruct) comparisonResult.get(ParseAndCompareBenchmarkResults.RELATIVE_DIFFERENCE_SCORE);
+            } else {
+                throw new IllegalStateException("The data structure of the comparison report is not supported.");
+            }
+        }
+        for (String keyWord : ParseAndCompareBenchmarkResults.BENCHMARK_SCORE_KEYWORDS) {
+            IonValue score = scoresStruct.get(keyWord);
+            if (score.getType().equals(IonType.FLOAT)) {
+                IonFloat scoreFloat = (IonFloat) score;
+                scoreMap.put(keyWord, scoreFloat.bigDecimalValue());
+            } else {
+                IonDecimal scoreDecimal = (IonDecimal) score;
+                scoreMap.put(keyWord, scoreDecimal.bigDecimalValue());
+            }
+        }
+        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression("./tst/com/amazon/ion/benchmark/threshold.ion", scoreMap, outputFile);
+        assertTrue(detectionResult.equals("The performance regression detected when benchmark the ion-java from the new commit with the test data: testList.10n and parameters: read::{format:\"ION_BINARY\",type:\"FILE\",api:\"DOM\"}\n" +
+                "The following aspects have regressions: {·gc.alloc.rate=-0.002851051607559}\n"));
     }
 
     /**

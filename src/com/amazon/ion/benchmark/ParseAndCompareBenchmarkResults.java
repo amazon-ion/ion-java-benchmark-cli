@@ -24,21 +24,21 @@ import java.util.List;
 import java.util.Map;
 
 public class ParseAndCompareBenchmarkResults {
-    public static final List<String> BENCHMARK_SCORE_KEYWORDS = Arrays.asList("speed", "Heap usage", "Serialized size", "·gc.alloc.rate");
-    public static final String PRIMARY_METRIC = "primaryMetric";
-    public static final String PARAMETERS = "params";
-    public static final String INPUT = "input";
-    public static final String OPTIONS = "options";
-    public static final String SECONDARY_METRIC = "secondaryMetrics";
-    public static final String SCORE = "score";
-    public static final String SPEED = "speed";
-    public static final String FORMAT = "format";
-    public static final String TYPE = "type";
-    public static final String API = "api";
     public static final String RELATIVE_DIFFERENCE_SCORE = "relative_difference_score";
-    public static final String RELATIVE_DIFFERENCE_THRESHOLD = "relative_difference_score_threshold";
-    public static final String FORMAT_KEYWORD = "f";
-    public static final String TYPE_KEYWORD = "t";
+    public static final List<String> BENCHMARK_SCORE_KEYWORDS = Arrays.asList("speed", "Heap usage", "Serialized size", "·gc.alloc.rate");
+    private static final String PRIMARY_METRIC = "primaryMetric";
+    private static final String PARAMETERS = "params";
+    private static final String INPUT = "input";
+    private static final String OPTIONS = "options";
+    private static final String SECONDARY_METRIC = "secondaryMetrics";
+    private static final String SCORE = "score";
+    private static final String SPEED = "speed";
+    private static final String FORMAT = "format";
+    private static final String TYPE = "type";
+    private static final String API = "api";
+    private static final String RELATIVE_DIFFERENCE_THRESHOLD = "relative_difference_score_threshold";
+    private static final String FORMAT_KEYWORD = "f";
+    private static final String TYPE_KEYWORD = "t";
 
     /**
      * Get the paths of benchmark results from two commits then invoke the methods to calculate relative change for each aspect from the result.
@@ -78,10 +78,10 @@ public class ParseAndCompareBenchmarkResults {
         }
         IonValue score = scoreStruct.get(SCORE);
         if (score.getType().equals(IonType.FLOAT)) {
-            IonFloat scoreFloat = (IonFloat)score;
+            IonFloat scoreFloat = (IonFloat) score;
             return scoreFloat.bigDecimalValue();
         } else {
-            IonDecimal scoreDecimal = (IonDecimal)score;
+            IonDecimal scoreDecimal = (IonDecimal) score;
             return scoreDecimal.bigDecimalValue();
         }
     }
@@ -142,7 +142,7 @@ public class ParseAndCompareBenchmarkResults {
      */
     private static void writeResult(String benchmarkResult, String outputFilePath, Map<String, BigDecimal> scoreMap, String thresholdFilePath) throws Exception {
         File file = new File(outputFilePath);
-        IonString inputFileName = (IonString)getParameter(benchmarkResult, INPUT);
+        IonString inputFileName = (IonString) getParameter(benchmarkResult, INPUT);
         String parameters = getParameter(benchmarkResult, OPTIONS).toString();
         try (
                 IonWriter writer = IonTextWriterBuilder.standard().build(new BufferedOutputStream(new FileOutputStream(file)));
@@ -193,7 +193,7 @@ public class ParseAndCompareBenchmarkResults {
      * @return a String which contains the information about whether performance regression happened.
      * @throws Exception if occur happen when reading Ion Data.
      */
-    private static String detectRegression(String thresholdFilePath, Map<String, BigDecimal> scoreMap, String outputFilePath) throws Exception {
+    public static String detectRegression(String thresholdFilePath, Map<String, BigDecimal> scoreMap, String outputFilePath) throws Exception {
         try (
                 IonReader thresholdReader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(thresholdFilePath)));
                 IonReader comparisonResultReader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFilePath)))
@@ -202,6 +202,9 @@ public class ParseAndCompareBenchmarkResults {
             IonDatagram comparisonResult = ReadGeneralConstraints.LOADER.load(comparisonResultReader);
             IonStruct comparisonResultStruct = (IonStruct) comparisonResult.get(0);
             comparisonResultStruct.remove(RELATIVE_DIFFERENCE_SCORE);
+            IonString inputFile = (IonString) comparisonResultStruct.get(INPUT);
+            String fileName = inputFile.stringValue();
+            Map<String, BigDecimal> regressions = new HashMap<>();
             for (int i = 0; i < thresholdScores.size(); i++) {
                 IonStruct thresholdScoresStruct = (IonStruct) thresholdScores.get(i);
                 IonStruct thresholdsStruct = thresholdScoresStruct.clone();
@@ -213,14 +216,19 @@ public class ParseAndCompareBenchmarkResults {
                     for (String keyWord : scoreMap.keySet()) {
                         IonDecimal thresholdScore = (IonDecimal) thresholds.get(keyWord);
                         if (scoreMap.get(keyWord).compareTo(thresholdScore.bigDecimalValue()) < 0) {
-                            String regressionDetect = "The performance regression detected when benchmark the ion-java from the new commit with the test data: " + comparisonResultStruct.get(INPUT) + " and parameters: " + comparisonResultStruct.get(PARAMETERS);
-                            return regressionDetect;
+                            regressions.put(keyWord, scoreMap.get(keyWord));
                         }
                     }
                 }
             }
+            if (regressions.size() != 0) {
+                return "The performance regression detected when benchmark the ion-java from the new commit with the test data: "
+                        + fileName.substring(fileName.lastIndexOf(File.separator) + 1) + " and parameters: " + comparisonResultStruct.get(PARAMETERS) + System.lineSeparator()
+                        + "The following aspects have regressions: " + regressions + System.lineSeparator();
+            } else {
+                // Only regression detected messages are expected, and if no regression detected after executing the current ion-java-benchmark invoke an empty string will be returned.
+                return "";
+            }
         }
-        String regressionNotDetected = "Regression not detected";
-        return regressionNotDetected;
     }
 }

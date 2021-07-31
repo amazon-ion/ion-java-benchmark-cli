@@ -48,7 +48,7 @@ public class Main {
 
         + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>) (--threshold <file_path>) <output_file>\n"
 
-        + "  ion-java-benchmark organize (--test-ion-data <file_path>) <output_file>\n"
+        + "  ion-java-benchmark run-suite (--test-ion-data <file_path>) (--benchmark-options-combinations <file_path>) <output_file>\n"
 
         + "  ion-java-benchmark --help\n"
 
@@ -283,6 +283,8 @@ public class Main {
 
         + "  -G --test-ion-data <file_path>      This option will specify the path of the directory which contains all test Ion data.\n"
 
+        + "  -B --benchmark-options-combinations <file_path>      This option will specify the path of an Ion text file which contains all options combinations of ion-java-benchmark-cli."
+
         + "\n";
 
     private static final String EXAMPLES =
@@ -399,8 +401,8 @@ public class Main {
                 GeneratorOptions.executeGenerator(optionsMap);
             } else if (optionsMap.get("compare").equals(true)) {
                 ParseAndCompareBenchmarkResults.compareResult(optionsMap);
-            } else if (optionsMap.get("organize").equals(true)) {
-                GenerateAndOrganizeBenchmarkResults.generateAndSaveBenchMarkResults(optionsMap);
+            } else if (optionsMap.get("run-suite").equals(true)) {
+                GenerateAndOrganizeBenchmarkResults.generateAndSaveBenchmarkResults(optionsMap);
             } else {
                 OptionsMatrixBase options = OptionsMatrixBase.from(optionsMap);
                 options.executeBenchmark();
