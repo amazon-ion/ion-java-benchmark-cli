@@ -18,6 +18,7 @@ import com.amazon.ionschema.Schema;
 import com.amazon.ionschema.Type;
 import com.amazon.ionschema.Violations;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -315,30 +317,10 @@ public class DataGeneratorTest {
      */
     @Test
     public void testRegressionDetected() throws Exception {
-        Map<String, BigDecimal> scoreMap = new HashMap<>();
-        IonStruct scoresStruct;
-        try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(COMPARISON_REPORT)))) {
-            reader.next();
-            if (reader.getType().equals(IonType.STRUCT)) {
-                IonStruct comparisonResult = (IonStruct) ReadGeneralConstraints.LOADER.load(reader).get(0);
-                scoresStruct = (IonStruct) comparisonResult.get(ParseAndCompareBenchmarkResults.RELATIVE_DIFFERENCE_SCORE);
-            } else {
-                throw new IllegalStateException("The data structure of the comparison report is not supported.");
-            }
-        }
-        for (String keyWord : ParseAndCompareBenchmarkResults.BENCHMARK_SCORE_KEYWORDS) {
-            IonValue score = scoresStruct.get(keyWord);
-            if (score.getType().equals(IonType.FLOAT)) {
-                IonFloat scoreFloat = (IonFloat) score;
-                scoreMap.put(keyWord, scoreFloat.bigDecimalValue());
-            } else {
-                IonDecimal scoreDecimal = (IonDecimal) score;
-                scoreMap.put(keyWord, scoreDecimal.bigDecimalValue());
-            }
-        }
+        Map<String, BigDecimal> scoreMap = constructScoreMap(COMPARISON_REPORT);
         String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(THRESHOLD, scoreMap, COMPARISON_REPORT);
-        assertTrue(detectionResult.equals("The performance regression detected when benchmark the ion-java from the new commit with the test data: testList.10n and parameters: read::{format:\"ION_BINARY\",type:\"FILE\",api:\"DOM\"}\n" +
-                "The following aspects have regressions: {·gc.alloc.rate=-0.002851051607559}\n"));
+        assertEquals("The performance regression detected when benchmark the ion-java from the new commit with the test data: testList.10n and parameters: read::{format:\"ION_BINARY\",type:\"FILE\",api:\"DOM\"}\n" +
+                "The following aspects have regressions: {·gc.alloc.rate=-0.002851051607559}\n", detectionResult);
     }
 
     /**
@@ -348,9 +330,21 @@ public class DataGeneratorTest {
      */
     @Test
     public void testRegressionNotDetected() throws Exception {
+        Map<String, BigDecimal> scoreMap = constructScoreMap(COMPARISON_REPORT_WITHOUT_REGRESSION);
+        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(THRESHOLD, scoreMap, COMPARISON_REPORT_WITHOUT_REGRESSION);
+        assertNull(detectionResult);
+    }
+
+    /**
+     * Construct the score map which matches the benchmark aspect with its score from the comparison report.
+     * @param inputFile specify the path of comparison report which is generated after the comparing benchmark results from different commits.
+     * @return a Map<String, BigDecimal> contains scores information.
+     * @throws Exception if error occurs when reading data.
+     */
+    private static Map<String, BigDecimal> constructScoreMap(String inputFile) throws Exception {
         Map<String, BigDecimal> scoreMap = new HashMap<>();
         IonStruct scoresStruct;
-        try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(COMPARISON_REPORT_WITHOUT_REGRESSION)))) {
+        try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(inputFile)))) {
             reader.next();
             if (reader.getType().equals(IonType.STRUCT)) {
                 IonStruct comparisonResult = (IonStruct) ReadGeneralConstraints.LOADER.load(reader).get(0);
@@ -369,8 +363,7 @@ public class DataGeneratorTest {
                 scoreMap.put(keyWord, scoreDecimal.bigDecimalValue());
             }
         }
-        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(THRESHOLD, scoreMap, COMPARISON_REPORT_WITHOUT_REGRESSION);
-        assertTrue(detectionResult == null);
+        return scoreMap;
     }
 
     /**
