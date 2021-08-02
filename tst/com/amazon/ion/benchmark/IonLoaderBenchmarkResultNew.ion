@@ -18,7 +18,7 @@
         "measurementTime" : "single-shot",
         "measurementBatchSize" : 1,
         "params" : {
-            "input" : "testIonData.10n",
+            "input" : "testList.10n",
             "options" : "read::{f:ION_BINARY,t:FILE,a:DOM}"
         },
         "primaryMetric" : {

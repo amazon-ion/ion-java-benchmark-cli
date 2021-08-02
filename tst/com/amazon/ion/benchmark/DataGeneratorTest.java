@@ -1,6 +1,8 @@
 package com.amazon.ion.benchmark;
 
 import com.amazon.ion.IonDatagram;
+import com.amazon.ion.IonDecimal;
+import com.amazon.ion.IonFloat;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonSystem;
@@ -10,13 +12,22 @@ import com.amazon.ion.Timestamp;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.util.IonStreamUtils;
-import com.amazon.ionschema.*;
+import com.amazon.ionschema.IonSchemaSystem;
+import com.amazon.ionschema.IonSchemaSystemBuilder;
+import com.amazon.ionschema.Schema;
+import com.amazon.ionschema.Type;
+import com.amazon.ionschema.Violations;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.After;
 import org.junit.Test;
 
@@ -30,16 +41,21 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class DataGeneratorTest {
-    private static String outputFile;
+    private static String outputFile = null;
     private final static IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().build();
     private final static IonSystem SYSTEM = IonSystemBuilder.standard().build();
     private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testStruct.isl";
     private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/benchmark/testList.isl";
     private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/benchmark/testNestedStruct.isl";
+    private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/benchmark/testComparisonReport.ion";
+    private final static String SCORE_DIFFERENCE = "scoreDifference";
+    private final static String COMPARISON_REPORT_WITHOUT_REGRESSION = "./tst/com/amazon/ion/benchmark/testComparisonReportWithoutRegression.ion";
+    private final static String THRESHOLD = "./tst/com/amazon/ion/benchmark/threshold.ion";
 
     /**
      * Construct IonReader for current output file in order to finish the following test process
@@ -270,14 +286,14 @@ public class DataGeneratorTest {
      */
     @Test
     public void testParseBenchmark() throws Exception {
-        Map<String, Object> optionsMap = Main.parseArguments("compare", "--benchmark-result-previous", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultPrevious.ion", "--benchmark-result-new", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultNew.ion", "test11.ion");
+        Map<String, Object> optionsMap = Main.parseArguments("compare", "--benchmark-result-previous", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultPrevious.ion", "--benchmark-result-new", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultNew.ion", "--threshold", "./tst/com/amazon/ion/benchmark/threshold.ion", "test11.ion");
         ParseAndCompareBenchmarkResults.compareResult(optionsMap);
         outputFile = optionsMap.get("<output_file>").toString();
         try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFile)))) {
             reader.next();
             reader.stepIn();
             while (reader.next() != null) {
-                if (reader.getFieldName().equals("scoreDifference")) {
+                if (reader.getFieldName().equals(SCORE_DIFFERENCE)) {
                     reader.stepIn();
                     while (reader.next() != null) {
                         String benchmarkResultPrevious = optionsMap.get("--benchmark-result-previous").toString();
@@ -295,14 +311,72 @@ public class DataGeneratorTest {
     }
 
     /**
+     * Test whether the detecting regression process can return the expected result when there is performance regression in the test file.
+     * In this unit test we use an Ion file which contain regression on [·gc.alloc.rate] as input to test the detectRegression method.
+     * @throws Exception if error occur when reading Ion data.
+     */
+    @Test
+    public void testRegressionDetected() throws Exception {
+        Map<String, BigDecimal> scoreMap = constructScoreMap(COMPARISON_REPORT);
+        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(THRESHOLD, scoreMap, COMPARISON_REPORT);
+        assertEquals("The performance regression detected when benchmark the ion-java from the new commit with the test data: testList.10n and parameters: read::{format:\"ION_BINARY\",type:\"FILE\",api:\"DOM\"}\n" +
+                "The following aspects have regressions: {·gc.alloc.rate=-0.002851051607559}\n", detectionResult);
+    }
+
+    /**
+     * Test whether the detecting regression process can return the expected result when there is no performance regression in the test file.
+     * In this unit test we use an Ion file which contain regression on [·gc.alloc.rate] as input to test the detectRegression method.
+     * @throws Exception if error occur when reading Ion data.
+     */
+    @Test
+    public void testRegressionNotDetected() throws Exception {
+        Map<String, BigDecimal> scoreMap = constructScoreMap(COMPARISON_REPORT_WITHOUT_REGRESSION);
+        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(THRESHOLD, scoreMap, COMPARISON_REPORT_WITHOUT_REGRESSION);
+        assertNull(detectionResult);
+    }
+
+    /**
+     * Construct the score map which matches the benchmark aspect with its score from the comparison report.
+     * @param inputFile specify the path of comparison report which is generated after the comparing benchmark results from different commits.
+     * @return a Map<String, BigDecimal> contains scores information.
+     * @throws Exception if error occurs when reading data.
+     */
+    private static Map<String, BigDecimal> constructScoreMap(String inputFile) throws Exception {
+        Map<String, BigDecimal> scoreMap = new HashMap<>();
+        IonStruct scoresStruct;
+        try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(inputFile)))) {
+            reader.next();
+            if (reader.getType().equals(IonType.STRUCT)) {
+                IonStruct comparisonResult = (IonStruct) ReadGeneralConstraints.LOADER.load(reader).get(0);
+                scoresStruct = (IonStruct) comparisonResult.get(ParseAndCompareBenchmarkResults.RELATIVE_DIFFERENCE_SCORE);
+            } else {
+                throw new IllegalStateException("The data structure of the comparison report is not supported.");
+            }
+        }
+        for (String keyWord : ParseAndCompareBenchmarkResults.BENCHMARK_SCORE_KEYWORDS) {
+            IonValue score = scoresStruct.get(keyWord);
+            if (score.getType().equals(IonType.FLOAT)) {
+                IonFloat scoreFloat = (IonFloat) score;
+                scoreMap.put(keyWord, scoreFloat.bigDecimalValue());
+            } else {
+                IonDecimal scoreDecimal = (IonDecimal) score;
+                scoreMap.put(keyWord, scoreDecimal.bigDecimalValue());
+            }
+        }
+        return scoreMap;
+    }
+
+    /**
      * Delete all files generated in the test process.
      * @throws IOException if an error occur when deleting files.
      */
     @After
     public void deleteGeneratedFile() throws IOException {
-        Path filePath = Paths.get(outputFile);
-        if(Files.exists(filePath)) {
-            Files.delete(filePath);
+        if (outputFile != null) {
+            Path filePath = Paths.get(outputFile);
+            if(Files.exists(filePath)) {
+                Files.delete(filePath);
+            }
         }
     }
 }

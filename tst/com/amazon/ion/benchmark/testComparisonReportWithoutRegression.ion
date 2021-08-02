@@ -1,0 +1,1 @@
+{input:"testList.10n",params:read::{format:"ION_BINARY",type:"FILE",api:"DOM"},relative_difference_score:{'·gc.alloc.rate':0.002851051607559,'Heap usage':0.0219662830324952,'Serialized size':0.000000,speed:0.017441311589927}}

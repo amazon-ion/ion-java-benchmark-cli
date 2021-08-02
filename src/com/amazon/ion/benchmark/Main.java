@@ -46,7 +46,9 @@ public class Main {
             + "[--format <type>] [--decimal-exponent-range <exp_range>] [--decimal-coefficient-digit-range <val_range>] "
             + "[--timestamps-template <template>] [--text-code-point-range <range>] [--input-ion-schema <file_path>] <output_file>\n"
 
-        + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>) <output_file>\n"
+        + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>) (--threshold <file_path>) <output_file>\n"
+
+        + "  ion-java-benchmark run-suite (--test-ion-data <file_path>) (--benchmark-options-combinations <file_path>) <output_file>\n"
 
         + "  ion-java-benchmark --help\n"
 
@@ -275,6 +277,14 @@ public class Main {
 
         + "  -X --benchmark-result-new <file_path>      This option will specify the path of benchmark result form the new ion-java commit.\n"
 
+        + "  -H --threshold <file_path>      This option will specify the path of threshold.ion which contains all threshold scores.\n"
+
+        // 'organize' options
+
+        + "  -G --test-ion-data <file_path>      This option will specify the path of the directory which contains all test Ion data.\n"
+
+        + "  -B --benchmark-options-combinations <file_path>      This option will specify the path of an Ion text file which contains all options combinations of ion-java-benchmark-cli."
+
         + "\n";
 
     private static final String EXAMPLES =
@@ -391,6 +401,8 @@ public class Main {
                 GeneratorOptions.executeGenerator(optionsMap);
             } else if (optionsMap.get("compare").equals(true)) {
                 ParseAndCompareBenchmarkResults.compareResult(optionsMap);
+            } else if (optionsMap.get("run-suite").equals(true)) {
+                GenerateAndOrganizeBenchmarkResults.generateAndSaveBenchmarkResults(optionsMap);
             } else {
                 OptionsMatrixBase options = OptionsMatrixBase.from(optionsMap);
                 options.executeBenchmark();
