@@ -39,7 +39,7 @@ public class GenerateAndOrganizeBenchmarkResults {
         String testDataDirectory = optionsMap.get("--test-ion-data").toString();
         String finalResultDirectory = optionsMap.get("<output_file>").toString();
         // Get the version of ion-java-benchmark-cli-jar-with-dependencies.jar
-        String version = pomParser(POM_FILE);
+        String version = parseVersionFromPom(POM_FILE);
         String ionJavaBenchmarkInvoke = ION_JAVA_BENCHMARK_INVOKE_ELEMENT + version + JAR_WITH_DEPENDENCIES;
         String fileName = PREVIOUS_FILE;
         String makeFinalDirectoryCommand = MAKE_DIRECTORY + finalResultDirectory;
@@ -97,7 +97,7 @@ public class GenerateAndOrganizeBenchmarkResults {
      * @return the version of ion-java-benchmark-cli in a string format.
      * @throws Exception if errors occur when parsing data.
      */
-    private static String pomParser(String filePath) throws Exception {
+    private static String parseVersionFromPom(String filePath) throws Exception {
         DocumentBuilderFactory pomFileInstance = DocumentBuilderFactory.newInstance();
         pomFileInstance.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         DocumentBuilder db = pomFileInstance.newDocumentBuilder();

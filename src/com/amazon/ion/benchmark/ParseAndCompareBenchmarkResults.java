@@ -181,7 +181,9 @@ public class ParseAndCompareBenchmarkResults {
         }
         String regressionDetectResult = detectRegression(thresholdFilePath, scoreMap, outputFilePath);
         // This print out value will be passed to one environment variable in the GitHub Actions workflow.
-        System.out.println(regressionDetectResult);
+        if (regressionDetectResult != null) {
+            System.out.println(regressionDetectResult);
+        }
     }
 
     /**
@@ -227,7 +229,7 @@ public class ParseAndCompareBenchmarkResults {
                         + "The following aspects have regressions: " + regressions + System.lineSeparator();
             } else {
                 // Only regression detected messages are expected, and if no regression detected after executing the current ion-java-benchmark invoke an empty string will be returned.
-                return "";
+                return null;
             }
         }
     }

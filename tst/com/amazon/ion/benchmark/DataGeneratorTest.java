@@ -44,7 +44,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class DataGeneratorTest {
-    private static String outputFile;
+    private static String outputFile = null;
     private final static IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().build();
     private final static IonSystem SYSTEM = IonSystemBuilder.standard().build();
     private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testStruct.isl";
@@ -52,6 +52,8 @@ public class DataGeneratorTest {
     private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/benchmark/testNestedStruct.isl";
     private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/benchmark/testComparisonReport.ion";
     private final static String SCORE_DIFFERENCE = "scoreDifference";
+    private final static String COMPARISON_REPORT_WITHOUT_REGRESSION = "./tst/com/amazon/ion/benchmark/testComparisonReportWithoutRegression.ion";
+    private final static String THRESHOLD = "./tst/com/amazon/ion/benchmark/threshold.ion";
 
     /**
      * Construct IonReader for current output file in order to finish the following test process
@@ -307,16 +309,15 @@ public class DataGeneratorTest {
     }
 
     /**
-     * Test whether the detecting regression process can return the expected result.
+     * Test whether the detecting regression process can return the expected result when there is performance regression in the test file.
      * In this unit test we use an Ion file which contain regression on [·gc.alloc.rate] as input to test the detectRegression method.
      * @throws Exception if error occur when reading Ion data.
      */
     @Test
-    public void testRegressionDetecting() throws Exception {
-        outputFile = COMPARISON_REPORT;
+    public void testRegressionDetected() throws Exception {
         Map<String, BigDecimal> scoreMap = new HashMap<>();
         IonStruct scoresStruct;
-        try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFile)))) {
+        try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(COMPARISON_REPORT)))) {
             reader.next();
             if (reader.getType().equals(IonType.STRUCT)) {
                 IonStruct comparisonResult = (IonStruct) ReadGeneralConstraints.LOADER.load(reader).get(0);
@@ -335,9 +336,41 @@ public class DataGeneratorTest {
                 scoreMap.put(keyWord, scoreDecimal.bigDecimalValue());
             }
         }
-        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression("./tst/com/amazon/ion/benchmark/threshold.ion", scoreMap, outputFile);
+        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(THRESHOLD, scoreMap, COMPARISON_REPORT);
         assertTrue(detectionResult.equals("The performance regression detected when benchmark the ion-java from the new commit with the test data: testList.10n and parameters: read::{format:\"ION_BINARY\",type:\"FILE\",api:\"DOM\"}\n" +
                 "The following aspects have regressions: {·gc.alloc.rate=-0.002851051607559}\n"));
+    }
+
+    /**
+     * Test whether the detecting regression process can return the expected result when there is no performance regression in the test file.
+     * In this unit test we use an Ion file which contain regression on [·gc.alloc.rate] as input to test the detectRegression method.
+     * @throws Exception if error occur when reading Ion data.
+     */
+    @Test
+    public void testRegressionNotDetected() throws Exception {
+        Map<String, BigDecimal> scoreMap = new HashMap<>();
+        IonStruct scoresStruct;
+        try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(COMPARISON_REPORT_WITHOUT_REGRESSION)))) {
+            reader.next();
+            if (reader.getType().equals(IonType.STRUCT)) {
+                IonStruct comparisonResult = (IonStruct) ReadGeneralConstraints.LOADER.load(reader).get(0);
+                scoresStruct = (IonStruct) comparisonResult.get(ParseAndCompareBenchmarkResults.RELATIVE_DIFFERENCE_SCORE);
+            } else {
+                throw new IllegalStateException("The data structure of the comparison report is not supported.");
+            }
+        }
+        for (String keyWord : ParseAndCompareBenchmarkResults.BENCHMARK_SCORE_KEYWORDS) {
+            IonValue score = scoresStruct.get(keyWord);
+            if (score.getType().equals(IonType.FLOAT)) {
+                IonFloat scoreFloat = (IonFloat) score;
+                scoreMap.put(keyWord, scoreFloat.bigDecimalValue());
+            } else {
+                IonDecimal scoreDecimal = (IonDecimal) score;
+                scoreMap.put(keyWord, scoreDecimal.bigDecimalValue());
+            }
+        }
+        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(THRESHOLD, scoreMap, COMPARISON_REPORT_WITHOUT_REGRESSION);
+        assertTrue(detectionResult == null);
     }
 
     /**
@@ -346,9 +379,11 @@ public class DataGeneratorTest {
      */
     @After
     public void deleteGeneratedFile() throws IOException {
-        Path filePath = Paths.get(outputFile);
-        if(Files.exists(filePath)) {
-            Files.delete(filePath);
+        if (outputFile != null) {
+            Path filePath = Paths.get(outputFile);
+            if(Files.exists(filePath)) {
+                Files.delete(filePath);
+            }
         }
     }
 }
