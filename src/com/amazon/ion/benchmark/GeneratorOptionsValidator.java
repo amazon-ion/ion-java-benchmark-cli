@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -52,6 +53,12 @@ public class GeneratorOptionsValidator {
                     break;
                 case DECIMAL:
                     GeneratorOptionsValidator.throwException(INVALID_FOR_DECIMAL, commandLine);
+                    break;
+                case INT:
+                case FLOAT:
+                case BLOB:
+                case CLOB:
+                case SYMBOL:
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + type);
