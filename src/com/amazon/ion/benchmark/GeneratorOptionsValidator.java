@@ -53,6 +53,12 @@ public class GeneratorOptionsValidator {
                 case DECIMAL:
                     GeneratorOptionsValidator.throwException(INVALID_FOR_DECIMAL, commandLine);
                     break;
+                case INT:
+                case FLOAT:
+                case BLOB:
+                case CLOB:
+                case SYMBOL:
+                    break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + type);
             }

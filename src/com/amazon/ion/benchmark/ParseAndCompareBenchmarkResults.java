@@ -3,6 +3,7 @@ package com.amazon.ion.benchmark;
 import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonDecimal;
 import com.amazon.ion.IonFloat;
+import com.amazon.ion.IonList;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonString;
 import com.amazon.ion.IonStruct;
@@ -18,7 +19,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +39,7 @@ public class ParseAndCompareBenchmarkResults {
     private static final String FORMAT = "format";
     private static final String TYPE = "type";
     private static final String API = "api";
-    private static final String RELATIVE_DIFFERENCE_THRESHOLD = "relative_difference_score_threshold";
+    private static final String RAW_DATA = "rawData";
     private static final String FORMAT_KEYWORD = "f";
     private static final String TYPE_KEYWORD = "t";
 
@@ -49,7 +52,6 @@ public class ParseAndCompareBenchmarkResults {
         String benchmarkResultPrevious = optionsMap.get("--benchmark-result-previous").toString();
         String benchmarkResultNew = optionsMap.get("--benchmark-result-new").toString();
         String outputFilePath = optionsMap.get("<output_file>").toString();
-        String thresholdFilePath = optionsMap.get("--threshold").toString();
         Map<String, BigDecimal> scoreMap = new HashMap<>();
         for (String benchmarkScoreKeyword : BENCHMARK_SCORE_KEYWORDS) {
             BigDecimal previousScore = getScore(benchmarkResultPrevious, benchmarkScoreKeyword);
@@ -57,7 +59,46 @@ public class ParseAndCompareBenchmarkResults {
             BigDecimal result = calculateDifference(previousScore, newScore);
             scoreMap.put(benchmarkScoreKeyword, result);
         }
-        writeResult(benchmarkResultNew, outputFilePath, scoreMap, thresholdFilePath);
+        Map<String, BigDecimal> thresholdMap = getThresholdMap(benchmarkResultPrevious, benchmarkResultNew);
+        writeResult(benchmarkResultNew, outputFilePath, scoreMap, thresholdMap);
+    }
+
+    /**
+     * Calculate the threshold scores and construct a map to match the threshold with the aspect it represents.
+     * @param benchmarkResultPrevious is the benchmark result of ion-java from the existing commit.
+     * @param benchmarkResultNew is the benchmark result of ion-java from the new commit.
+     * @return a map which match the thresholds score with the aspect name it represents.
+     * @throws Exception if errors occurs when calling method parseScore.
+     */
+    public static Map<String, BigDecimal> getThresholdMap(String benchmarkResultPrevious, String benchmarkResultNew) throws Exception {
+        Map<String, BigDecimal> thresholdMap = new HashMap<>();
+        for (String keyWord : BENCHMARK_SCORE_KEYWORDS) {
+            IonList rawDataPrevious = (IonList) parseScore(benchmarkResultPrevious, keyWord).get(RAW_DATA);
+            IonList rawDataNew = (IonList) parseScore(benchmarkResultNew, keyWord).get(RAW_DATA);
+            BigDecimal thresholdPrevious = getThresholdScore((IonList) rawDataPrevious.get(0));
+            BigDecimal thresholdNew = getThresholdScore((IonList) rawDataNew.get(0));
+            if (thresholdPrevious.compareTo(thresholdNew) < 0) {
+                thresholdMap.put(keyWord, thresholdPrevious);
+            } else {
+                thresholdMap.put(keyWord, thresholdNew);
+            }
+        }
+        return thresholdMap;
+    }
+
+    /**
+     * Get threshold score by applying (minScore - maxScore)/maxScore to a list of raw data in benchmark result.
+     * @param rawDataList is an Ion List contains performance scores from multiple iterations of benchmark process.
+     * @return calculated threshold score.
+     */
+    private static BigDecimal getThresholdScore(IonList rawDataList) {
+        List<BigDecimal> rawData = new ArrayList<>();
+        for (int i = 0; i < rawDataList.size(); i++ ) {
+            IonDecimal score = (IonDecimal) rawDataList.get(i);
+            rawData.add(score.bigDecimalValue());
+        }
+        BigDecimal threshold = calculateDifference(Collections.max(rawData), Collections.min(rawData));
+        return threshold;
     }
 
     /**
@@ -68,14 +109,7 @@ public class ParseAndCompareBenchmarkResults {
      * @throws Exception if error occurs when reading Ion Data.
      */
     public static BigDecimal getScore(String benchmarkResultFilePath, String keyWord) throws Exception {
-        IonStruct scoreStruct;
-        IonStruct benchmarkResultStruct = readHelper(benchmarkResultFilePath);
-        if (keyWord.equals(SPEED)) {
-            scoreStruct = (IonStruct)benchmarkResultStruct.get(PRIMARY_METRIC);
-        } else {
-            IonStruct secondaryMetricStruct = (IonStruct) benchmarkResultStruct.get(SECONDARY_METRIC);
-            scoreStruct = (IonStruct)secondaryMetricStruct.get(keyWord);
-        }
+        IonStruct scoreStruct = parseScore(benchmarkResultFilePath, keyWord);
         IonValue score = scoreStruct.get(SCORE);
         if (score.getType().equals(IonType.FLOAT)) {
             IonFloat scoreFloat = (IonFloat) score;
@@ -84,6 +118,25 @@ public class ParseAndCompareBenchmarkResults {
             IonDecimal scoreDecimal = (IonDecimal) score;
             return scoreDecimal.bigDecimalValue();
         }
+    }
+
+    /**
+     * Parse the benchmark result and extract the IonStruct which contains scores information.
+     * @param benchmarkResultFilePath is the file path of benchmark result.
+     * @param keyWord represents which aspect of scores are required to be extracted.
+     * @return an IonStruct which contains the scores information.
+     * @throws Exception if errors occur when create IonReader.
+     */
+    private static IonStruct parseScore(String benchmarkResultFilePath, String keyWord) throws Exception {
+        IonStruct scoreStruct;
+        IonStruct benchmarkResultStruct = readHelper(benchmarkResultFilePath);
+        if (keyWord.equals(SPEED)) {
+            scoreStruct = (IonStruct)benchmarkResultStruct.get(PRIMARY_METRIC);
+        } else {
+            IonStruct secondaryMetricStruct = (IonStruct) benchmarkResultStruct.get(SECONDARY_METRIC);
+            scoreStruct = (IonStruct)secondaryMetricStruct.get(keyWord);
+        }
+        return scoreStruct;
     }
 
     /**
@@ -137,10 +190,10 @@ public class ParseAndCompareBenchmarkResults {
      * @param benchmarkResult is the path of benchmark result.
      * @param outputFilePath is destination path of generated result.
      * @param scoreMap is a hashmap which match relative change of the score with the aspect it represents.
-     * @param thresholdFilePath specifies the path of file which contains all threshold scores.
+     * @param thresholdMap is a hashmap which match threshold of the score with the aspect it represents.
      * @throws Exception if error occurs when reading Ion data.
      */
-    private static void writeResult(String benchmarkResult, String outputFilePath, Map<String, BigDecimal> scoreMap, String thresholdFilePath) throws Exception {
+    private static void writeResult(String benchmarkResult, String outputFilePath, Map<String, BigDecimal> scoreMap, Map<String, BigDecimal> thresholdMap) throws Exception {
         File file = new File(outputFilePath);
         IonString inputFileName = (IonString) getParameter(benchmarkResult, INPUT);
         String parameters = getParameter(benchmarkResult, OPTIONS).toString();
@@ -179,7 +232,7 @@ public class ParseAndCompareBenchmarkResults {
             writer.stepOut();
             writer.stepOut();
         }
-        String regressionDetectResult = detectRegression(thresholdFilePath, scoreMap, outputFilePath);
+        String regressionDetectResult = detectRegression(thresholdMap, scoreMap, outputFilePath);
         // This print out value will be passed to one environment variable in the GitHub Actions workflow.
         if (regressionDetectResult != null) {
             System.out.println(regressionDetectResult);
@@ -189,38 +242,23 @@ public class ParseAndCompareBenchmarkResults {
     /**
      * Compare the relative changes of benchmark results with the thresholds, if the relative change smaller than threshold score which represent the decrease threshold of one
      * specific aspect, then the performance regression detected and return 'true'.
-     * @param thresholdFilePath specifies the path of file which contains all threshold scores.
+     * @param thresholdMap is a hashmap which match threshold of the score with the aspect it represents.
      * @param scoreMap is a hashmap which match relative change of the score with the aspect it represents.
      * @param outputFilePath is the destination of generated report after comparison process.
      * @return a String which contains the information about whether performance regression happened.
      * @throws Exception if occur happen when reading Ion Data.
      */
-    public static String detectRegression(String thresholdFilePath, Map<String, BigDecimal> scoreMap, String outputFilePath) throws Exception {
-        try (
-                IonReader thresholdReader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(thresholdFilePath)));
-                IonReader comparisonResultReader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFilePath)))
-        ) {
-            IonDatagram thresholdScores = ReadGeneralConstraints.LOADER.load(thresholdReader);
+    public static String detectRegression(Map<String, BigDecimal> thresholdMap, Map<String, BigDecimal> scoreMap, String outputFilePath) throws Exception {
+        try (IonReader comparisonResultReader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFilePath)))) {
             IonDatagram comparisonResult = ReadGeneralConstraints.LOADER.load(comparisonResultReader);
             IonStruct comparisonResultStruct = (IonStruct) comparisonResult.get(0);
             comparisonResultStruct.remove(RELATIVE_DIFFERENCE_SCORE);
             IonString inputFile = (IonString) comparisonResultStruct.get(INPUT);
             String fileName = inputFile.stringValue();
             Map<String, BigDecimal> regressions = new HashMap<>();
-            for (int i = 0; i < thresholdScores.size(); i++) {
-                IonStruct thresholdScoresStruct = (IonStruct) thresholdScores.get(i);
-                IonStruct thresholdsStruct = thresholdScoresStruct.clone();
-                // Get the fields which contain parameters information.
-                thresholdScoresStruct.remove(RELATIVE_DIFFERENCE_THRESHOLD);
-                // Get the fields which contain threshold scores information.
-                IonStruct thresholds = (IonStruct) thresholdsStruct.get(RELATIVE_DIFFERENCE_THRESHOLD);
-                if (thresholdScoresStruct.equals(comparisonResultStruct)) {
-                    for (String keyWord : scoreMap.keySet()) {
-                        IonDecimal thresholdScore = (IonDecimal) thresholds.get(keyWord);
-                        if (scoreMap.get(keyWord).compareTo(thresholdScore.bigDecimalValue()) < 0) {
-                            regressions.put(keyWord, scoreMap.get(keyWord));
-                        }
-                    }
+            for (String keyWord : scoreMap.keySet()) {
+                if (scoreMap.get(keyWord).compareTo(thresholdMap.get(keyWord)) < 0) {
+                    regressions.put(keyWord, scoreMap.get(keyWord));
                 }
             }
             if (regressions.size() != 0) {

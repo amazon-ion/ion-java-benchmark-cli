@@ -23,11 +23,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.After;
 import org.junit.Test;
 
@@ -41,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -52,10 +52,19 @@ public class DataGeneratorTest {
     private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testStruct.isl";
     private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/benchmark/testList.isl";
     private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/benchmark/testNestedStruct.isl";
-    private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/benchmark/testComparisonReport.ion";
     private final static String SCORE_DIFFERENCE = "scoreDifference";
     private final static String COMPARISON_REPORT_WITHOUT_REGRESSION = "./tst/com/amazon/ion/benchmark/testComparisonReportWithoutRegression.ion";
-    private final static String THRESHOLD = "./tst/com/amazon/ion/benchmark/threshold.ion";
+    private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/benchmark/testComparisonReport.ion";
+    private final static String BENCHMARK_RESULT_PREVIOUS = "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultPrevious.ion";
+    private final static String BENCHMARK_RESULT_NEW = "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultNew.ion";
+    private final static BigDecimal EXPECTED_GC_ALLOCATE_THRESHOLD = new BigDecimal("-0.010774139119162");
+    private final static BigDecimal EXPECTED_SPEED_THRESHOLD = new BigDecimal("-0.326936");
+    private final static BigDecimal EXPECTED_HEAP_USAGE_THRESHOLD = new BigDecimal("-0.184482");
+    private final static BigDecimal EXPECTED_SERIALIZED_SIZE = new BigDecimal("0.000000");
+    private final static String GC_ALLOCATE = "·gc.alloc.rate";
+    private final static String HEAP_USAGE = "Heap usage";
+    private final static String SERIALIZED_SIZE = "Serialized size";
+    private final static String SPEED = "speed";
 
     /**
      * Construct IonReader for current output file in order to finish the following test process
@@ -239,7 +248,7 @@ public class DataGeneratorTest {
      */
     @Test
     public void testSizeOfGeneratedData() throws Exception {
-        Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--data-type", "timestamp", "--timestamps-template","[2021T]","test7.10n");
+        Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--data-type", "timestamp", "--timestamps-template", "[2021T]", "test7.10n");
         GeneratorOptions.executeGenerator(optionsMap);
         int expectedSize = Integer.parseInt(optionsMap.get("--data-size").toString());
         outputFile = optionsMap.get("<output_file>").toString();
@@ -251,7 +260,6 @@ public class DataGeneratorTest {
         int difference = Math.abs(expectedSize - fileSize);
         assertTrue(difference <= 0.1 * expectedSize);
     }
-
 
     /**
      * Test if there's violation when generating Ion Struct based on Ion Schema.
@@ -286,7 +294,7 @@ public class DataGeneratorTest {
      */
     @Test
     public void testParseBenchmark() throws Exception {
-        Map<String, Object> optionsMap = Main.parseArguments("compare", "--benchmark-result-previous", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultPrevious.ion", "--benchmark-result-new", "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultNew.ion", "--threshold", "./tst/com/amazon/ion/benchmark/threshold.ion", "test11.ion");
+        Map<String, Object> optionsMap = Main.parseArguments("compare", "--benchmark-result-previous", BENCHMARK_RESULT_PREVIOUS, "--benchmark-result-new", BENCHMARK_RESULT_NEW, "test11.ion");
         ParseAndCompareBenchmarkResults.compareResult(optionsMap);
         outputFile = optionsMap.get("<output_file>").toString();
         try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFile)))) {
@@ -311,6 +319,33 @@ public class DataGeneratorTest {
     }
 
     /**
+     * Test whether the method which calculate and construct threshold map can return the expected result.
+     * @throws Exception if errors occur when constructing threshold map.
+     */
+    @Test
+    public void testThresholdMapParser() throws Exception {
+        Map<String, BigDecimal> thresholdMap = ParseAndCompareBenchmarkResults.getThresholdMap(BENCHMARK_RESULT_PREVIOUS, BENCHMARK_RESULT_NEW);
+        for (String keyWord : thresholdMap.keySet()) {
+            switch (keyWord) {
+                case GC_ALLOCATE:
+                    assertTrue(thresholdMap.get(keyWord).equals(EXPECTED_GC_ALLOCATE_THRESHOLD));
+                    break;
+                case SPEED:
+                    assertTrue(thresholdMap.get(keyWord).equals(EXPECTED_SPEED_THRESHOLD));
+                    break;
+                case HEAP_USAGE:
+                    assertTrue(thresholdMap.get(keyWord).equals(EXPECTED_HEAP_USAGE_THRESHOLD));
+                    break;
+                case SERIALIZED_SIZE:
+                    assertTrue(thresholdMap.get(keyWord).equals(EXPECTED_SERIALIZED_SIZE));
+                    break;
+                default:
+                    throw new IllegalStateException("This aspect of benchmark result is not supported when generating threshold map.");
+            }
+        }
+    }
+
+    /**
      * Test whether the detecting regression process can return the expected result when there is performance regression in the test file.
      * In this unit test we use an Ion file which contain regression on [·gc.alloc.rate] as input to test the detectRegression method.
      * @throws Exception if error occur when reading Ion data.
@@ -318,9 +353,10 @@ public class DataGeneratorTest {
     @Test
     public void testRegressionDetected() throws Exception {
         Map<String, BigDecimal> scoreMap = constructScoreMap(COMPARISON_REPORT);
-        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(THRESHOLD, scoreMap, COMPARISON_REPORT);
+        Map<String, BigDecimal> thresholdMap = ParseAndCompareBenchmarkResults.getThresholdMap(BENCHMARK_RESULT_PREVIOUS, BENCHMARK_RESULT_NEW);
+        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(thresholdMap, scoreMap, COMPARISON_REPORT);
         assertEquals("The performance regression detected when benchmark the ion-java from the new commit with the test data: testList.10n and parameters: read::{format:\"ION_BINARY\",type:\"FILE\",api:\"DOM\"}\n" +
-                "The following aspects have regressions: {·gc.alloc.rate=-0.002851051607559}\n", detectionResult);
+                "The following aspects have regressions: {·gc.alloc.rate=-0.2851051607559}\n", detectionResult);
     }
 
     /**
@@ -331,7 +367,8 @@ public class DataGeneratorTest {
     @Test
     public void testRegressionNotDetected() throws Exception {
         Map<String, BigDecimal> scoreMap = constructScoreMap(COMPARISON_REPORT_WITHOUT_REGRESSION);
-        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(THRESHOLD, scoreMap, COMPARISON_REPORT_WITHOUT_REGRESSION);
+        Map<String, BigDecimal> thresholdMap = ParseAndCompareBenchmarkResults.getThresholdMap(BENCHMARK_RESULT_PREVIOUS, BENCHMARK_RESULT_NEW);
+        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(thresholdMap, scoreMap, COMPARISON_REPORT_WITHOUT_REGRESSION);
         assertNull(detectionResult);
     }
 
