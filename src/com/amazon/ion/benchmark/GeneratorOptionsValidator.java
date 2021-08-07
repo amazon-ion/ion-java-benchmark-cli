@@ -19,6 +19,7 @@ public class GeneratorOptionsValidator {
     final public static Set<String> INVALID_FOR_STRING = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-M", "--timestamps-template", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range", "-Q", "--input-ion-schema")));
     final public static Set<String> INVALID_FOR_DECIMAL = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-M", "--timestamps-template", "-Q", "--input-ion-schema")));
     final public static Set<String> INVALID_FOR_ION_SCHEMA = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range","-M", "--timestamps-template", "-T", "--data-type")));
+    final public static Set<String> GENERAL_INVALID_OPTIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("-N", "--text-code-point-range", "-E", "--decimal-exponent-range <exp_range>", "-C", "--decimal-coefficient-digit-range", "-Q", "--input-ion-schema", "-M", "--timestamps-template")));
 
     /**
      * The method combine all options which are not available for the current data type, and check
@@ -58,6 +59,7 @@ public class GeneratorOptionsValidator {
                 case BLOB:
                 case CLOB:
                 case SYMBOL:
+                    GeneratorOptionsValidator.throwException(GENERAL_INVALID_OPTIONS, commandLine);
                     break;
                 default:
                     throw new IllegalStateException("Unexpected value: " + type);
