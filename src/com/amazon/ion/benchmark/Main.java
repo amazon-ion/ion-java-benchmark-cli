@@ -46,7 +46,7 @@ public class Main {
             + "[--format <type>] [--decimal-exponent-range <exp_range>] [--decimal-coefficient-digit-range <val_range>] "
             + "[--timestamps-template <template>] [--text-code-point-range <range>] [--input-ion-schema <file_path>] <output_file>\n"
 
-        + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>) (--threshold <file_path>) <output_file>\n"
+        + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>) <output_file>\n"
 
         + "  ion-java-benchmark run-suite (--test-ion-data <file_path>) (--benchmark-options-combinations <file_path>) <output_file>\n"
 
@@ -276,8 +276,6 @@ public class Main {
         + "  -P --benchmark-result-previous <file_path>      This option will specify the path of benchmark result from the existing ion-java commit.\n"
 
         + "  -X --benchmark-result-new <file_path>      This option will specify the path of benchmark result form the new ion-java commit.\n"
-
-        + "  -H --threshold <file_path>      This option will specify the path of threshold.ion which contains all threshold scores.\n"
 
         // 'organize' options
 
