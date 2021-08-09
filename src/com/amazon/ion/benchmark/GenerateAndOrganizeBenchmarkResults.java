@@ -41,7 +41,7 @@ public class GenerateAndOrganizeBenchmarkResults {
         // Get the version of ion-java-benchmark-cli-jar-with-dependencies.jar
         String version = parseVersionFromPom(POM_FILE);
         String ionJavaBenchmarkInvoke = ION_JAVA_BENCHMARK_INVOKE_ELEMENT + version + JAR_WITH_DEPENDENCIES;
-        String fileName = PREVIOUS_FILE;
+        String fileName = NEW_FILE;
         String makeFinalDirectoryCommand = MAKE_DIRECTORY + finalResultDirectory;
         IonList optionsCombinationsList;
         try (IonReader reader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(combinations)))) {
@@ -66,7 +66,7 @@ public class GenerateAndOrganizeBenchmarkResults {
                 // When generating benchmark results for ion-java from the new commit, all benchmark results will be named as 'new.ion'.
                 File fileCheck = new File(finalResultDirectory + subDirectoryName + File.separator + fileName);
                 if (fileCheck.exists()) {
-                    fileName = NEW_FILE;
+                    fileName = PREVIOUS_FILE;
                 }
                 // Execute ion-java-benchmark invoke.
                 String commandLine = ionJavaBenchmarkInvoke + benchmarkOptionCombination + "--results-file " +  finalResultDirectory + subDirectoryName + File.separator + fileName + " " + testData.getAbsolutePath();
