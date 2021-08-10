@@ -531,8 +531,27 @@ class WriteRandomIonValues {
                 writer.writeInt(intValue);
                 break;
             case TIMESTAMP:
-                Timestamp timestamp = WriteRandomIonValues.constructTimestamp(timestampTemplate);
-                writer.writeTimestamp(timestamp);
+                if (timestampTemplate != null) {
+                    try (IonReader templateReader = IonReaderBuilder.standard().build(timestampTemplate)) {
+                        if (templateReader.next() != IonType.LIST) throw new IllegalStateException("Please provide a list type");
+                        templateReader.stepIn();
+                        while (templateReader.next() != null) {
+                            Timestamp value;
+                            if (templateReader.getType() == IonType.TIMESTAMP) {
+                                value = templateReader.timestampValue();
+                            } else {
+                                throw new IllegalStateException("Please provide timestamp in the template list");
+                            }
+                            Timestamp.Precision precision = value.getPrecision();
+                            Timestamp timestamp = WriteRandomIonValues.writeTimestamp(precision, value);
+                            writer.writeTimestamp(timestamp);
+                        }
+                        if (templateReader.next() != null) throw new IllegalStateException("Only one template list is needed");
+                    }
+                } else {
+                    Timestamp timestamp = WriteRandomIonValues.constructTimestamp();
+                    writer.writeTimestamp(timestamp);
+                }
                 break;
             case STRUCT:
                 annotationList = IonSchemaUtilities.getAnnotation(constraintStruct);
@@ -606,33 +625,13 @@ class WriteRandomIonValues {
     }
 
     /**
-     * Construct output timestamps that follow the timestamp template or generate data randomly
-     * @param timestampTemplate is a string which provides a series of timestamps that are used as templates when generating data.
+     * Construct output timestamps with random precision.
      * @throws IOException if an error occurs when writing timestamps.
      */
-    public static Timestamp constructTimestamp(String timestampTemplate) throws IOException {
-        Timestamp timestamp = null;
-        if (timestampTemplate != null) {
-            IonReader templateReader = IonReaderBuilder.standard().build(timestampTemplate);
-            if (templateReader.next() != IonType.LIST) throw new IllegalStateException("Please provide a list type");
-            templateReader.stepIn();
-            while (templateReader.next() != null) {
-                Timestamp value;
-                if (templateReader.getType() == IonType.TIMESTAMP) {
-                    value = templateReader.timestampValue();
-                } else {
-                    throw new IllegalStateException("Please provide timestamp in the template list");
-                }
-                Timestamp.Precision precision = value.getPrecision();
-                timestamp = WriteRandomIonValues.writeTimestamp(precision, value);
-            }
-            templateReader.close();
-            if (templateReader.next() != null) throw new IllegalStateException("Only one template list is needed");
-        } else {
-            Random random = new Random();
-            Timestamp.Precision precision = PRECISIONS[random.nextInt(PRECISIONS.length)];
-            timestamp = WriteRandomIonValues.writeTimestamp(precision, null);
-        }
+    public static Timestamp constructTimestamp() throws IOException {
+        Random random = new Random();
+        Timestamp.Precision precision = PRECISIONS[random.nextInt(PRECISIONS.length)];
+        Timestamp timestamp = WriteRandomIonValues.writeTimestamp(precision, null);
         return timestamp;
     }
 

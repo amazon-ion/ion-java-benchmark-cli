@@ -212,7 +212,7 @@ public class DataGeneratorTest {
      */
     @Test
     public void testGeneratedTimestampTemplateFormat() throws Exception{
-        Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--data-type", "timestamp", "--timestamps-template", "[2021T]", "test6.10n");
+        Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--data-type", "timestamp", "--timestamps-template", "[2021T, 2021-03T]", "--format", "ion_text", "test6.10n");
         try (
                 IonReader reader = DataGeneratorTest.executeAndRead(optionsMap);
                 IonReader templateReader = IonReaderBuilder.standard().build(optionsMap.get("--timestamps-template").toString())
