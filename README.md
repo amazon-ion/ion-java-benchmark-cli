@@ -214,9 +214,9 @@ Adding an option to specify generated scalar type Ion Data involves the followin
 ### Adding more supported data type to Ion Data Generator
 
 Adding abilities to Ion Data Generator to generate more types of Ion Data which conform with the Ion Schema.
-1. In `ReadGeneralConstaints`, add more data type cases under switch logic, mimicking the existing supported data type.
+1. In `ReadGeneralConstraints`, add more data type cases under switch logic, mimicking the existing supported data type.
 2. Add methods in `WriteRandomIonValues`, mimicking the existing methods which writes random ion data to the generated file. 
-   If the data type is already supported by the existing methods, find the relative method to see if more logic processing the constraints needed to be added.
+   If the data type is already supported by the existing methods, find the related method to see if more logic processing the constraints needed to be added.
    
 Commit [017a4ee](https://github.com/amzn/ion-java-benchmark-cli/pull/15)
 demonstrates the steps required to add a new generated data type.
