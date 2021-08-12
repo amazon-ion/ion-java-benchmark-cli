@@ -202,6 +202,38 @@ the tool by hand to make sure everything looks correct and the benchmark results
 9. Add at least one example of using the new format to the `EXAMPLES` string in `Main`. Copy this
 example into the `Examples` section of this README.
 
+### Adding an option for Ion Data Generator
+
+Adding an option to specify generated scalar type Ion Data involves the following steps.
+1. In `Main`, add the option to the `USAGE` and `OPTIONS` strings, mimicking the existing format.
+2. Add invalid options hashset to `GeneratorOptionsValidator` , mimicking the existing format.
+3. Add parsing options logic to `GeneratorOptions` and consider which type of Ion data the parsed parameters should be passed to, 
+   mimicking the existing logic of passing options parameters.
+4. In `WriteRandomIonValues`, add logic to the methods of constructing Ion Data to process the added option.
+
+### Adding more supported data type to Ion Data Generator
+
+Adding abilities to Ion Data Generator to generate more types of Ion Data which conform with the Ion Schema.
+1. In `ReadGeneralConstaints`, add more data type cases under switch logic, mimicking the existing supported data type.
+2. Add methods in `WriteRandomIonValues`, mimicking the existing methods which writes random ion data to the generated file. 
+   If the data type is already supported by the existing methods, find the relative method to see if more logic processing the constraints needed to be added.
+   
+Commit [017a4ee](https://github.com/amzn/ion-java-benchmark-cli/pull/15)
+demonstrates the steps required to add a new generated data type.
+
+### Adding logic to process constraints in Ion Schema
+
+Adding logic to process constraints in Ion Schema involves the following steps.
+1. If the constraints are general constraints, add logic to `ReadGeneralConstraints`to extract the constraint value before the 
+   switch logic, then decide which type of data will apply this constraint and pass the constraint values to the specific generating data method.
+2. If the constraints are applied to specific type of Ion Data, the extracting constraint value process should be finished in the switch logic 
+   before navigating to data generating methods in `ReadGeneralConstraints`, then pass the constraint value to generating data method. 
+3. During extracting constraint value process, methods in `IonSchemaUtilities` will be used. If the current constraint is not supported by 
+   the existing methods in `IonSchemaUtilities`, more methods parsing the constraint value should be added to `IonSchemaUtilities` and the logic 
+   should follow the rules provided in [Ion Schema Specification 1.0](https://amzn.github.io/ion-schema/docs/spec.html).
+4. In `WriteRandomIonValues`, add logic to process the constraints in the methods of constructing Ion Data.
+
+
 ## Security
 
 See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
