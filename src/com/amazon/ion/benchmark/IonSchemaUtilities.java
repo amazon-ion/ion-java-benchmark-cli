@@ -1,5 +1,6 @@
 package com.amazon.ion.benchmark;
 
+import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonList;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonStruct;
@@ -7,7 +8,12 @@ import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.system.IonReaderBuilder;
+import com.amazon.ionschema.InvalidSchemaException;
+import com.amazon.ionschema.IonSchemaSystem;
+import com.amazon.ionschema.IonSchemaSystemBuilder;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,11 +38,29 @@ public class IonSchemaUtilities {
     public static final String KEYWORD_ORDERED = "ordered";
     public static final String KEYWORD_NAME = "name";
     public static final String KEYWORD_CONTAINER_LENGTH = "container_length";
+    public static final String KEYWORD_BYTE_LENGTH = "byte_length";
     public static final String KEYWORD_MIN = "min";
     public static final String KEYWORD_MAX = "max";
+    public static final String KEYWORD_SCALE = "scale";
+    public static final String KEYWORD_PRECISION = "precision";
 
     /**
-     * Extract the value of the constraints, select from the set (occurs | container_length | codepoint_length).
+     * Check the validation of input ion schema file and will throw InvalidSchemaException message when an invalid schema definition is encountered.
+     * @param inputFile represents the file path of the ion schema file.
+     * @throws Exception if an error occur when creating FileInputStream.
+     */
+    public static void checkValidationOfSchema(String inputFile) throws Exception {
+        IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().build();
+        try (IonReader readerInput = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(inputFile)))) {
+            IonDatagram schema = ReadGeneralConstraints.LOADER.load(readerInput);
+            ISS.newSchema(schema.iterator());
+        } catch (InvalidSchemaException e) {
+            System.out.println(e.getMessage());
+        } throw new Exception("The provided ion schema file is not valid");
+    }
+
+    /**
+     * Extract the value of the constraints, select from the set (occurs | container_length | codepoint_length | timestamp_precision | precision | scale | byte_length).
      * @param value is the Ion struct which contain the current constraint field
      * @param keyWord is the field name of the constraint
      * @return the value of the current constraint.
@@ -72,6 +96,8 @@ public class IonSchemaUtilities {
                             if (reader.getType() == IonType.SYMBOL) {
                                 if (reader.symbolValue().equals(KEYWORD_MIN)) {
                                     min = 0;
+                                } else if (keyWord.equals(IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION)) {
+                                    min = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase()).ordinal();
                                 } else {
                                     throw new IllegalStateException("The lower bound symbol value is not supported in Ion Schema");
                                 }
@@ -82,6 +108,8 @@ public class IonSchemaUtilities {
                             if (reader.getType() == IonType.SYMBOL) {
                                 if (reader.symbolValue().equals(KEYWORD_MAX)) {
                                     max = Integer.MAX_VALUE;
+                                } else if (keyWord.equals(IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION)) {
+                                    max = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase()).ordinal();
                                 } else {
                                     throw new IllegalStateException("The upper bound symbol value is not supported in Ion Schema");
                                 }
