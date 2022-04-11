@@ -46,13 +46,14 @@ public class ReadGeneralConstraints {
                             WriteRandomIonValues.writeRandomStructValues(size, format, outputFile, constraintStruct);
                             break;
                         case TIMESTAMP:
-                            WriteRandomIonValues.writeRandomTimestamps(size, type, outputFile, null, format);
+                            WriteRandomIonValues.writeRandomTimestampsFromSchema(size, type, outputFile, format, constraintStruct);
                             break;
                         case STRING:
                             int codePointBoundary = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
                             WriteRandomIonValues.writeRandomStrings(size, type, outputFile, DEFAULT_RANGE, format, codePointBoundary);
                             break;
                         case DECIMAL:
+                            WriteRandomIonValues.writeRandomDecimalsFromSchema(size, type, outputFile, format, constraintStruct);
                             break;
                         case INT:
                             WriteRandomIonValues.writeRandomInts(size, type, format, outputFile);
@@ -62,7 +63,7 @@ public class ReadGeneralConstraints {
                             break;
                         case BLOB:
                         case CLOB:
-                            WriteRandomIonValues.writeRandomLobs(size, type, format, outputFile);
+                            WriteRandomIonValues.writeRandomLobs(size, type, format, outputFile, constraintStruct);
                             break;
                         case SYMBOL:
                             WriteRandomIonValues.writeRandomSymbolValues(size, format, outputFile);

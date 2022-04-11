@@ -36,6 +36,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -44,6 +45,7 @@ import java.util.Random;
  * Generate specific scalar type of Ion data randomly, for some specific type, e.g. String, Decimal, Timestamp, users can put specifications on these types of Ion data.
  */
 class WriteRandomIonValues {
+    // The constant defined below are used as placeholder in the method WriteRandomIonValues.writeRequestedSizeFile.
     final static private IonSystem SYSTEM = IonSystemBuilder.standard().build();
     final static private List<Integer> DEFAULT_RANGE = WriteRandomIonValues.parseRange("[0, 1114111]");
     final static private Timestamp.Precision[] PRECISIONS = Timestamp.Precision.values();
@@ -52,7 +54,7 @@ class WriteRandomIonValues {
     final static private List<Integer> NO_EXPONENT_VALUE_RANGE = null;
     final static private List<Integer> NO_COEFFICIENT_DIGIT_RANGE = null;
     final static private String NO_TIMESTAMP_TEMPLATE = null;
-    final static private IonStruct NO_CONSTRAINT_STRUCT = null;
+    final static public IonStruct NO_CONSTRAINT_STRUCT = null;
 
     /**
      * Build up the writer based on the provided format (ion_text|ion_binary)
@@ -161,6 +163,23 @@ class WriteRandomIonValues {
     }
 
     /**
+     * Write random Ion decimals into the file, and all generated data is conformed with the constraints provided by Ion schema file.
+     * @param size specifies the size in bytes of the generated file.
+     * @param type determines which type of ion data will be generated.
+     * @param path the destination of the generated file.
+     * @param format the format of output file (ion_binary | ion_text).
+     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
+     * @throws Exception if an error occurs when building up the writer.
+     **/
+    public static void writeRandomDecimalsFromSchema(int size, IonType type, String path, String format, IonStruct constraintStruct) throws Exception {
+        File file = new File(path);
+        try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
+            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, NO_CODE_POINT_LENGTH, NO_POINT_RANGE, NO_EXPONENT_VALUE_RANGE, NO_COEFFICIENT_DIGIT_RANGE, NO_TIMESTAMP_TEMPLATE, constraintStruct);
+        }
+        WriteRandomIonValues.printInfo(path);
+    }
+
+    /**
      * Write random Ion integers into target file, and all data conform with the specifications provided by the options, e.g. size, format and the output file path.
      * @param size specifies the size in bytes of the generated file.
      * @param type determines which type of data will be generated.
@@ -249,7 +268,7 @@ class WriteRandomIonValues {
     /**
      * Generate random fractional second which the precision conforms with the precision of the second in template timestamp.
      * @param random is the random number generator.
-     * @param scale is the the scale of the decimal second in the current template timestamp.
+     * @param scale is the scale of the decimal second in the current template timestamp.
      * @return a random timestamp second in a fractional format which conforms with the current template timestamp.
      */
     private static BigDecimal randomSecondWithFraction(Random random, int scale) {
@@ -286,12 +305,29 @@ class WriteRandomIonValues {
     }
 
     /**
+     * Write random Ion timestamps into the file, and all generated data conforming with the constraints provided by Ion Schema file.
+     * @param size specifies the size in bytes of the generated file.
+     * @param type determines which type of data will be generated.
+     * @param path the destination of the generated file.
+     * @param format the format of output file (ion_binary | ion_text).
+     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
+     * @throws Exception if an error occur when writing generated data.
+     */
+    public static void writeRandomTimestampsFromSchema (int size, IonType type,  String path, String format, IonStruct constraintStruct) throws Exception {
+        File file = new File(path);
+        try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
+            WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, type, NO_CODE_POINT_LENGTH, NO_POINT_RANGE, NO_EXPONENT_VALUE_RANGE, NO_COEFFICIENT_DIGIT_RANGE, NO_TIMESTAMP_TEMPLATE, constraintStruct);
+        }
+        WriteRandomIonValues.printInfo(path);
+    }
+
+    /**
      * Execute the writing timestamp data process based on the precision provided by the template timestamps.
      * @param precision is the precision of current template timestamp.
      * @param value is the current timestamp in the provided template.
      * @throws IOException if an error occurs when writing timestamp value.
      */
-    public static Timestamp writeTimestamp(Timestamp.Precision precision,  Timestamp value) throws IOException {
+    public static Timestamp writeTimestamp(Timestamp.Precision precision, Timestamp value) throws IOException {
         Timestamp timestamp;
         Random random = new Random();
         switch (precision) {
@@ -376,18 +412,25 @@ class WriteRandomIonValues {
     /**
      * Write random Ion blobs/clobs into target file, and all data conform with the specifications provided by the options, e.g. size, format, type(blob/clob) and the output file path.
      * @param size specifies the size in bytes of the generated file.
-     * @param path the destination of the generated file.
-     * @param format the format of output file (ion_binary | ion_text).
      * @param type determines which type of data will be generated [blob | clob].
+     * @param format the format of output file (ion_binary | ion_text).
+     * @param path the destination of the generated file.
+     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
      * @throws Exception if an error occurs when building up the writer.
-    */
-    public static void writeRandomLobs(int size, IonType type, String format, String path) throws Exception {
+     */
+    public static void writeRandomLobs(int size, IonType type, String format, String path, IonStruct constraintStruct) throws Exception {
         File file = new File(path);
+        Random random = new Random();
+        int byte_length;
+        if (constraintStruct != null) {
+            byte_length = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_BYTE_LENGTH);
+        } else {
+            byte_length = random.nextInt(512);
+        }
         try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
-            Random random = new Random();
             int currentSize = 0;
             while (currentSize <= size) {
-                WriteRandomIonValues.constructLobs(random, type, writer);
+                WriteRandomIonValues.constructLobs(random, type, writer, byte_length);
                 writer.flush();
                 currentSize = (int) file.length();
             }
@@ -485,7 +528,7 @@ class WriteRandomIonValues {
         Random random = new Random();
         int currentSize = 0;
         int count = 0;
-        // Determine how many values should be write before the writer.flush()
+        // Determine how many values should be written before the writer.flush()
         while (currentSize <= 0.05 * size) {
             WriteRandomIonValues.writeDataToFile(type, writer, random, codePointLength, pointRange, expValRange, coefficientDigitRange, timestampTemplate, constraintStruct);
             count += 1;
@@ -524,7 +567,13 @@ class WriteRandomIonValues {
                 writer.writeString(WriteRandomIonValues.constructString(pointRange, codePointLength));
                 break;
             case DECIMAL:
-                writer.writeDecimal(WriteRandomIonValues.constructDecimal(expValRange, coefficientDigitRange));
+                if (expValRange == null && coefficientDigitRange == null) {
+                    int decimalPrecision = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_PRECISION);
+                    int decimalScale = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_SCALE);
+                    writer.writeDecimal(WriteRandomIonValues.constructDecimalFromSchema(decimalPrecision, decimalScale));
+                } else {
+                    writer.writeDecimal(WriteRandomIonValues.constructDecimal(expValRange, coefficientDigitRange));
+                }
                 break;
             case INT:
                 long intValue = WriteRandomIonValues.constructInt();
@@ -549,7 +598,9 @@ class WriteRandomIonValues {
                         if (templateReader.next() != null) throw new IllegalStateException("Only one template list is needed");
                     }
                 } else {
-                    Timestamp timestamp = WriteRandomIonValues.constructTimestamp();
+                    int randomIndex = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION);
+                    Timestamp.Precision precision = PRECISIONS[randomIndex];
+                    Timestamp timestamp = WriteRandomIonValues.constructTimestamp(precision);
                     writer.writeTimestamp(timestamp);
                 }
                 break;
@@ -605,6 +656,24 @@ class WriteRandomIonValues {
     }
 
     /**
+     * Construct the decimal which is conformed with the constraints provided in ISL.
+     * @param precision represents the minimum/maximum range indicating the number of digits in the unscaled value of a decimal. The minimum precision must be greater than or equal to 1.
+     * @param scale represents the minimum/maximum range indicating the number of digits to the right of the decimal point. The minimum scale must be greater than or equal to 0.
+     * @return the constructed decimal.
+     */
+    public static BigDecimal constructDecimalFromSchema(int precision, int scale) {
+        Random random = new Random();
+        StringBuilder rs = new StringBuilder();
+        rs.append(random.nextInt(9) + 1);
+        for (int digit = 1; digit < precision; digit++) {
+            rs.append(random.nextInt(10));
+        }
+        BigInteger unscaledValue = new BigInteger(rs.toString());
+        BigDecimal bigDecimal = new BigDecimal(unscaledValue, scale);
+        return bigDecimal;
+    }
+
+    /**
      * Generate random integers which composed by different length of data into the output file.
      */
     public static long constructInt() {
@@ -628,10 +697,8 @@ class WriteRandomIonValues {
      * Construct output timestamps with random precision.
      * @throws IOException if an error occurs when writing timestamps.
      */
-    public static Timestamp constructTimestamp() throws IOException {
-        Random random = new Random();
-        Timestamp.Precision precision = PRECISIONS[random.nextInt(PRECISIONS.length)];
-        Timestamp timestamp = WriteRandomIonValues.writeTimestamp(precision, null);
+    public static Timestamp constructTimestamp(Timestamp.Precision timestampPrecision) throws IOException {
+        Timestamp timestamp = WriteRandomIonValues.writeTimestamp(timestampPrecision, null);
         return timestamp;
     }
 
@@ -642,8 +709,8 @@ class WriteRandomIonValues {
      * @param writer writes Ion clob/blob data.
      * @throws IOException if an error occurs during the writing process
      */
-    public static void constructLobs(Random random, IonType type, IonWriter writer) throws IOException {
-        byte[] randomBytes = new byte[random.nextInt(512)];
+    public static void constructLobs(Random random, IonType type, IonWriter writer, int byte_length) throws IOException {
+        byte[] randomBytes = new byte[byte_length];
         random.nextBytes(randomBytes);
         switch (type) {
             case CLOB:
