@@ -56,7 +56,8 @@ public class IonSchemaUtilities {
             ISS.newSchema(schema.iterator());
         } catch (InvalidSchemaException e) {
             System.out.println(e.getMessage());
-        } throw new Exception("The provided ion schema file is not valid");
+            throw new Exception("The provided ion schema file is not valid");
+        }
     }
 
     /**
