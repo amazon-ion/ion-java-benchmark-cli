@@ -8,7 +8,6 @@ import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
-import com.amazon.ion.Timestamp;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.util.IonStreamUtils;
@@ -17,13 +16,10 @@ import com.amazon.ionschema.IonSchemaSystemBuilder;
 import com.amazon.ionschema.Schema;
 import com.amazon.ionschema.Type;
 import com.amazon.ionschema.Violations;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,16 +29,13 @@ import org.junit.Test;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class DataGeneratorTest {
@@ -118,57 +111,6 @@ public class DataGeneratorTest {
     }
 
     /**
-     * Assert generated Ion data is the same type as expected.
-     * @throws Exception if error occurs when executing Ion data generator.
-     */
-    @Test
-    public void testGeneratedType() throws Exception {
-        Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--data-type", "decimal", "test1.10n");
-        try (IonReader reader = DataGeneratorTest.executeAndRead(optionsMap)) {
-            while (reader.next() != null) {
-                assertSame(reader.getType(), IonType.valueOf(optionsMap.get("--data-type").toString().toUpperCase()));
-            }
-        }
-    }
-
-    /**
-     * Assert the exponent range of generated Ion decimals is conform with the expected range.
-     * @throws Exception if error occurs when executing Ion data generator.
-     */
-    @Test
-    public void testGeneratedDecimalExponentRange() throws Exception {
-        Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--data-type", "decimal", "--decimal-exponent-range", "[0,10]", "test2.10n");
-        try (IonReader reader = DataGeneratorTest.executeAndRead(optionsMap)) {
-            List<Integer> range = WriteRandomIonValues.parseRange(optionsMap.get("--decimal-exponent-range").toString());
-            while (reader.next() != null) {
-                int exp = reader.decimalValue().scale();
-                assertTrue(exp * (-1) >= range.get(0) && exp * (-1) <= range.get(1));
-            }
-        }
-    }
-
-    /**
-     * Assert the range of coefficient digits number of generated Ion decimals is conform with the expected range.
-     * @throws Exception if error occurs when executing Ion data generator.
-     */
-    @Test
-    public void testGeneratedDecimalCoefficientRange() throws Exception {
-        Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--data-type", "decimal", "--decimal-coefficient-digit-range", "[1,12]", "test3.10n");
-        try (IonReader reader = DataGeneratorTest.executeAndRead(optionsMap)) {
-            List<Integer> range = WriteRandomIonValues.parseRange(optionsMap.get("--decimal-coefficient-digit-range").toString());
-            while (reader.next() != null) {
-                BigInteger coefficient = reader.decimalValue().unscaledValue();
-                double factor = Math.log(2) / Math.log(10);
-                int digitCount = (int) (factor * coefficient.bitLength() + 1);
-                if (BigInteger.TEN.pow(digitCount - 1).compareTo(coefficient) > 0) {
-                    digitCount = digitCount - 1;
-                }
-                assertTrue(digitCount >= range.get(0) && digitCount <= range.get(1));
-            }
-        }
-    }
-
-    /**
      * Assert the format of generated file is conform with the expected format [ion_binary|ion_text].
      * @throws Exception if error occurs when executing Ion data generator.
      */
@@ -176,7 +118,7 @@ public class DataGeneratorTest {
     public void testGeneratedFormat() throws Exception {
         List<String> inputs = new ArrayList<>(Arrays.asList("ion_text","ion_binary"));
         for (int i = 0; i < 2; i++ ) {
-            Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--data-type", "float", "--format", inputs.get(i), "test4.ion");
+            Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--format", "ion_text", "--input-ion-schema", INPUT_ION_DECIMAL_FILE_PATH, "test8.ion");
             GeneratorOptions.executeGenerator(optionsMap);
             String format = ((List<String>)optionsMap.get("--format")).get(0);
             outputFile = optionsMap.get("<output_file>").toString();
@@ -187,72 +129,12 @@ public class DataGeneratorTest {
     }
 
     /**
-     * Assert the unicode code point range of the character which constructed the generated Ion string is conform with the expect range.
-     * @throws Exception if error occurs when executing Ion data generator.
-     */
-    @Test
-    public void testGeneratedStringUniCodeRange() throws Exception {
-        Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--data-type", "string", "--text-code-point-range", "[96,99]","test5.10n");
-        try (IonReader reader = DataGeneratorTest.executeAndRead(optionsMap)) {
-            List<Integer> range = WriteRandomIonValues.parseRange(optionsMap.get("--text-code-point-range").toString());
-            while (reader.next() != null) {
-                String str = reader.stringValue();
-                for (int i = 0; i < str.length(); i++) {
-                    int codePoint = Character.codePointAt(str, i);
-                    int charCount = Character.charCount(codePoint);
-                    //UTF characters may use more than 1 char to be represented
-                    if (charCount == 2) {
-                        i++;
-                    }
-                    assertTrue(codePoint >= range.get(0) && codePoint <= range.get(1));
-                }
-            }
-        }
-    }
-
-    /**
-     * Assert the generated timestamps is follow the precision and proportion of the given timestamp template.
-     * @throws Exception if error occurs when executing Ion data generator.
-     */
-    @Test
-    public void testGeneratedTimestampTemplateFormat() throws Exception{
-        Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "500", "--data-type", "timestamp", "--timestamps-template", "[2021T, 2021-03T]", "--format", "ion_text", "test6.10n");
-        try (
-                IonReader reader = DataGeneratorTest.executeAndRead(optionsMap);
-                IonReader templateReader = IonReaderBuilder.standard().build(optionsMap.get("--timestamps-template").toString())
-        ) {
-            templateReader.next();
-            templateReader.stepIn();
-            reader.next();
-            while (reader.isNullValue()) {
-                while (templateReader.next() != null){
-                    Timestamp templateTimestamp = templateReader.timestampValue();
-                    Timestamp.Precision templatePrecision = templateTimestamp.getPrecision();
-                    Timestamp.Precision currentPrecision = reader.timestampValue().getPrecision();
-                    Integer templateOffset = templateTimestamp.getLocalOffset();
-                    Integer currentOffset = reader.timestampValue().getLocalOffset();
-                    assertSame(templatePrecision, currentPrecision);
-                    if (currentOffset == null || currentOffset == 0) {
-                        assertSame(currentOffset, templateOffset);
-                    } else {
-                        assertEquals(currentOffset >= -1439 && currentOffset <= 1439, templateOffset >= -1439 && templateOffset <= 1439);
-                    }
-                    if (currentPrecision == Timestamp.Precision.SECOND) {
-                        assertEquals(reader.timestampValue().getDecimalSecond().scale(), templateTimestamp.getDecimalSecond().scale());
-                    }
-                    reader.next();
-                }
-            }
-        }
-    }
-
-    /**
      * Assert the generated data size in bytes has an 10% difference with the expected size, this range is not available for Ion symbol, because the size of symbol is predicted.
      * @throws Exception if error occurs when executing Ion data generator
      */
     @Test
     public void testSizeOfGeneratedData() throws Exception {
-        Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--data-type", "timestamp", "--timestamps-template", "[2021T]", "test7.10n");
+        Map<String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--format", "ion_text", "--input-ion-schema", INPUT_ION_TIMESTAMP_FILE_PATH, "test8.ion");
         GeneratorOptions.executeGenerator(optionsMap);
         int expectedSize = Integer.parseInt(optionsMap.get("--data-size").toString());
         outputFile = optionsMap.get("<output_file>").toString();

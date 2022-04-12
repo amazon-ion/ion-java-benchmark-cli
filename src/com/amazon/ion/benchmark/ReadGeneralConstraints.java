@@ -7,10 +7,12 @@ import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
+import com.amazon.ion.IonWriter;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 
 /**
@@ -19,7 +21,6 @@ import java.io.FileInputStream;
 public class ReadGeneralConstraints {
     public static final IonSystem SYSTEM = IonSystemBuilder.standard().build();
     public static final IonLoader LOADER = SYSTEM.newLoader();
-    private static final String DEFAULT_RANGE = "[0, 1114111]";
 
     /**
      * Get general constraints of Ion Schema and call the relevant generator method based on the type.
@@ -37,43 +38,13 @@ public class ReadGeneralConstraints {
                 // Assume there's only one constraint between schema_header and schema_footer, if more constraints added, here is the point where developers should start.
                 if (schemaValue.getType().equals(IonType.STRUCT) && schemaValue.getTypeAnnotations()[0].equals(IonSchemaUtilities.KEYWORD_TYPE)) {
                     IonStruct constraintStruct = (IonStruct) schemaValue;
-                    // Get general constraints:
-                    IonType type = IonType.valueOf(constraintStruct.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
-                    // If more types of Ion data added in the future, developers can add more types under the switch logic.
-                    switch (type) {
-                        case STRUCT:
-                            // If more constraints relevant to Ion Struct needed to be processed, developers should call functions here.
-                            WriteRandomIonValues.writeRandomStructValues(size, format, outputFile, constraintStruct);
-                            break;
-                        case TIMESTAMP:
-                            WriteRandomIonValues.writeRandomTimestampsFromSchema(size, type, outputFile, format, constraintStruct);
-                            break;
-                        case STRING:
-                            int codePointBoundary = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
-                            WriteRandomIonValues.writeRandomStrings(size, type, outputFile, DEFAULT_RANGE, format, codePointBoundary);
-                            break;
-                        case DECIMAL:
-                            WriteRandomIonValues.writeRandomDecimalsFromSchema(size, type, outputFile, format, constraintStruct);
-                            break;
-                        case INT:
-                            WriteRandomIonValues.writeRandomInts(size, type, format, outputFile);
-                            break;
-                        case FLOAT:
-                            WriteRandomIonValues.writeRandomFloats(size, type, format, outputFile);
-                            break;
-                        case BLOB:
-                        case CLOB:
-                            WriteRandomIonValues.writeRandomLobs(size, type, format, outputFile, constraintStruct);
-                            break;
-                        case SYMBOL:
-                            WriteRandomIonValues.writeRandomSymbolValues(size, format, outputFile);
-                            break;
-                        case LIST:
-                            WriteRandomIonValues.writeRandomListValues(size, format, outputFile, constraintStruct);
-                            break;
-                        default:
-                            throw new IllegalStateException(type + " is not supported when generating IonValue based on Ion Schema.");
+                    //Construct the writer and pass the constraints to the following writing data to files process.
+                    File file = new File(outputFile);
+                    try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
+                        WriteRandomIonValues.writeRequestedSizeFile(size, writer, file, constraintStruct);
                     }
+                    // Print the successfully generated data notification which includes the file path information.
+                    WriteRandomIonValues.printInfo(outputFile);
                 }
             }
         }
