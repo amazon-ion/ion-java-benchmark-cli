@@ -8,6 +8,7 @@ import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.system.IonReaderBuilder;
+import com.amazon.ionschema.AuthorityFilesystem;
 import com.amazon.ionschema.InvalidSchemaException;
 import com.amazon.ionschema.IonSchemaSystem;
 import com.amazon.ionschema.IonSchemaSystemBuilder;
@@ -51,14 +52,25 @@ public class IonSchemaUtilities {
      * @throws Exception if an error occur when creating FileInputStream.
      */
     public static void checkValidationOfSchema(String inputFile) throws Exception {
-        IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().build();
-        try (IonReader readerInput = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(inputFile)))) {
-            IonDatagram schema = ReadGeneralConstraints.LOADER.load(readerInput);
-            ISS.newSchema(schema.iterator());
+        IonSchemaSystem ISS = buildIonSchemaSystem(inputFile);
+        String schemaID = inputFile.substring(inputFile.lastIndexOf('/') + 1);
+        try {
+            ISS.loadSchema(schemaID);
         } catch (InvalidSchemaException e) {
             System.out.println(e.getMessage());
             throw new Exception("The provided ion schema file is not valid");
         }
+    }
+
+    /**
+     * Build IonSchemaSystem from the provided input file path folder.
+     * @param inputFile represents the path of input file.
+     * @return IonSchemaSystem of the input file.
+     */
+    public static IonSchemaSystem buildIonSchemaSystem(String inputFile) {
+        String authority = inputFile.substring(0, inputFile.lastIndexOf('/'));
+        IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().addAuthority(new AuthorityFilesystem(authority)).build();
+        return ISS;
     }
 
     /**

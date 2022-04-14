@@ -12,10 +12,10 @@ import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.util.IonStreamUtils;
 import com.amazon.ionschema.IonSchemaSystem;
-import com.amazon.ionschema.IonSchemaSystemBuilder;
 import com.amazon.ionschema.Schema;
 import com.amazon.ionschema.Type;
 import com.amazon.ionschema.Violations;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -40,7 +40,6 @@ import static org.junit.Assert.assertTrue;
 
 public class DataGeneratorTest {
     private static String outputFile = null;
-    private final static IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().build();
     private final static IonSystem SYSTEM = IonSystemBuilder.standard().build();
     private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testStruct.isl";
     private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/benchmark/testList.isl";
@@ -84,6 +83,7 @@ public class DataGeneratorTest {
         Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--format", "ion_text", "--input-ion-schema", inputFile, "test8.ion");
         String inputFilePath = optionsMap.get("--input-ion-schema").toString();
         outputFile = optionsMap.get("<output_file>").toString();
+        String schemaID = inputFile.substring(inputFile.lastIndexOf('/') + 1);
         try (
                 IonReader readerInput = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(inputFilePath)));
                 IonReader reader = DataGeneratorTest.executeAndRead(optionsMap);
@@ -99,8 +99,9 @@ public class DataGeneratorTest {
                     break;
                 }
             }
-            // Construct new schema and get the type of the Ion Schema.
-            Schema newSchema = ISS.newSchema(schema.iterator());
+            //Load schema file and get the type of the Ion Schema.
+            IonSchemaSystem ISS = IonSchemaUtilities.buildIonSchemaSystem(inputFile);
+            Schema newSchema = ISS.loadSchema(schemaID);
             Type type = newSchema.getType(ionSchemaName);
             while (reader.next() != null) {
                 IonValue value = SYSTEM.newValue(reader);
