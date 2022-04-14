@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Execute Ion Data Generator after receiving the hashmap of command line.
+ * Execute Ion Data Generator after receiving the hashmap of command line options.
  */
 public class GeneratorOptions {
 

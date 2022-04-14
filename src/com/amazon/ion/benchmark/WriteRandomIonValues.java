@@ -51,6 +51,9 @@ class WriteRandomIonValues {
     final static private List<Integer> DEFAULT_RANGE = WriteRandomIonValues.parseRange("[0, 1114111]");
     final static private Timestamp.Precision[] PRECISIONS = Timestamp.Precision.values();
     final static public IonStruct NO_CONSTRAINT_STRUCT = null;
+    final static private int DEFAULT_PRECISION = 20;
+    final static private int DEFAULT_SCALE_LOWER_BOUND = -20;
+    final static private int DEFAULT_SCALE_UPPER_BOUND = 20;
 
     /**
      * Build up the writer based on the provided format (ion_text|ion_binary)
@@ -325,6 +328,8 @@ class WriteRandomIonValues {
             case CLOB:
                 writer.writeClob(WriteRandomIonValues.constructLobs(constraintStruct));
                 break;
+            default:
+                throw new IllegalStateException(type + " is not supported.");
         }
     }
 
@@ -339,7 +344,7 @@ class WriteRandomIonValues {
         String regexPattern = IonSchemaUtilities.parseTextConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_REGEX);
         Integer codePointsLengthBound = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
         if (regexPattern != null) {
-            RgxGen rgxGen = new RgxGen (regexPattern);
+            RgxGen rgxGen = new RgxGen(regexPattern);
             constructedString = rgxGen.generate();
         } else {
             Random random = new Random();
@@ -372,12 +377,12 @@ class WriteRandomIonValues {
         // precision represents the minimum/maximum range indicating the number of digits in the unscaled value of a decimal. The minimum precision must be greater than or equal to 1.
         Integer precision = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_PRECISION);
         if (precision == null) {
-            precision = random.nextInt(Integer.MAX_VALUE);
+            precision = random.nextInt(DEFAULT_PRECISION);
         }
         // scale represents the minimum/maximum range indicating the number of digits to the right of the decimal point. The minimum scale must be greater than or equal to 0.
         Integer scale = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_SCALE);
         if (scale == null) {
-            scale = random.nextInt(Integer.MAX_VALUE);
+            scale = random.nextInt(DEFAULT_SCALE_UPPER_BOUND - DEFAULT_SCALE_LOWER_BOUND + 1) + DEFAULT_SCALE_LOWER_BOUND;
         }
         StringBuilder rs = new StringBuilder();
         rs.append(random.nextInt(9) + 1);
