@@ -8,6 +8,7 @@ import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.system.IonReaderBuilder;
+import com.amazon.ionschema.AuthorityFilesystem;
 import com.amazon.ionschema.InvalidSchemaException;
 import com.amazon.ionschema.IonSchemaSystem;
 import com.amazon.ionschema.IonSchemaSystemBuilder;
@@ -34,6 +35,7 @@ public class IonSchemaUtilities {
     public static final String KEYWORD_CODE_POINT_LENGTH = "codepoint_length";
     public static final String KEYWORD_OCCURS = "occurs";
     public static final String KEYWORD_ELEMENT = "element";
+    public static final String KEYWORD_REGEX = "regex";
     public static final String KEYWORD_ORDERED_ELEMENTS = "ordered_elements";
     public static final String KEYWORD_ORDERED = "ordered";
     public static final String KEYWORD_NAME = "name";
@@ -50,14 +52,25 @@ public class IonSchemaUtilities {
      * @throws Exception if an error occur when creating FileInputStream.
      */
     public static void checkValidationOfSchema(String inputFile) throws Exception {
-        IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().build();
-        try (IonReader readerInput = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(inputFile)))) {
-            IonDatagram schema = ReadGeneralConstraints.LOADER.load(readerInput);
-            ISS.newSchema(schema.iterator());
+        IonSchemaSystem ISS = buildIonSchemaSystem(inputFile);
+        String schemaID = inputFile.substring(inputFile.lastIndexOf('/') + 1);
+        try {
+            ISS.loadSchema(schemaID);
         } catch (InvalidSchemaException e) {
             System.out.println(e.getMessage());
             throw new Exception("The provided ion schema file is not valid");
         }
+    }
+
+    /**
+     * Build IonSchemaSystem from the provided input file path folder.
+     * @param inputFile represents the path of input file.
+     * @return IonSchemaSystem of the input file.
+     */
+    public static IonSchemaSystem buildIonSchemaSystem(String inputFile) {
+        String authority = inputFile.substring(0, inputFile.lastIndexOf('/'));
+        IonSchemaSystem ISS = IonSchemaSystemBuilder.standard().addAuthority(new AuthorityFilesystem(authority)).build();
+        return ISS;
     }
 
     /**
@@ -67,88 +80,90 @@ public class IonSchemaUtilities {
      * @return the value of the current constraint.
      * @throws IOException if an error occur when constructing the IonReader.
      */
-    public static int parseConstraints(IonStruct value, String keyWord) throws IOException {
+    public static Integer parseConstraints(IonStruct value, String keyWord) throws IOException {
         Random random = new Random();
-        int result = 0;
+        Integer result = null;
         int min;
         int max;
-        try (IonReader reader = IonReaderBuilder.standard().build(value)) {
-            reader.next();
-            reader.stepIn();
-            while (reader.next() != null) {
-                if (reader.getFieldName().equals(keyWord)) {
-                    IonType type = reader.getType();
-                    switch (type) {
-                        case INT:
-                            result = reader.intValue();
-                            break;
-                        case SYMBOL:
-                            if (reader.stringValue().equals(KEYWORD_REQUIRED)) {
-                                result = 1;
-                            } else if (reader.stringValue().equals(KEYWORD_OPTIONAL)) {
-                                result = random.nextInt(2);
-                            } else {
-                                throw new IllegalArgumentException ("The value of this option is not supported");
-                            }
-                            break;
-                        case LIST:
-                            reader.stepIn();
-                            reader.next();
-                            if (reader.getType() == IonType.SYMBOL) {
-                                if (reader.symbolValue().equals(KEYWORD_MIN)) {
-                                    min = 0;
-                                } else if (keyWord.equals(IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION)) {
-                                    min = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase()).ordinal();
+        if (value != null) {
+            try (IonReader reader = IonReaderBuilder.standard().build(value)) {
+                reader.next();
+                reader.stepIn();
+                while (reader.next() != null) {
+                    if (reader.getFieldName().equals(keyWord)) {
+                        IonType type = reader.getType();
+                        switch (type) {
+                            case INT:
+                                result = reader.intValue();
+                                break;
+                            case SYMBOL:
+                                if (reader.stringValue().equals(KEYWORD_REQUIRED)) {
+                                    result = 1;
+                                } else if (reader.stringValue().equals(KEYWORD_OPTIONAL)) {
+                                    result = random.nextInt(2);
+                                } else if (reader.getFieldName().equals(KEYWORD_TIMESTAMP_PRECISION)) {
+                                    result = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase()).ordinal();
                                 } else {
-                                    throw new IllegalStateException("The lower bound symbol value is not supported in Ion Schema");
+                                    throw new IllegalArgumentException("The value of this option is not supported");
                                 }
-                            } else {
-                                min = reader.intValue();
-                            }
-                            reader.next();
-                            if (reader.getType() == IonType.SYMBOL) {
-                                if (reader.symbolValue().equals(KEYWORD_MAX)) {
-                                    max = Integer.MAX_VALUE;
-                                } else if (keyWord.equals(IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION)) {
-                                    max = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase()).ordinal();
+                                break;
+                            case LIST:
+                                reader.stepIn();
+                                reader.next();
+                                if (reader.getType() == IonType.SYMBOL) {
+                                    if (reader.symbolValue().equals(KEYWORD_MIN)) {
+                                        min = 0;
+                                    } else if (keyWord.equals(IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION)) {
+                                        min = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase()).ordinal();
+                                    } else {
+                                        throw new IllegalStateException("The lower bound symbol value is not supported in Ion Schema");
+                                    }
                                 } else {
-                                    throw new IllegalStateException("The upper bound symbol value is not supported in Ion Schema");
+                                    min = reader.intValue();
                                 }
-                            } else {
-                                max = reader.intValue();
-                            }
-                            result = random.nextInt(max - min + 1) + min;
-                            break;
+                                reader.next();
+                                if (reader.getType() == IonType.SYMBOL) {
+                                    if (reader.symbolValue().equals(KEYWORD_MAX)) {
+                                        max = Integer.MAX_VALUE;
+                                    } else if (keyWord.equals(IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION)) {
+                                        max = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase()).ordinal();
+                                    } else {
+                                        throw new IllegalStateException("The upper bound symbol value is not supported in Ion Schema");
+                                    }
+                                } else {
+                                    max = reader.intValue();
+                                }
+                                result = random.nextInt(max - min + 1) + min;
+                                break;
+                        }
                     }
                 }
             }
-            return result;
         }
+        return result;
     }
 
     /**
-     * Parse the precision of the timestamp.
-     * @param value is the Ion struct which contain the current constraint field.
-     * @throws IOException if errors occur when reading the data.
-     * @return requested timestamp precision
+     * Extract the value of the constraints in text format, select from the set (regex | (Other unsupported constraint)).
+     * @param constraintStruct is the Ion struct which contain the current constraint field.
+     * @param keyword is the field name of the constraint.
+     * @return the value of the current constraint.
+     * @throws Exception if an error occur when constructing the IonReader.
      */
-    public static Timestamp.Precision getTimestampPrecisionTemplate(IonStruct value) throws IOException {
-        Timestamp.Precision precision = null;
-        try (IonReader reader = IonReaderBuilder.standard().build(value)) {
-            reader.next();
-            reader.stepIn();
-            while (reader.next() != null) {
-                if (reader.getFieldName().equals(KEYWORD_TIMESTAMP_PRECISION)) {
-                    IonType type = reader.getType();
-                    switch (type) {
-                        case SYMBOL:
-                            precision = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase());
-                            break;
+    public static String parseTextConstraints(IonStruct constraintStruct, String keyword) throws Exception {
+        String constraint = null;
+        if (constraintStruct != null) {
+            try (IonReader reader = IonReaderBuilder.standard().build(constraintStruct)) {
+                reader.next();
+                reader.stepIn();
+                while (reader.next() != null) {
+                    if (reader.getFieldName().equals(keyword)) {
+                        constraint = reader.stringValue();
                     }
                 }
             }
         }
-        return precision;
+        return constraint;
     }
 
     /**
