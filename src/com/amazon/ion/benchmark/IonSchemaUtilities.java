@@ -45,8 +45,9 @@ public class IonSchemaUtilities {
     public static final String KEYWORD_MIN = "min";
     public static final String KEYWORD_MAX = "max";
     public static final String KEYWORD_SCALE = "scale";
+    public static final String KEYWORD_RANGE = "range";
     public static final String KEYWORD_PRECISION = "precision";
-    public static final String KEYWORD_VALID_VALUE = "valid_value";
+    public static final String KEYWORD_VALID_VALUE = "valid_values";
 
     /**
      * Check the validation of input ion schema file and will throw InvalidSchemaException message when an invalid schema definition is encountered.
@@ -175,7 +176,7 @@ public class IonSchemaUtilities {
      * @return the result of checking whether constraint 'valid_value' contains the annotation 'range'.
      * @throws Exception if error occurs when building the IonReader.
      */
-    public static IonList checkValidRange(IonStruct constraintStruct) throws Exception {
+    public static IonList getValidValuesAsRange(IonStruct constraintStruct) throws Exception {
         IonList result = null;
         IonSystem SYSTEM = IonSystemBuilder.standard().build();
         IonLoader LOADER = SYSTEM.newLoader();
@@ -184,7 +185,7 @@ public class IonSchemaUtilities {
                 reader.next();
                 reader.stepIn();
                 while (reader.next() != null) {
-                    if (reader.getFieldName().equals(KEYWORD_VALID_VALUE) && reader.getTypeAnnotations().length != 0) {
+                    if (reader.getFieldName().equals(KEYWORD_VALID_VALUE) && Arrays.asList(reader.getTypeAnnotations()).contains(KEYWORD_RANGE)) {
                         // If the constraint contains the annotation 'range' it will return the range value in IonList format for the further data construction process.
                         IonDatagram datagram = LOADER.load(reader);
                         result = (IonList)datagram.get(0);
@@ -197,7 +198,7 @@ public class IonSchemaUtilities {
 
     /**
      * This method is used for paring constraint 'valid_value: [ <VALUE>... ]' and return a randomly selected IonValue.
-     * This method only process the constraint 'valid_value' without the annotation 'range'.
+     * This method only parses for `valid_values` that doesn't contain ranges.
      * @param constraintStruct is the Ion struct which contain the current constraint field.
      * @return an IonValue selected from the provided list randomly.
      * @throws Exception if error occurs when building the IonReader.

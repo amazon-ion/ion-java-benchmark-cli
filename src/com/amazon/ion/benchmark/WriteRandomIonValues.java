@@ -305,7 +305,7 @@ class WriteRandomIonValues {
         // value should be selected randomly from the provided valid value list every iteration.
         // Constraint 'valid_value' has two formats, with annotation '' and without annotation ''. This step only check the format that without annotation.
         // If the annotation 'range' has been detected, it will be processed in the constructing data steps.
-        if (constraintStruct != null && IonSchemaUtilities.parseValidValue(constraintStruct) != null && IonSchemaUtilities.checkValidRange(constraintStruct) == null) {
+        if (constraintStruct != null && IonSchemaUtilities.parseValidValue(constraintStruct) != null && IonSchemaUtilities.getValidValuesAsRange(constraintStruct) == null) {
             IonValue value = IonSchemaUtilities.parseValidValue(constraintStruct);
             value.writeTo(writer);
         } else {
@@ -391,8 +391,8 @@ class WriteRandomIonValues {
     public static double constructFloat(IonStruct constraintStruct) throws Exception {
         Random random = new Random();
         double randomDouble;
-        if (IonSchemaUtilities.checkValidRange(constraintStruct) != null) {
-            IonList range = IonSchemaUtilities.checkValidRange(constraintStruct);
+        if (IonSchemaUtilities.getValidValuesAsRange(constraintStruct) != null) {
+            IonList range = IonSchemaUtilities.getValidValuesAsRange(constraintStruct);
             // Extract the value of 'valid_value:range:: [lowerBound, upperBound]' and convert IonValue to double.
             double lowerBound = Double.valueOf(range.get(0).toString());
             double upperBound = Double.valueOf(range.get(1).toString());
@@ -441,8 +441,8 @@ class WriteRandomIonValues {
         RandomDataGenerator randomDataGenerator = new RandomDataGenerator();
         Random random = new Random();
         long longValue;
-        if (IonSchemaUtilities.checkValidRange(constraintStruct) != null) {
-            IonList range = IonSchemaUtilities.checkValidRange(constraintStruct);
+        if (IonSchemaUtilities.getValidValuesAsRange(constraintStruct) != null) {
+            IonList range = IonSchemaUtilities.getValidValuesAsRange(constraintStruct);
             // Convert IonValue to long
             long lowerBound = Long.valueOf(range.get(0).toString());
             long upperBound = Long.valueOf(range.get(1).toString());
