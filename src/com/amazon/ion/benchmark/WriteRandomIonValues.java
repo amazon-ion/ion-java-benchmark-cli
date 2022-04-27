@@ -28,6 +28,7 @@ import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.system.IonTextWriterBuilder;
 import com.github.curiousoddman.rgxgen.RgxGen;
+import org.apache.commons.math3.random.RandomDataGenerator;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -41,6 +42,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Generate specific scalar type of Ion data randomly, for some specific type, e.g. String, Decimal, Timestamp, users can put specifications on these types of Ion data.
@@ -49,7 +51,7 @@ class WriteRandomIonValues {
     // The constant defined below are used as placeholder in the method WriteRandomIonValues.writeRequestedSizeFile.
     final static private IonSystem SYSTEM = IonSystemBuilder.standard().build();
     final static private List<Integer> DEFAULT_RANGE = WriteRandomIonValues.parseRange("[0, 1114111]");
-    final static private Timestamp.Precision[] PRECISIONS = Timestamp.Precision.values();
+    final static public Timestamp.Precision[] PRECISIONS = Timestamp.Precision.values();
     final static public IonStruct NO_CONSTRAINT_STRUCT = null;
     final static private int DEFAULT_PRECISION = 20;
     final static private int DEFAULT_SCALE_LOWER_BOUND = -20;
@@ -299,37 +301,48 @@ class WriteRandomIonValues {
      */
     private static void writeDataToFile(IonWriter writer, IonStruct constraintStruct) throws Exception {
         IonType type = IonType.valueOf(constraintStruct.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
-        switch (type) {
-            case FLOAT:
-            case SYMBOL:
-                //Not available.
-                break;
-            case INT:
-                writer.writeInt(WriteRandomIonValues.constructInt());
-                break;
-            case STRING:
-                writer.writeString(WriteRandomIonValues.constructString(constraintStruct));
-                break;
-            case DECIMAL:
-                writer.writeDecimal(WriteRandomIonValues.constructDecimal(constraintStruct));
-                break;
-            case TIMESTAMP:
-                writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(constraintStruct));
-                break;
-            case STRUCT:
-                WriteRandomIonValues.constructAndWriteIonStruct(constraintStruct, writer);
-                break;
-            case LIST:
-                WriteRandomIonValues.constructAndWriteIonList(writer, constraintStruct);
-                break;
-            case BLOB:
-                writer.writeBlob(WriteRandomIonValues.constructLobs(constraintStruct));
-                break;
-            case CLOB:
-                writer.writeClob(WriteRandomIonValues.constructLobs(constraintStruct));
-                break;
-            default:
-                throw new IllegalStateException(type + " is not supported.");
+        // Check whether the valid_value constraints provided in the top level constraint struct. If a list of valid_value provided, the generated
+        // value should be selected randomly from the provided valid value list every iteration.
+        // Constraint 'valid_value' has two formats, with annotation '' and without annotation ''. This step only check the format that without annotation.
+        // If the annotation 'range' has been detected, it will be processed in the constructing data steps.
+        if (constraintStruct != null && IonSchemaUtilities.parseValidValue(constraintStruct) != null && IonSchemaUtilities.checkValidRange(constraintStruct) == null) {
+            IonValue value = IonSchemaUtilities.parseValidValue(constraintStruct);
+            value.writeTo(writer);
+        } else {
+            switch (type) {
+                case FLOAT:
+                    writer.writeFloat(WriteRandomIonValues.constructFloat(constraintStruct));
+                    break;
+                case SYMBOL:
+                    writer.writeSymbol(WriteRandomIonValues.constructString(constraintStruct));
+                    break;
+                case INT:
+                    writer.writeInt(WriteRandomIonValues.constructInt(constraintStruct));
+                    break;
+                case STRING:
+                    writer.writeString(WriteRandomIonValues.constructString(constraintStruct));
+                    break;
+                case DECIMAL:
+                    writer.writeDecimal(WriteRandomIonValues.constructDecimal(constraintStruct));
+                    break;
+                case TIMESTAMP:
+                    writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(constraintStruct));
+                    break;
+                case STRUCT:
+                    WriteRandomIonValues.constructAndWriteIonStruct(constraintStruct, writer);
+                    break;
+                case LIST:
+                    WriteRandomIonValues.constructAndWriteIonList(writer, constraintStruct);
+                    break;
+                case BLOB:
+                    writer.writeBlob(WriteRandomIonValues.constructLobs(constraintStruct));
+                    break;
+                case CLOB:
+                    writer.writeClob(WriteRandomIonValues.constructLobs(constraintStruct));
+                    break;
+                default:
+                    throw new IllegalStateException(type + " is not supported.");
+            }
         }
     }
 
@@ -341,13 +354,14 @@ class WriteRandomIonValues {
      */
     public static String constructString(IonStruct constraintStruct) throws Exception {
         String constructedString;
+        Integer codePointsLengthBound;
         String regexPattern = IonSchemaUtilities.parseTextConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_REGEX);
-        Integer codePointsLengthBound = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
         if (regexPattern != null) {
             RgxGen rgxGen = new RgxGen(regexPattern);
             constructedString = rgxGen.generate();
         } else {
             Random random = new Random();
+            codePointsLengthBound = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
             // The condition of no codepoint_length constraint in ion schema.
             if (codePointsLengthBound == null) {
                 // Preset the bound as average number 20;
@@ -369,8 +383,31 @@ class WriteRandomIonValues {
     }
 
     /**
+     * Construct the float which is conformed with the constraints provided in ISL.
+     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
+     * @return the constructed double value.
+     * @throws Exception
+     */
+    public static double constructFloat(IonStruct constraintStruct) throws Exception {
+        Random random = new Random();
+        double randomDouble;
+        if (IonSchemaUtilities.checkValidRange(constraintStruct) != null) {
+            IonList range = IonSchemaUtilities.checkValidRange(constraintStruct);
+            // Extract the value of 'valid_value:range:: [lowerBound, upperBound]' and convert IonValue to double.
+            double lowerBound = Double.valueOf(range.get(0).toString());
+            double upperBound = Double.valueOf(range.get(1).toString());
+            randomDouble = ThreadLocalRandom.current().nextDouble(lowerBound, upperBound);
+        } else {
+            randomDouble = Double.longBitsToDouble(random.nextLong());
+        }
+        return randomDouble;
+    }
+
+    /**
      * Construct the decimal which is conformed with the constraints provided in ISL.
+     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
      * @return the constructed decimal.
+     * @throws Exception if error occurs when parsing the constraints.
      */
     public static BigDecimal constructDecimal(IonStruct constraintStruct) throws Exception {
         Random random = new Random();
@@ -395,11 +432,24 @@ class WriteRandomIonValues {
     }
 
     /**
-     * Generate random integers which composed by different length of data into the output file.
+     * Generate random integers which is conformed with the constraints provided in ISL.
+     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
+     * @return constructed integers
+     * @throws Exception if error occurs when parsing the constraint 'valid_value'.
      */
-    public static long constructInt() {
+    public static long constructInt(IonStruct constraintStruct) throws Exception {
+        RandomDataGenerator randomDataGenerator = new RandomDataGenerator();
         Random random = new Random();
-        long longValue = random.nextLong();
+        long longValue;
+        if (IonSchemaUtilities.checkValidRange(constraintStruct) != null) {
+            IonList range = IonSchemaUtilities.checkValidRange(constraintStruct);
+            // Convert IonValue to long
+            long lowerBound = Long.valueOf(range.get(0).toString());
+            long upperBound = Long.valueOf(range.get(1).toString());
+            longValue = randomDataGenerator.nextLong(lowerBound, upperBound);
+        } else {
+            longValue = random.nextLong();
+        }
         return longValue;
     }
 
@@ -605,7 +655,7 @@ class WriteRandomIonValues {
                     writer.writeString(WriteRandomIonValues.constructString(constraintStruct));
                     break;
                 case INT:
-                    writer.writeInt(WriteRandomIonValues.constructInt());
+                    writer.writeInt(WriteRandomIonValues.constructInt(constraintStruct));
                     break;
                 default:
                     throw new IllegalStateException(valueType + " is not supported when generating Ion List based on Ion Schema.");

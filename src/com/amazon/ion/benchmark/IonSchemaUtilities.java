@@ -2,19 +2,20 @@ package com.amazon.ion.benchmark;
 
 import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonList;
+import com.amazon.ion.IonLoader;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonStruct;
+import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.system.IonReaderBuilder;
+import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ionschema.AuthorityFilesystem;
 import com.amazon.ionschema.InvalidSchemaException;
 import com.amazon.ionschema.IonSchemaSystem;
 import com.amazon.ionschema.IonSchemaSystemBuilder;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +46,7 @@ public class IonSchemaUtilities {
     public static final String KEYWORD_MAX = "max";
     public static final String KEYWORD_SCALE = "scale";
     public static final String KEYWORD_PRECISION = "precision";
+    public static final String KEYWORD_VALID_VALUE = "valid_value";
 
     /**
      * Check the validation of input ion schema file and will throw InvalidSchemaException message when an invalid schema definition is encountered.
@@ -111,9 +113,9 @@ public class IonSchemaUtilities {
                                 reader.stepIn();
                                 reader.next();
                                 if (reader.getType() == IonType.SYMBOL) {
-                                    if (reader.symbolValue().equals(KEYWORD_MIN)) {
+                                    if (reader.stringValue().equals(KEYWORD_MIN)) {
                                         min = 0;
-                                    } else if (keyWord.equals(IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION)) {
+                                    } else if (keyWord.equals(KEYWORD_TIMESTAMP_PRECISION)) {
                                         min = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase()).ordinal();
                                     } else {
                                         throw new IllegalStateException("The lower bound symbol value is not supported in Ion Schema");
@@ -123,9 +125,9 @@ public class IonSchemaUtilities {
                                 }
                                 reader.next();
                                 if (reader.getType() == IonType.SYMBOL) {
-                                    if (reader.symbolValue().equals(KEYWORD_MAX)) {
+                                    if (reader.stringValue().equals(KEYWORD_MAX)) {
                                         max = Integer.MAX_VALUE;
-                                    } else if (keyWord.equals(IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION)) {
+                                    } else if (keyWord.equals(KEYWORD_TIMESTAMP_PRECISION)) {
                                         max = Timestamp.Precision.valueOf(reader.stringValue().toUpperCase()).ordinal();
                                     } else {
                                         throw new IllegalStateException("The upper bound symbol value is not supported in Ion Schema");
@@ -164,6 +166,77 @@ public class IonSchemaUtilities {
             }
         }
         return constraint;
+    }
+
+    /**
+     * This method is used for checking whether the constraint 'valid_value' has the annotation 'range'.
+     * If 'valid_value' has the annotation 'range', this method will return the range value in IonList format, else it will return null.
+     * @param constraintStruct is the Ion struct which contain the current constraint field.
+     * @return the result of checking whether constraint 'valid_value' contains the annotation 'range'.
+     * @throws Exception if error occurs when building the IonReader.
+     */
+    public static IonList checkValidRange(IonStruct constraintStruct) throws Exception {
+        IonList result = null;
+        IonSystem SYSTEM = IonSystemBuilder.standard().build();
+        IonLoader LOADER = SYSTEM.newLoader();
+        if (constraintStruct != null) {
+            try (IonReader reader = IonReaderBuilder.standard().build(constraintStruct)) {
+                reader.next();
+                reader.stepIn();
+                while (reader.next() != null) {
+                    if (reader.getFieldName().equals(KEYWORD_VALID_VALUE) && reader.getTypeAnnotations().length != 0) {
+                        // If the constraint contains the annotation 'range' it will return the range value in IonList format for the further data construction process.
+                        IonDatagram datagram = LOADER.load(reader);
+                        result = (IonList)datagram.get(0);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * This method is used for paring constraint 'valid_value: [ <VALUE>... ]' and return a randomly selected IonValue.
+     * This method only process the constraint 'valid_value' without the annotation 'range'.
+     * @param constraintStruct is the Ion struct which contain the current constraint field.
+     * @return an IonValue selected from the provided list randomly.
+     * @throws Exception if error occurs when building the IonReader.
+     */
+    public static IonValue parseValidValue(IonStruct constraintStruct) throws Exception {
+        IonSystem SYSTEM = IonSystemBuilder.standard().build();
+        IonLoader LOADER = SYSTEM.newLoader();
+        Random random = new Random();
+        IonValue result = null;
+        try (IonReader reader = IonReaderBuilder.standard().build(constraintStruct)) {
+            reader.next();
+            reader.stepIn();
+            // Build the top level constraints into a reader and iterate the struct to find the constraint 'valid_value'.
+            while (reader.next() != null) {
+                // Find the constraint 'valid_value' and get the value of this constraint.
+                // The formats of 'valid_value' are [ <VALUE>... ], <RANGE<NUMBER>>, <RANGE<TIMESTAMP>>.
+                if (reader.getFieldName().equals(KEYWORD_VALID_VALUE)) {
+                    // Get the annotation of constraint.
+                    String[] annotations = reader.getTypeAnnotations();
+                    IonType type = reader.getType();
+                    // Check whether the provided constraints value is valid or not.
+                    if (type.equals(IonType.LIST)) {
+                        // This method only process a list of valid value [ <VALUE>... ]. The constraint with annotation 'range' will be processed in the construct data methods.
+                        if (annotations.length == 0) {
+                            // Save the constraint value to IonDatagram and randomly get a value from the list.
+                            IonDatagram datagram = LOADER.load(reader);
+                            IonList listValue = (IonList)datagram.get(0);
+                            int randomIndex = random.nextInt(listValue.size());
+                            result = listValue.get(randomIndex);
+                        } else {
+                            break;
+                        }
+                    } else {
+                        throw new IllegalStateException("The provided constraints value is not valid.");
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     /**

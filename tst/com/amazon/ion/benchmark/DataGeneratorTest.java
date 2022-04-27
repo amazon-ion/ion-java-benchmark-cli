@@ -48,6 +48,10 @@ public class DataGeneratorTest {
     private final static String INPUT_ION_TIMESTAMP_FILE_PATH = "./tst/com/amazon/ion/benchmark/testTimestamp.isl";
     private final static String INPUT_ION_CLOB_FILE_PATH = "./tst/com/amazon/ion/benchmark/testClob.isl";
     private final static String INPUT_ION_BLOB_FILE_PATH = "./tst/com/amazon/ion/benchmark/testBlob.isl";
+    private final static String INPUT_ION_FLOAT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testFloat.isl";
+    private final static String INPUT_ION_FLOAT_VALID_VALUE_FILE_PATH = "./tst/com/amazon/ion/benchmark/testFloatValidValue.isl";
+    private final static String INPUT_ION_SYMBOL_FILE_PATH = "./tst/com/amazon/ion/benchmark/testSymbol.isl";
+    private final static String INPUT_ION_STRING_FILE_PATH = "./tst/com/amazon/ion/benchmark/testString.isl";
     private final static String SCORE_DIFFERENCE = "scoreDifference";
     private final static String COMPARISON_REPORT_WITHOUT_REGRESSION = "./tst/com/amazon/ion/benchmark/testComparisonReportWithoutRegression.ion";
     private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/benchmark/testComparisonReport.ion";
@@ -209,6 +213,42 @@ public class DataGeneratorTest {
     @Test
     public void testViolationOfIonBlob() throws Exception {
         DataGeneratorTest.violationDetect(INPUT_ION_BLOB_FILE_PATH);
+    }
+
+    /**
+     * Test if there's violation when generating floats from Ion Schema file.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testViolationOfFloat() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_ION_FLOAT_FILE_PATH);
+    }
+
+    /**
+     * Test if there's violation when generating floats from Ion Schema file.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testViolationOfSymbol() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_ION_SYMBOL_FILE_PATH);
+    }
+
+    /**
+     * Test if there's violation when generating floats from Ion Schema file.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testViolationOfString() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_ION_STRING_FILE_PATH);
+    }
+
+    /**
+     * Test if there's violation when generating floats from Ion Schema file which specifies valid value.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testViolationOfFloatValidValue() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_ION_FLOAT_VALID_VALUE_FILE_PATH);
     }
 
     /**
