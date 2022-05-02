@@ -48,6 +48,8 @@ public class IonSchemaUtilities {
     public static final String KEYWORD_RANGE = "range";
     public static final String KEYWORD_PRECISION = "precision";
     public static final String KEYWORD_VALID_VALUE = "valid_values";
+    private static final IonSystem SYSTEM = IonSystemBuilder.standard().build();
+    private static final IonLoader LOADER = SYSTEM.newLoader();
 
     /**
      * Check the validation of input ion schema file and will throw InvalidSchemaException message when an invalid schema definition is encountered.
@@ -170,22 +172,19 @@ public class IonSchemaUtilities {
     }
 
     /**
-     * This method is used for checking whether the constraint 'valid_value' has the annotation 'range'.
-     * If 'valid_value' has the annotation 'range', this method will return the range value in IonList format, else it will return null.
+     * This method is used for getting the constraint value which contains annotation 'range'.
      * @param constraintStruct is the Ion struct which contain the current constraint field.
      * @return the result of checking whether constraint 'valid_value' contains the annotation 'range'.
      * @throws Exception if error occurs when building the IonReader.
      */
-    public static IonList getValidValuesAsRange(IonStruct constraintStruct) throws Exception {
+    public static IonList getConstraintValueAsRange(IonStruct constraintStruct, String keyword) throws Exception {
         IonList result = null;
-        IonSystem SYSTEM = IonSystemBuilder.standard().build();
-        IonLoader LOADER = SYSTEM.newLoader();
         if (constraintStruct != null) {
             try (IonReader reader = IonReaderBuilder.standard().build(constraintStruct)) {
                 reader.next();
                 reader.stepIn();
                 while (reader.next() != null) {
-                    if (reader.getFieldName().equals(KEYWORD_VALID_VALUE) && Arrays.asList(reader.getTypeAnnotations()).contains(KEYWORD_RANGE)) {
+                    if (reader.getFieldName().equals(keyword) && Arrays.asList(reader.getTypeAnnotations()).contains(KEYWORD_RANGE)) {
                         // If the constraint contains the annotation 'range' it will return the range value in IonList format for the further data construction process.
                         IonDatagram datagram = LOADER.load(reader);
                         result = (IonList)datagram.get(0);
@@ -197,15 +196,13 @@ public class IonSchemaUtilities {
     }
 
     /**
-     * This method is used for paring constraint 'valid_value: [ <VALUE>... ]' and return a randomly selected IonValue.
+     * This method is used for parsing constraint 'valid_value: [ <VALUE>... ]' and return a randomly selected IonValue.
      * This method only parses for `valid_values` that doesn't contain ranges.
      * @param constraintStruct is the Ion struct which contain the current constraint field.
      * @return an IonValue selected from the provided list randomly.
      * @throws Exception if error occurs when building the IonReader.
      */
     public static IonValue parseValidValue(IonStruct constraintStruct) throws Exception {
-        IonSystem SYSTEM = IonSystemBuilder.standard().build();
-        IonLoader LOADER = SYSTEM.newLoader();
         Random random = new Random();
         IonValue result = null;
         try (IonReader reader = IonReaderBuilder.standard().build(constraintStruct)) {

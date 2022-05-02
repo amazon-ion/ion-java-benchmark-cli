@@ -40,6 +40,7 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -50,7 +51,7 @@ import java.util.concurrent.ThreadLocalRandom;
 class WriteRandomIonValues {
     // The constant defined below are used as placeholder in the method WriteRandomIonValues.writeRequestedSizeFile.
     final static private IonSystem SYSTEM = IonSystemBuilder.standard().build();
-    final static private List<Integer> DEFAULT_RANGE = WriteRandomIonValues.parseRange("[0, 1114111]");
+    final static private List<Integer> DEFAULT_RANGE = Arrays.asList(0, 0x10FFFF);
     final static public Timestamp.Precision[] PRECISIONS = Timestamp.Precision.values();
     final static public IonStruct NO_CONSTRAINT_STRUCT = null;
     final static private int DEFAULT_PRECISION = 20;
@@ -301,12 +302,15 @@ class WriteRandomIonValues {
      */
     private static void writeDataToFile(IonWriter writer, IonStruct constraintStruct) throws Exception {
         IonType type = IonType.valueOf(constraintStruct.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
-        // Check whether the valid_value constraints provided in the top level constraint struct. If a list of valid_value provided, the generated
-        // value should be selected randomly from the provided valid value list every iteration.
+        IonValue value = null;
+        // Check whether the valid_value constraints provided in the top level constraint struct.
+        // If a list of valid_value provided, the generated value should be selected randomly from the provided valid value list every iteration.
         // Constraint 'valid_value' has two formats, with annotation '' and without annotation ''. This step only check the format that without annotation.
         // If the annotation 'range' has been detected, it will be processed in the constructing data steps.
-        if (constraintStruct != null && IonSchemaUtilities.parseValidValue(constraintStruct) != null && IonSchemaUtilities.getValidValuesAsRange(constraintStruct) == null) {
-            IonValue value = IonSchemaUtilities.parseValidValue(constraintStruct);
+        if (constraintStruct != null) {
+            value = IonSchemaUtilities.parseValidValue(constraintStruct);
+        }
+        if (value != null && IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUE) == null) {
             value.writeTo(writer);
         } else {
             switch (type) {
@@ -353,32 +357,71 @@ class WriteRandomIonValues {
      * @throws Exception if error occurs when parsing the constraints.
      */
     public static String constructString(IonStruct constraintStruct) throws Exception {
+        Random random = new Random();
         String constructedString;
-        Integer codePointsLengthBound;
         String regexPattern = IonSchemaUtilities.parseTextConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_REGEX);
-        if (regexPattern != null) {
+        Integer codePointsLengthBound = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
+        if (regexPattern != null && codePointsLengthBound != null) {
+            int codePointLength;
+            RgxGen rgxGen = new RgxGen(regexPattern);
+            // Get the range of codePointLength and check whether the codepoint length of generated string aligned with the specified range.
+            IonList codePointRange = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
+            // If there are both 'regex' and 'codepoint_length' constraints in ISL, 'regex' will be prioritized as the first implementation step.
+            // The second step is to check whether the generated string conformed with the constraint 'codepoint_length'.
+            // The provided constraints might be conflict with each other, e.g. 'regex: "^B[0-9]{9}$", codepoint_length:range::[2, 7]' which will
+            // lead to endless iterations of the do while loop.
+            // To avoid this condition, using 'count' as a threshold to determine when to terminate the process.
+            int count = 0;
+            do {
+                if (count >= 10) {
+                    constructedString = null;
+                    break;
+                }
+                constructedString = rgxGen.generate();
+                codePointLength = constructedString.codePointCount(0, constructedString.length());
+                count++;
+            } while (codePointLength < Integer.parseInt(codePointRange.get(0).toString()) || codePointLength > Integer.parseInt(codePointRange.get(1).toString()));
+        } else if (regexPattern == null && codePointsLengthBound != null) {
+            // Construct string with the specified Unicode codepoints length.
+            constructedString = constructStringFromCodepointLength(codePointsLengthBound);
+        } else if (regexPattern != null && codePointsLengthBound == null) {
             RgxGen rgxGen = new RgxGen(regexPattern);
             constructedString = rgxGen.generate();
         } else {
-            Random random = new Random();
-            codePointsLengthBound = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
-            // The condition of no codepoint_length constraint in ion schema.
-            if (codePointsLengthBound == null) {
-                // Preset the bound as average number 20;
-                codePointsLengthBound = random.nextInt(20);
-            }
-            StringBuilder sb = new StringBuilder();
-            for (int j = 0; j < codePointsLengthBound; j++) {
-                int codePoint;
-                int type;
-                do {
-                    codePoint = random.nextInt(DEFAULT_RANGE.get(1) - DEFAULT_RANGE.get(0) + 1) + DEFAULT_RANGE.get(0);
-                    type = Character.getType(codePoint);
-                } while (type == Character.PRIVATE_USE || type == Character.SURROGATE || type == Character.UNASSIGNED);
-                sb.appendCodePoint(codePoint);
-            }
-            constructedString = sb.toString();
+            // Preset the Unicode codepoints length as average number 20;
+            codePointsLengthBound = random.nextInt(20);
+            constructedString = constructStringFromCodepointLength(codePointsLengthBound);
         }
+        return constructedString;
+    }
+
+    /**
+     * Generate unicode codepoint randomly.
+     * @return generated codepoint.
+     */
+    private static int getCodePoint() {
+        Random random = new Random();
+        int type;
+        int codePoint;
+        do {
+            codePoint = random.nextInt(DEFAULT_RANGE.get(1) - DEFAULT_RANGE.get(0) + 1) + DEFAULT_RANGE.get(0);
+            type = Character.getType(codePoint);
+        } while (type == Character.PRIVATE_USE || type == Character.SURROGATE || type == Character.UNASSIGNED);
+        return codePoint;
+    }
+
+    /**
+     *  Construct string which is conformed with the provided codepoint_length.
+     * @param codePointsLengthBound represents the exact number of Unicode codepoints in a string or symbol.
+     * @return the constructed string.
+     */
+    private static String constructStringFromCodepointLength(int codePointsLengthBound) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < codePointsLengthBound; i++) {
+            int codePoint = getCodePoint();
+            sb.appendCodePoint(codePoint);
+        }
+        String constructedString = sb.toString();
         return constructedString;
     }
 
@@ -391,8 +434,8 @@ class WriteRandomIonValues {
     public static double constructFloat(IonStruct constraintStruct) throws Exception {
         Random random = new Random();
         double randomDouble;
-        if (IonSchemaUtilities.getValidValuesAsRange(constraintStruct) != null) {
-            IonList range = IonSchemaUtilities.getValidValuesAsRange(constraintStruct);
+        IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUE);
+        if (range != null) {
             // Extract the value of 'valid_value:range:: [lowerBound, upperBound]' and convert IonValue to double.
             double lowerBound = Double.valueOf(range.get(0).toString());
             double upperBound = Double.valueOf(range.get(1).toString());
@@ -438,15 +481,14 @@ class WriteRandomIonValues {
      * @throws Exception if error occurs when parsing the constraint 'valid_value'.
      */
     public static long constructInt(IonStruct constraintStruct) throws Exception {
-        RandomDataGenerator randomDataGenerator = new RandomDataGenerator();
         Random random = new Random();
         long longValue;
-        if (IonSchemaUtilities.getValidValuesAsRange(constraintStruct) != null) {
-            IonList range = IonSchemaUtilities.getValidValuesAsRange(constraintStruct);
+        IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUE);
+        if (range != null) {
             // Convert IonValue to long
             long lowerBound = Long.valueOf(range.get(0).toString());
             long upperBound = Long.valueOf(range.get(1).toString());
-            longValue = randomDataGenerator.nextLong(lowerBound, upperBound);
+            longValue = lowerBound + (long)(Math.random() * (upperBound - lowerBound));
         } else {
             longValue = random.nextLong();
         }
