@@ -28,7 +28,6 @@ import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.system.IonTextWriterBuilder;
 import com.github.curiousoddman.rgxgen.RgxGen;
-import org.apache.commons.math3.random.RandomDataGenerator;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -303,14 +302,14 @@ class WriteRandomIonValues {
     private static void writeDataToFile(IonWriter writer, IonStruct constraintStruct) throws Exception {
         IonType type = IonType.valueOf(constraintStruct.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
         IonValue value = null;
-        // Check whether the valid_value constraints provided in the top level constraint struct.
-        // If a list of valid_value provided, the generated value should be selected randomly from the provided valid value list every iteration.
-        // Constraint 'valid_value' has two formats, with annotation '' and without annotation ''. This step only check the format that without annotation.
+        // Check whether the 'valid_values' constraints provided in the top level constraint struct.
+        // If a list of 'valid_values' provided, the generated value should be selected randomly from the provided 'valid_values' list every iteration.
+        // Constraint 'valid_values' has three formats. <RANGE<TIMESTAMP>>, <RANGE<NUMBER>> and [ <VALUE>... ]. This step only check the format [ <VALUE>... ].
         // If the annotation 'range' has been detected, it will be processed in the constructing data steps.
         if (constraintStruct != null) {
-            value = IonSchemaUtilities.parseValidValue(constraintStruct);
+            value = IonSchemaUtilities.parseValidValues(constraintStruct);
         }
-        if (value != null && IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUE) == null) {
+        if (value != null && IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUES) == null) {
             value.writeTo(writer);
         } else {
             switch (type) {
@@ -361,26 +360,9 @@ class WriteRandomIonValues {
         String constructedString;
         String regexPattern = IonSchemaUtilities.parseTextConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_REGEX);
         Integer codePointsLengthBound = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
+        // For now, if there are potentially-conflicting constraints detected, an exception statement will be thrown.
         if (regexPattern != null && codePointsLengthBound != null) {
-            int codePointLength;
-            RgxGen rgxGen = new RgxGen(regexPattern);
-            // Get the range of codePointLength and check whether the codepoint length of generated string aligned with the specified range.
-            IonList codePointRange = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
-            // If there are both 'regex' and 'codepoint_length' constraints in ISL, 'regex' will be prioritized as the first implementation step.
-            // The second step is to check whether the generated string conformed with the constraint 'codepoint_length'.
-            // The provided constraints might be conflict with each other, e.g. 'regex: "^B[0-9]{9}$", codepoint_length:range::[2, 7]' which will
-            // lead to endless iterations of the do while loop.
-            // To avoid this condition, using 'count' as a threshold to determine when to terminate the process.
-            int count = 0;
-            do {
-                if (count >= 10) {
-                    constructedString = null;
-                    break;
-                }
-                constructedString = rgxGen.generate();
-                codePointLength = constructedString.codePointCount(0, constructedString.length());
-                count++;
-            } while (codePointLength < Integer.parseInt(codePointRange.get(0).toString()) || codePointLength > Integer.parseInt(codePointRange.get(1).toString()));
+            throw new IllegalStateException("This constraints combination can not be processed in Ion Data Generator.");
         } else if (regexPattern == null && codePointsLengthBound != null) {
             // Construct string with the specified Unicode codepoints length.
             constructedString = constructStringFromCodepointLength(codePointsLengthBound);
@@ -429,14 +411,14 @@ class WriteRandomIonValues {
      * Construct the float which is conformed with the constraints provided in ISL.
      * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
      * @return the constructed double value.
-     * @throws Exception
+     * @throws Exception if error occurs when getting the constraints value.
      */
     public static double constructFloat(IonStruct constraintStruct) throws Exception {
         Random random = new Random();
         double randomDouble;
-        IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUE);
+        IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUES);
         if (range != null) {
-            // Extract the value of 'valid_value:range:: [lowerBound, upperBound]' and convert IonValue to double.
+            // Extract the value of 'valid_values:range:: [lowerBound, upperBound]' and convert IonValue to double.
             double lowerBound = Double.valueOf(range.get(0).toString());
             double upperBound = Double.valueOf(range.get(1).toString());
             randomDouble = ThreadLocalRandom.current().nextDouble(lowerBound, upperBound);
@@ -478,12 +460,12 @@ class WriteRandomIonValues {
      * Generate random integers which is conformed with the constraints provided in ISL.
      * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
      * @return constructed integers
-     * @throws Exception if error occurs when parsing the constraint 'valid_value'.
+     * @throws Exception if error occurs when parsing the constraint 'valid_values'.
      */
     public static long constructInt(IonStruct constraintStruct) throws Exception {
         Random random = new Random();
         long longValue;
-        IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUE);
+        IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUES);
         if (range != null) {
             // Convert IonValue to long
             long lowerBound = Long.valueOf(range.get(0).toString());
