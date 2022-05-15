@@ -414,7 +414,6 @@ class WriteRandomIonValues {
      * @throws Exception if error occurs when getting the constraints value.
      */
     public static double constructFloat(IonStruct constraintStruct) throws Exception {
-        Random random = new Random();
         double randomDouble;
         IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUES);
         if (range != null) {
@@ -423,7 +422,7 @@ class WriteRandomIonValues {
             double upperBound = Double.valueOf(range.get(1).toString());
             randomDouble = ThreadLocalRandom.current().nextDouble(lowerBound, upperBound);
         } else {
-            randomDouble = Double.longBitsToDouble(random.nextLong());
+            randomDouble = ThreadLocalRandom.current().nextDouble();
         }
         return randomDouble;
     }
@@ -463,16 +462,15 @@ class WriteRandomIonValues {
      * @throws Exception if error occurs when parsing the constraint 'valid_values'.
      */
     public static long constructInt(IonStruct constraintStruct) throws Exception {
-        Random random = new Random();
         long longValue;
         IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUES);
         if (range != null) {
             // Convert IonValue to long
             long lowerBound = Long.valueOf(range.get(0).toString());
             long upperBound = Long.valueOf(range.get(1).toString());
-            longValue = lowerBound + (long)(Math.random() * (upperBound - lowerBound));
+            longValue = ThreadLocalRandom.current().nextLong(lowerBound, upperBound);
         } else {
-            longValue = random.nextLong();
+            longValue = ThreadLocalRandom.current().nextLong();
         }
         return longValue;
     }
