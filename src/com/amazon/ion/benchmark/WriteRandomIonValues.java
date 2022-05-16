@@ -361,6 +361,7 @@ class WriteRandomIonValues {
         String regexPattern = IonSchemaUtilities.parseTextConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_REGEX);
         Integer codePointsLengthBound = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
         // For now, if there are potentially-conflicting constraints detected, an exception statement will be thrown.
+        // For more information: https://github.com/amzn/ion-java-benchmark-cli/issues/33
         if (regexPattern != null && codePointsLengthBound != null) {
             throw new IllegalStateException("This constraints combination can not be processed in Ion Data Generator.");
         } else if (regexPattern == null && codePointsLengthBound != null) {
@@ -393,7 +394,7 @@ class WriteRandomIonValues {
     }
 
     /**
-     *  Construct string which is conformed with the provided codepoint_length.
+     * Construct string which is conformed with the provided codepoint_length.
      * @param codePointsLengthBound represents the exact number of Unicode codepoints in a string or symbol.
      * @return the constructed string.
      */
@@ -556,6 +557,7 @@ class WriteRandomIonValues {
         random.nextBytes(randomBytes);
         return randomBytes;
     }
+
     /**
      * Construct and write Ion structs based on the provided constraints.
      * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
