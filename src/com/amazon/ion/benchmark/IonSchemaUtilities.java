@@ -15,6 +15,7 @@ import com.amazon.ionschema.AuthorityFilesystem;
 import com.amazon.ionschema.InvalidSchemaException;
 import com.amazon.ionschema.IonSchemaSystem;
 import com.amazon.ionschema.IonSchemaSystemBuilder;
+import com.amazon.ionschema.Schema;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -54,16 +55,20 @@ public class IonSchemaUtilities {
     /**
      * Check the validation of input ion schema file and will throw InvalidSchemaException message when an invalid schema definition is encountered.
      * @param inputFile represents the file path of the ion schema file.
-     * @throws Exception if an error occur when creating FileInputStream.
+     * @return schema loaded from input ISL file.
      */
-    public static void checkValidationOfSchema(String inputFile) throws Exception {
+    public static Schema checkValidationOfSchema(String inputFile) {
+        // Build ion schema system from input ISL file.
         IonSchemaSystem ISS = buildIonSchemaSystem(inputFile);
+        // Get the name of ISL file as schema ID.
         String schemaID = inputFile.substring(inputFile.lastIndexOf('/') + 1);
+        // If the input ISL file is not validated by ion schema kotlin, it will throw an error.
+        // If the input ISL file is valid, the loaded schema will be returned.
         try {
-            ISS.loadSchema(schemaID);
+            return ISS.loadSchema(schemaID);
         } catch (InvalidSchemaException e) {
             System.out.println(e.getMessage());
-            throw new Exception("The provided ion schema file is not valid");
+            throw new IllegalStateException("The provided ion schema file is not valid");
         }
     }
 
