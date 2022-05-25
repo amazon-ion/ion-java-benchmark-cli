@@ -23,6 +23,9 @@ import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
 import com.amazon.ion.IonWriter;
 import com.amazon.ion.Timestamp;
+import com.amazon.ion.benchmark.schema.ReparsedType;
+import com.amazon.ion.benchmark.schema.constraints.ReparsedConstraint;
+import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 import com.amazon.ion.system.IonBinaryWriterBuilder;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
@@ -40,7 +43,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -271,22 +276,22 @@ class WriteRandomIonValues {
      * @param size specifies the size in bytes of the generated file.
      * @param writer writer is IonWriter.
      * @param file the generated file which contains specified Ion data.
-     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
-     * @throws IOException if an error occur when writing generated data.
+     * @param parsedTypeDefinition is parsed from ion schema file as IonStruct format, it contains the top-level constraints.
+     * @throws Exception if an error occur when writing generated data.
      */
-    public static void writeRequestedSizeFile(int size, IonWriter writer, File file, IonStruct constraintStruct) throws Exception {
+    public static void writeRequestedSizeFile(int size, IonWriter writer, File file, ReparsedType parsedTypeDefinition) throws Exception {
         int currentSize = 0;
         int count = 0;
         // Determine how many values should be written before the writer.flush(), and this process aims to reduce the execution time of writer.flush().
         while (currentSize <= 0.05 * size) {
-            WriteRandomIonValues.writeDataToFile(writer, constraintStruct);
+            WriteRandomIonValues.writeDataToFile(writer, parsedTypeDefinition);
             count += 1;
             writer.flush();
             currentSize = (int) file.length();
         }
         while (currentSize <= size) {
             for (int i = 0; i < count; i++) {
-                WriteRandomIonValues.writeDataToFile(writer, constraintStruct);
+                WriteRandomIonValues.writeDataToFile(writer, parsedTypeDefinition);
             }
             writer.flush();
             currentSize = (int) file.length();
@@ -294,27 +299,30 @@ class WriteRandomIonValues {
     }
 
     /**
-     * This method will be reused by different data generator
-     * @param writer writer is IonWriter.
-     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
-     * @throws IOException if an error occur during the data writing process.
+     * Generating data which is conformed with provided constraints and writing it to the output file.
+     * @param writer is IonWriter.
+     * @param parsedTypeDefinition is parsed from ion schema file as IonStruct format, it contains the top-level constraints.
+     * @throws Exception if an error occur during the data writing process.
      */
-    private static void writeDataToFile(IonWriter writer, IonStruct constraintStruct) throws Exception {
-        IonType type = IonType.valueOf(constraintStruct.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
-        IonValue value = null;
-        // Check whether the 'valid_values' constraints provided in the top level constraint struct.
-        // If a list of 'valid_values' provided, the generated value should be selected randomly from the provided 'valid_values' list every iteration.
-        // Constraint 'valid_values' has three formats. <RANGE<TIMESTAMP>>, <RANGE<NUMBER>> and [ <VALUE>... ]. This step only check the format [ <VALUE>... ].
-        // If the annotation 'range' has been detected, it will be processed in the constructing data steps.
-        if (constraintStruct != null) {
-            value = IonSchemaUtilities.parseValidValues(constraintStruct);
-        }
-        if (value != null && IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUES) == null) {
-            value.writeTo(writer);
+    private static void writeDataToFile(IonWriter writer, ReparsedType parsedTypeDefinition) throws Exception {
+        // The first step is to check whether parsedTypeDefinition contains 'valid_values'. The reason we prioritize checking
+        // 'valid_values' is that the constraint 'type' might not be contained in the type definition, in that case we cannot trigger
+        // the following data constructing process.
+        // Assume if 'valid_values' provided in ISL file, constraint 'type' is optional, else constraint 'type' is required.
+        Map<String, ReparsedConstraint> constraintMap = parsedTypeDefinition.getConstraintMap();
+        Map<String, ReparsedConstraint> constraintMapClone = new HashMap<>();
+        constraintMapClone.putAll(constraintMap);
+        ValidValues validValues = (ValidValues) constraintMap.get("valid_values");
+        if (validValues != null && !validValues.isRange()) {
+            IonValue validValue = getRandomValueFromList(validValues.getValidValues());
+            validValue.writeTo(writer);
+        } else if (parsedTypeDefinition.getIonType() == null) {
+            throw new IllegalStateException("Constraint 'type' is required.");
         } else {
+            IonType type = parsedTypeDefinition.getIonType();
             switch (type) {
                 case FLOAT:
-                    writer.writeFloat(WriteRandomIonValues.constructFloat(constraintStruct));
+                    writer.writeFloat(WriteRandomIonValues.constructFloat(constraintMapClone));
                     break;
                 case SYMBOL:
                     writer.writeSymbol(WriteRandomIonValues.constructString(constraintStruct));
@@ -347,6 +355,17 @@ class WriteRandomIonValues {
                     throw new IllegalStateException(type + " is not supported.");
             }
         }
+    }
+
+    /**
+     * Get a random IonValue from IonList.
+     * @param values represents IonList.
+     * @return the randomly chosen IonValue.
+     */
+    public static IonValue getRandomValueFromList(IonList values) {
+        Random random = new Random();
+        int randomIndex = random.nextInt(values.size());
+        return values.get(randomIndex);
     }
 
     /**
@@ -410,22 +429,22 @@ class WriteRandomIonValues {
 
     /**
      * Construct the float which is conformed with the constraints provided in ISL.
-     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
+     * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
+     * and the value is constraint value in ReparsedConstraint format.
      * @return the constructed double value.
-     * @throws Exception if error occurs when getting the constraints value.
      */
-    public static double constructFloat(IonStruct constraintStruct) throws Exception {
-        double randomDouble;
-        IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUES);
-        if (range != null) {
-            // Extract the value of 'valid_values:range:: [lowerBound, upperBound]' and convert IonValue to double.
-            double lowerBound = Double.valueOf(range.get(0).toString());
-            double upperBound = Double.valueOf(range.get(1).toString());
-            randomDouble = ThreadLocalRandom.current().nextDouble(lowerBound, upperBound);
-        } else {
-            randomDouble = ThreadLocalRandom.current().nextDouble();
+    public static Double constructFloat(Map<String, ReparsedConstraint> constraintMapClone) {
+        // In the process of generating IonFloat, there is no type-specified constraints. For this step we
+        // only consider the general constraint 'valid_values'.
+        ValidValues validValues = (ValidValues) constraintMapClone.remove("valid_values");
+        if (!constraintMapClone.isEmpty()) {
+            throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
         }
-        return randomDouble;
+        if (validValues != null) {
+            return validValues.getRange().getRandomQuantifiableValueFromRange().doubleValue();
+        } else {
+            return ThreadLocalRandom.current().nextDouble();
+        }
     }
 
     /**
