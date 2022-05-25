@@ -335,7 +335,7 @@ class WriteRandomIonValues {
                     writer.writeSymbol(WriteRandomIonValues.constructString(constraintMapClone));
                     break;
                 case INT:
-                    writer.writeInt(WriteRandomIonValues.constructInt(constraintStruct));
+                    writer.writeInt(WriteRandomIonValues.constructInt(constraintMapClone));
                     break;
                 case STRING:
                     writer.writeString(WriteRandomIonValues.constructString(constraintMapClone));
@@ -486,22 +486,24 @@ class WriteRandomIonValues {
 
     /**
      * Generate random integers which is conformed with the constraints provided in ISL.
-     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
-     * @return constructed integers
-     * @throws Exception if error occurs when parsing the constraint 'valid_values'.
+     * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
+     * and the value is in ReparsedConstraint format.
+     * @return constructed int.
      */
-    public static long constructInt(IonStruct constraintStruct) throws Exception {
-        long longValue;
-        IonList range = IonSchemaUtilities.getConstraintValueAsRange(constraintStruct, IonSchemaUtilities.KEYWORD_VALID_VALUES);
-        if (range != null) {
-            // Convert IonValue to long
-            long lowerBound = Long.valueOf(range.get(0).toString());
-            long upperBound = Long.valueOf(range.get(1).toString());
-            longValue = ThreadLocalRandom.current().nextLong(lowerBound, upperBound);
-        } else {
-            longValue = ThreadLocalRandom.current().nextLong();
+    public static long constructInt(Map<String, ReparsedConstraint> constraintMapClone) {
+        // In the process of generating IonInt, there is no type-specified constraints. For this step we
+        // only consider the general constraints 'valid_values'.
+        ValidValues validValues = (ValidValues) constraintMapClone.remove("valid_values");
+        if (!constraintMapClone.isEmpty()) {
+            throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
         }
-        return longValue;
+        if (validValues != null) {
+            // The generated data is conformed with the provided 'valid_values' range.
+            return validValues.getRange().getRandomQuantifiableValueFromRange().longValue();
+        } else {
+            // If there is no constraint provided, the generator will construct a random value.
+            return ThreadLocalRandom.current().nextLong();
+        }
     }
 
     /**
