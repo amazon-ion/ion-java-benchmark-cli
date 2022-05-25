@@ -24,6 +24,7 @@ import com.amazon.ion.IonValue;
 import com.amazon.ion.IonWriter;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.benchmark.schema.ReparsedType;
+import com.amazon.ion.benchmark.schema.constraints.ByteLength;
 import com.amazon.ion.benchmark.schema.constraints.CodepointLength;
 import com.amazon.ion.benchmark.schema.constraints.Regex;
 import com.amazon.ion.benchmark.schema.constraints.ReparsedConstraint;
@@ -353,10 +354,10 @@ class WriteRandomIonValues {
 //                    WriteRandomIonValues.constructAndWriteIonList(writer, constraintStruct);
 //                    break;
                 case BLOB:
-                    writer.writeBlob(WriteRandomIonValues.constructLobs(constraintStruct));
+                    writer.writeBlob(WriteRandomIonValues.constructLobs(constraintMapClone));
                     break;
                 case CLOB:
-                    writer.writeClob(WriteRandomIonValues.constructLobs(constraintStruct));
+                    writer.writeClob(WriteRandomIonValues.constructLobs(constraintMapClone));
                     break;
                 default:
                     throw new IllegalStateException(type + " is not supported.");
@@ -569,14 +570,18 @@ class WriteRandomIonValues {
 
     /**
      * Construct clob/blob which is conformed with the constraints provided in ISL.
-     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
-     * @throws Exception if an error occurs when parsing constraints.
+     * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
+     * and the value is in ReparsedConstraint format.
      */
-    public static byte[] constructLobs(IonStruct constraintStruct) throws Exception {
+    public static byte[] constructLobs( Map<String, ReparsedConstraint> constraintMapClone) {
         int byte_length;
         Random random = new Random();
-        if (constraintStruct != null) {
-            byte_length = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_BYTE_LENGTH);
+        ByteLength byteLength = (ByteLength) constraintMapClone.remove("byte_length");
+        if (!constraintMapClone.isEmpty()) {
+            throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
+        }
+        if (byteLength != null) {
+            byte_length = byteLength.getRange().getRandomQuantifiableValueFromRange().intValue();
         } else {
             byte_length = random.nextInt(512);
         }
@@ -591,46 +596,46 @@ class WriteRandomIonValues {
      * @param writer writes Ion struct data.
      * @throws IOException if errors occur when writing data.
      */
-    public static void constructAndWriteIonStruct(IonStruct constraintStruct, IonWriter writer) throws Exception {
-        Random random = new Random();
-        IonList annotations = IonSchemaUtilities.getAnnotation(constraintStruct);
-        IonStruct fields = (IonStruct) constraintStruct.get(IonSchemaUtilities.KEYWORD_FIELDS);
-        try (IonReader reader = IonReaderBuilder.standard().build(fields)) {
-            reader.next();
-            reader.stepIn();
-            for (int i = 0; i < annotations.size(); i++) {
-                writer.addTypeAnnotation(annotations.get(i).toString());
-            }
-            writer.stepIn(IonType.STRUCT);
-            while (reader.next() != null) {
-                String fieldName = reader.getFieldName();
-                IonValue struct = SYSTEM.newValue(reader);
-                IonStruct value = (IonStruct) struct;
-                // If the value of "occurs" is optional, the integer represents this value is 1 or 0.
-                int occurTime = IonSchemaUtilities.parseConstraints(value, IonSchemaUtilities.KEYWORD_OCCURS);
-                if (occurTime == 0) {
-                    continue;
-                }
-                writer.setFieldName(fieldName);
-                IonType type = IonType.valueOf(value.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
-                switch (type) {
-                    // If more types of Ion data are available, the logic should be added below.
-                    case STRING:
-                        writer.writeString(WriteRandomIonValues.constructString(value));
-                        break;
-                    case TIMESTAMP:
-                        writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(value));
-                        break;
-                    case LIST:
-                        WriteRandomIonValues.constructAndWriteIonList(writer, value);
-                        break;
-                    default:
-                        throw new IllegalStateException(type + " is not supported when generating Ion Struct based on Ion Schema.");
-                }
-            }
-            writer.stepOut();
-        }
-    }
+//    public static void constructAndWriteIonStruct(IonStruct constraintStruct, IonWriter writer) throws Exception {
+//        Random random = new Random();
+//        IonList annotations = IonSchemaUtilities.getAnnotation(constraintStruct);
+//        IonStruct fields = (IonStruct) constraintStruct.get(IonSchemaUtilities.KEYWORD_FIELDS);
+//        try (IonReader reader = IonReaderBuilder.standard().build(fields)) {
+//            reader.next();
+//            reader.stepIn();
+//            for (int i = 0; i < annotations.size(); i++) {
+//                writer.addTypeAnnotation(annotations.get(i).toString());
+//            }
+//            writer.stepIn(IonType.STRUCT);
+//            while (reader.next() != null) {
+//                String fieldName = reader.getFieldName();
+//                IonValue struct = SYSTEM.newValue(reader);
+//                IonStruct value = (IonStruct) struct;
+//                // If the value of "occurs" is optional, the integer represents this value is 1 or 0.
+//                int occurTime = IonSchemaUtilities.parseConstraints(value, IonSchemaUtilities.KEYWORD_OCCURS);
+//                if (occurTime == 0) {
+//                    continue;
+//                }
+//                writer.setFieldName(fieldName);
+//                IonType type = IonType.valueOf(value.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
+//                switch (type) {
+//                    // If more types of Ion data are available, the logic should be added below.
+//                    case STRING:
+//                        writer.writeString(WriteRandomIonValues.constructString(value));
+//                        break;
+//                    case TIMESTAMP:
+//                        writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(value));
+//                        break;
+//                    case LIST:
+//                        WriteRandomIonValues.constructAndWriteIonList(writer, value);
+//                        break;
+//                    default:
+//                        throw new IllegalStateException(type + " is not supported when generating Ion Struct based on Ion Schema.");
+//                }
+//            }
+//            writer.stepOut();
+//        }
+//    }
 
     /**
      * Construct Ion List based on the constraints provided by Ion Schema.
@@ -638,58 +643,58 @@ class WriteRandomIonValues {
      * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
      * @throws Exception if errors occur when reading or writing data.
      */
-    public static void constructAndWriteIonList(IonWriter writer, IonStruct constraintStruct) throws Exception {
-        // When there's only one required element in Ion List and the length of generated Ion List is not specified, we set the default length as a integer smaller than 20.
-        Integer containerLength = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CONTAINER_LENGTH);
-        IonList annotations = IonSchemaUtilities.getAnnotation(constraintStruct);
-        int occurrences;
-        try (IonReader reader = IonReaderBuilder.standard().build(constraintStruct)) {
-            reader.next();
-            reader.stepIn();
-            while (reader.next() != null) {
-                if (annotations != null) {
-                    for (int i = 0; i < annotations.size(); i++) {
-                        writer.addTypeAnnotation(annotations.get(i).toString());
-                    }
-                }
-                writer.stepIn(IonType.LIST);
-                // If constraint name is 'element', only one type of Ion Data is specified.
-                if (constraintStruct.get(IonSchemaUtilities.KEYWORD_ELEMENT) != null && containerLength != null) {
-                    IonType type = IonType.valueOf(constraintStruct.get(IonSchemaUtilities.KEYWORD_ELEMENT).toString().toUpperCase());
-                    for (int i = 0; i < containerLength; i++) {
-                        occurrences = 1;
-                        WriteRandomIonValues.constructScalarTypeData(type, writer, occurrences, constraintStruct);
-                    }
-                    break;
-                } else if (constraintStruct.get(IonSchemaUtilities.KEYWORD_ORDERED_ELEMENTS) != null) {
-                    IonList orderedElement = (IonList) constraintStruct.get(IonSchemaUtilities.KEYWORD_ORDERED_ELEMENTS);
-                    for (int index = 0; index < orderedElement.size(); index++) {
-                        IonType elementType = orderedElement.get(index).getType();
-                        IonType valueType;
-                        switch (elementType) {
-                            case SYMBOL:
-                                occurrences = 1;
-                                valueType = IonType.valueOf(orderedElement.get(index).toString().toUpperCase());
-                                WriteRandomIonValues.constructScalarTypeData(valueType, writer, occurrences, NO_CONSTRAINT_STRUCT);
-                                break;
-                            case STRUCT:
-                                IonStruct constraintsStruct = (IonStruct) orderedElement.get(index);
-                                occurrences = IonSchemaUtilities.parseConstraints(constraintsStruct, IonSchemaUtilities.KEYWORD_OCCURS);
-                                if(occurrences == 0) {
-                                    break;
-                                }
-                                valueType = IonType.valueOf(constraintsStruct.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
-                                WriteRandomIonValues.constructScalarTypeData(valueType, writer, occurrences, constraintsStruct);
-                                break;
-                        }
-                    }
-                    writer.stepOut();
-                    return;
-                }
-            }
-            writer.stepOut();
-        }
-    }
+//    public static void constructAndWriteIonList(IonWriter writer, IonStruct constraintStruct) throws Exception {
+//        // When there's only one required element in Ion List and the length of generated Ion List is not specified, we set the default length as a integer smaller than 20.
+//        Integer containerLength = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CONTAINER_LENGTH);
+//        IonList annotations = IonSchemaUtilities.getAnnotation(constraintStruct);
+//        int occurrences;
+//        try (IonReader reader = IonReaderBuilder.standard().build(constraintStruct)) {
+//            reader.next();
+//            reader.stepIn();
+//            while (reader.next() != null) {
+//                if (annotations != null) {
+//                    for (int i = 0; i < annotations.size(); i++) {
+//                        writer.addTypeAnnotation(annotations.get(i).toString());
+//                    }
+//                }
+//                writer.stepIn(IonType.LIST);
+//                // If constraint name is 'element', only one type of Ion Data is specified.
+//                if (constraintStruct.get(IonSchemaUtilities.KEYWORD_ELEMENT) != null && containerLength != null) {
+//                    IonType type = IonType.valueOf(constraintStruct.get(IonSchemaUtilities.KEYWORD_ELEMENT).toString().toUpperCase());
+//                    for (int i = 0; i < containerLength; i++) {
+//                        occurrences = 1;
+//                        WriteRandomIonValues.constructScalarTypeData(type, writer, occurrences, constraintStruct);
+//                    }
+//                    break;
+//                } else if (constraintStruct.get(IonSchemaUtilities.KEYWORD_ORDERED_ELEMENTS) != null) {
+//                    IonList orderedElement = (IonList) constraintStruct.get(IonSchemaUtilities.KEYWORD_ORDERED_ELEMENTS);
+//                    for (int index = 0; index < orderedElement.size(); index++) {
+//                        IonType elementType = orderedElement.get(index).getType();
+//                        IonType valueType;
+//                        switch (elementType) {
+//                            case SYMBOL:
+//                                occurrences = 1;
+//                                valueType = IonType.valueOf(orderedElement.get(index).toString().toUpperCase());
+//                                WriteRandomIonValues.constructScalarTypeData(valueType, writer, occurrences, NO_CONSTRAINT_STRUCT);
+//                                break;
+//                            case STRUCT:
+//                                IonStruct constraintsStruct = (IonStruct) orderedElement.get(index);
+//                                occurrences = IonSchemaUtilities.parseConstraints(constraintsStruct, IonSchemaUtilities.KEYWORD_OCCURS);
+//                                if(occurrences == 0) {
+//                                    break;
+//                                }
+//                                valueType = IonType.valueOf(constraintsStruct.get(IonSchemaUtilities.KEYWORD_TYPE).toString().toUpperCase());
+//                                WriteRandomIonValues.constructScalarTypeData(valueType, writer, occurrences, constraintsStruct);
+//                                break;
+//                        }
+//                    }
+//                    writer.stepOut();
+//                    return;
+//                }
+//            }
+//            writer.stepOut();
+//        }
+//    }
 
     /**
      * Construct scalar type Ion data based on the occurrence time. This method is mainly reused during the process of generating Ion List which will specify the occurrence time.
@@ -698,19 +703,19 @@ class WriteRandomIonValues {
      * @param occurTime is the occurrence time of the element in Ion List.
      * @throws IOException if errors occur when writing data.
      */
-    public static void constructScalarTypeData(IonType valueType, IonWriter writer, int occurTime, IonStruct constraintStruct) throws Exception {
-        for (int i = 0; i < occurTime; i++) {
-            switch (valueType) {
-                // If more scalar types of Ion data are supported, this is the point to add more cases.
-                case STRING:
-                    writer.writeString(WriteRandomIonValues.constructString(constraintStruct));
-                    break;
-                case INT:
-                    writer.writeInt(WriteRandomIonValues.constructInt(constraintStruct));
-                    break;
-                default:
-                    throw new IllegalStateException(valueType + " is not supported when generating Ion List based on Ion Schema.");
-            }
-        }
-    }
+//    public static void constructScalarTypeData(IonType valueType, IonWriter writer, int occurTime, IonStruct constraintStruct) throws Exception {
+//        for (int i = 0; i < occurTime; i++) {
+//            switch (valueType) {
+//                // If more scalar types of Ion data are supported, this is the point to add more cases.
+//                case STRING:
+//                    writer.writeString(WriteRandomIonValues.constructString(constraintStruct));
+//                    break;
+//                case INT:
+//                    writer.writeInt(WriteRandomIonValues.constructInt(constraintStruct));
+//                    break;
+//                default:
+//                    throw new IllegalStateException(valueType + " is not supported when generating Ion List based on Ion Schema.");
+//            }
+//        }
+//    }
 }
