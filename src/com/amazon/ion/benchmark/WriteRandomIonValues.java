@@ -26,8 +26,10 @@ import com.amazon.ion.Timestamp;
 import com.amazon.ion.benchmark.schema.ReparsedType;
 import com.amazon.ion.benchmark.schema.constraints.ByteLength;
 import com.amazon.ion.benchmark.schema.constraints.CodepointLength;
+import com.amazon.ion.benchmark.schema.constraints.Precision;
 import com.amazon.ion.benchmark.schema.constraints.Regex;
 import com.amazon.ion.benchmark.schema.constraints.ReparsedConstraint;
+import com.amazon.ion.benchmark.schema.constraints.Scale;
 import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 import com.amazon.ion.system.IonBinaryWriterBuilder;
 import com.amazon.ion.system.IonReaderBuilder;
@@ -68,6 +70,7 @@ class WriteRandomIonValues {
     final static private int DEFAULT_SCALE_LOWER_BOUND = -20;
     final static private int DEFAULT_SCALE_UPPER_BOUND = 20;
     final static private Set<String> VALID_STRING_SYMBOL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("regex", "codepoint_length")));
+    final static private Set<String> VALID_DECIMAL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("precision", "scale")));
 
     /**
      * Build up the writer based on the provided format (ion_text|ion_binary)
@@ -341,7 +344,7 @@ class WriteRandomIonValues {
                     writer.writeString(WriteRandomIonValues.constructString(constraintMapClone));
                     break;
                 case DECIMAL:
-                    writer.writeDecimal(WriteRandomIonValues.constructDecimal(constraintStruct));
+                    writer.writeDecimal(WriteRandomIonValues.constructDecimal(constraintMapClone));
                     break;
                 case TIMESTAMP:
                     writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(constraintStruct));
@@ -458,30 +461,42 @@ class WriteRandomIonValues {
 
     /**
      * Construct the decimal which is conformed with the constraints provided in ISL.
-     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
+     * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
+     * and the value is constraint value in ReparsedConstraint format.
      * @return the constructed decimal.
-     * @throws Exception if error occurs when parsing the constraints.
      */
-    public static BigDecimal constructDecimal(IonStruct constraintStruct) throws Exception {
+    public static BigDecimal constructDecimal(Map<String, ReparsedConstraint> constraintMapClone) {
         Random random = new Random();
-        // precision represents the minimum/maximum range indicating the number of digits in the unscaled value of a decimal. The minimum precision must be greater than or equal to 1.
-        Integer precision = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_PRECISION);
-        if (precision == null) {
-            precision = random.nextInt(DEFAULT_PRECISION);
-        }
-        // scale represents the minimum/maximum range indicating the number of digits to the right of the decimal point. The minimum scale must be greater than or equal to 0.
-        Integer scale = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_SCALE);
-        if (scale == null) {
-            scale = random.nextInt(DEFAULT_SCALE_UPPER_BOUND - DEFAULT_SCALE_LOWER_BOUND + 1) + DEFAULT_SCALE_LOWER_BOUND;
-        }
+        // If there is no constraints provided, assign scale and precision with default values.
+        int scaleValue = random.nextInt(DEFAULT_SCALE_UPPER_BOUND - DEFAULT_SCALE_LOWER_BOUND + 1) + DEFAULT_SCALE_LOWER_BOUND;
+        int precisionValue = random.nextInt(DEFAULT_PRECISION);
+        Scale scale = (Scale) constraintMapClone.remove("scale");
+        Precision precision = (Precision) constraintMapClone.remove("precision");
+        ValidValues validValues = (ValidValues) constraintMapClone.remove("valid_values");
         StringBuilder rs = new StringBuilder();
         rs.append(random.nextInt(9) + 1);
-        for (int digit = 1; digit < precision; digit++) {
-            rs.append(random.nextInt(10));
+        if (!constraintMapClone.isEmpty()) {
+            throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
         }
-        BigInteger unscaledValue = new BigInteger(rs.toString());
-        BigDecimal bigDecimal = new BigDecimal(unscaledValue, scale);
-        return bigDecimal;
+        if (validValues == null) {
+            if (scale != null) {
+                scaleValue = scale.getRange().getRandomQuantifiableValueFromRange().intValue();
+            }
+            if (precision != null) {
+                precisionValue = precision.getRange().getRandomQuantifiableValueFromRange().intValue();
+            }
+            for (int digit = 1; digit < precisionValue; digit++) {
+                rs.append(random.nextInt(10));
+            }
+            BigInteger unscaledValue = new BigInteger(rs.toString());
+            return new BigDecimal(unscaledValue, scaleValue);
+        } else {
+            if (scale != null || precision != null) {
+                throw new IllegalStateException("Cannot handle 'valid_values' and constraint from " + VALID_DECIMAL_CONSTRAINTS + "at the same time.");
+            } else {
+                return validValues.getRange().getRandomQuantifiableValueFromRange();
+            }
+        }
     }
 
     /**
