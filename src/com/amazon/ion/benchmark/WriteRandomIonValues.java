@@ -24,6 +24,8 @@ import com.amazon.ion.IonValue;
 import com.amazon.ion.IonWriter;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.benchmark.schema.ReparsedType;
+import com.amazon.ion.benchmark.schema.constraints.CodepointLength;
+import com.amazon.ion.benchmark.schema.constraints.Regex;
 import com.amazon.ion.benchmark.schema.constraints.ReparsedConstraint;
 import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 import com.amazon.ion.system.IonBinaryWriterBuilder;
@@ -43,10 +45,13 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -61,6 +66,7 @@ class WriteRandomIonValues {
     final static private int DEFAULT_PRECISION = 20;
     final static private int DEFAULT_SCALE_LOWER_BOUND = -20;
     final static private int DEFAULT_SCALE_UPPER_BOUND = 20;
+    final static private Set<String> VALID_STRING_SYMBOL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("regex", "codepoint_length")));
 
     /**
      * Build up the writer based on the provided format (ion_text|ion_binary)
@@ -325,13 +331,13 @@ class WriteRandomIonValues {
                     writer.writeFloat(WriteRandomIonValues.constructFloat(constraintMapClone));
                     break;
                 case SYMBOL:
-                    writer.writeSymbol(WriteRandomIonValues.constructString(constraintStruct));
+                    writer.writeSymbol(WriteRandomIonValues.constructString(constraintMapClone));
                     break;
                 case INT:
                     writer.writeInt(WriteRandomIonValues.constructInt(constraintStruct));
                     break;
                 case STRING:
-                    writer.writeString(WriteRandomIonValues.constructString(constraintStruct));
+                    writer.writeString(WriteRandomIonValues.constructString(constraintMapClone));
                     break;
                 case DECIMAL:
                     writer.writeDecimal(WriteRandomIonValues.constructDecimal(constraintStruct));
@@ -339,12 +345,13 @@ class WriteRandomIonValues {
                 case TIMESTAMP:
                     writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(constraintStruct));
                     break;
-                case STRUCT:
-                    WriteRandomIonValues.constructAndWriteIonStruct(constraintStruct, writer);
-                    break;
-                case LIST:
-                    WriteRandomIonValues.constructAndWriteIonList(writer, constraintStruct);
-                    break;
+// Temporally comment the struct and list generating process.
+//                case STRUCT:
+//                    WriteRandomIonValues.constructAndWriteIonStruct(constraintStruct, writer);
+//                    break;
+//                case LIST:
+//                    WriteRandomIonValues.constructAndWriteIonList(writer, constraintStruct);
+//                    break;
                 case BLOB:
                     writer.writeBlob(WriteRandomIonValues.constructLobs(constraintStruct));
                     break;
@@ -370,31 +377,32 @@ class WriteRandomIonValues {
 
     /**
      * Construct string which is conformed with the constraints provided in ISL.
-     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
+     * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
+     * and the value is constraint value in ReparsedConstraint format.
      * @return constructed string.
-     * @throws Exception if error occurs when parsing the constraints.
      */
-    public static String constructString(IonStruct constraintStruct) throws Exception {
+    public static String constructString(Map<String, ReparsedConstraint> constraintMapClone) {
         Random random = new Random();
-        String constructedString;
-        String regexPattern = IonSchemaUtilities.parseTextConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_REGEX);
-        Integer codePointsLengthBound = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_CODE_POINT_LENGTH);
-        // For now, if there are potentially-conflicting constraints detected, an exception statement will be thrown.
-        // For more information: https://github.com/amzn/ion-java-benchmark-cli/issues/33
-        if (regexPattern != null && codePointsLengthBound != null) {
-            throw new IllegalStateException("This constraints combination can not be processed in Ion Data Generator.");
-        } else if (regexPattern == null && codePointsLengthBound != null) {
-            // Construct string with the specified Unicode codepoints length.
-            constructedString = constructStringFromCodepointLength(codePointsLengthBound);
-        } else if (regexPattern != null && codePointsLengthBound == null) {
-            RgxGen rgxGen = new RgxGen(regexPattern);
-            constructedString = rgxGen.generate();
-        } else {
-            // Preset the Unicode codepoints length as average number 20;
-            codePointsLengthBound = random.nextInt(20);
-            constructedString = constructStringFromCodepointLength(codePointsLengthBound);
+        Regex regex = (Regex) constraintMapClone.remove("regex");
+        CodepointLength codepoint_length = (CodepointLength) constraintMapClone.remove("codepoint_length");
+
+        if (!constraintMapClone.isEmpty()) {
+            throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
         }
-        return constructedString;
+        if (regex != null && codepoint_length != null) {
+            throw new IllegalStateException ("Can only handle one of : " + VALID_STRING_SYMBOL_CONSTRAINTS);
+        } else if (regex != null) {
+            String pattern = regex.getPattern();
+            RgxGen rgxGen = new RgxGen(pattern);
+            return rgxGen.generate();
+        } else if (codepoint_length != null) {
+            int length = codepoint_length.getRange().getRandomQuantifiableValueFromRange().intValue();
+            return constructStringFromCodepointLength(length);
+        } else {
+            // If there is no constraints provided, a randomly constructed string with
+            // preset Unicode codepoints length will be generated.
+            return constructStringFromCodepointLength(random.nextInt(20));
+        }
     }
 
     /**
