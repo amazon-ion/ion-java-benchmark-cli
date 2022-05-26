@@ -82,7 +82,7 @@ public class ReparsedType {
         return constraintMap;
     }
 
-    //TODO: Constraints come in two flavors- container and scalar?
+    //TODO: Constraints come in two flavors - container and scalar?
     /**
      * This method helps to categorize constraints based on the data type that they represent.
      * @param field represents the field contained in type definition.
@@ -91,6 +91,7 @@ public class ReparsedType {
     private static ReparsedConstraint toConstraint(IonValue field) {
         switch (field.getFieldName()) {
             //TODO: Add cases of constraints 'annotation' and 'occurs'.
+            //TODO: Add container type constraints: 'element', 'ordered_element', 'fields', these might cover some of the implemented constraints.
             case KEYWORD_BYTE_LENGTH:
                 return ByteLength.of(field);
             case KEYWORD_PRECISION:

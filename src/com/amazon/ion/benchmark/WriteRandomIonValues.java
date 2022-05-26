@@ -17,8 +17,10 @@ package com.amazon.ion.benchmark;
 
 import com.amazon.ion.IonList;
 import com.amazon.ion.IonReader;
+import com.amazon.ion.IonSequence;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonSystem;
+import com.amazon.ion.IonTimestamp;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
 import com.amazon.ion.IonWriter;
@@ -27,9 +29,11 @@ import com.amazon.ion.benchmark.schema.ReparsedType;
 import com.amazon.ion.benchmark.schema.constraints.ByteLength;
 import com.amazon.ion.benchmark.schema.constraints.CodepointLength;
 import com.amazon.ion.benchmark.schema.constraints.Precision;
+import com.amazon.ion.benchmark.schema.constraints.Range;
 import com.amazon.ion.benchmark.schema.constraints.Regex;
 import com.amazon.ion.benchmark.schema.constraints.ReparsedConstraint;
 import com.amazon.ion.benchmark.schema.constraints.Scale;
+import com.amazon.ion.benchmark.schema.constraints.TimestampPrecision;
 import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 import com.amazon.ion.system.IonBinaryWriterBuilder;
 import com.amazon.ion.system.IonReaderBuilder;
@@ -71,7 +75,11 @@ class WriteRandomIonValues {
     final static private int DEFAULT_SCALE_UPPER_BOUND = 20;
     final static private Set<String> VALID_STRING_SYMBOL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("regex", "codepoint_length")));
     final static private Set<String> VALID_DECIMAL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("precision", "scale")));
-
+    final static private Set<String> VALID_TIMESTAMP_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("timestamp_offset", "timestamp_precision")));
+    // 0001-01-01T00:00:00.0Z in millis.
+    final static private BigDecimal MINIMUM_TIMESTAMP_IN_MILLIS_DECIMAL = new BigDecimal(-62135769600000L);
+    // 10000T in millis, upper bound exclusive.
+    final static private BigDecimal MAXIMUM_TIMESTAMP_IN_MILLIS_DECIMAL = new BigDecimal(253402300800000L);
     /**
      * Build up the writer based on the provided format (ion_text|ion_binary)
      * @param format the option to decide which writer to be constructed.
@@ -347,7 +355,7 @@ class WriteRandomIonValues {
                     writer.writeDecimal(WriteRandomIonValues.constructDecimal(constraintMapClone));
                     break;
                 case TIMESTAMP:
-                    writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(constraintStruct));
+                    writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(constraintMapClone));
                     break;
 // Temporally comment the struct and list generating process.
 //                case STRUCT:
@@ -503,7 +511,7 @@ class WriteRandomIonValues {
      * Generate random integers which is conformed with the constraints provided in ISL.
      * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
      * and the value is in ReparsedConstraint format.
-     * @return constructed int.
+     * @return the constructed int.
      */
     public static long constructInt(Map<String, ReparsedConstraint> constraintMapClone) {
         // In the process of generating IonInt, there is no type-specified constraints. For this step we
@@ -523,72 +531,58 @@ class WriteRandomIonValues {
 
     /**
      * Construct timestamp which is conformed with the constraints provided in ISL.
-     * @param constraintStruct is an IonStruct which contains the top-level constraints in Ion Schema.
-     * @return Constructed timestamp
-     * @throws Exception if error occurs when parsing the constraints.
+     * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
+     * and the value is in ReparsedConstraint format.
+     * @return the constructed timestamp.
      */
-    public static Timestamp constructTimestamp(IonStruct constraintStruct) throws Exception {
-        Timestamp timestamp;
+    public static Timestamp constructTimestamp(Map<String, ReparsedConstraint> constraintMapClone) {
         Random random = new Random();
-        int randomIndex = IonSchemaUtilities.parseConstraints(constraintStruct, IonSchemaUtilities.KEYWORD_TIMESTAMP_PRECISION);
-        Timestamp.Precision precision = PRECISIONS[randomIndex];
-        switch (precision) {
-            case YEAR:
-                timestamp = Timestamp.forYear(random.nextInt(9998) + 1);
-                break;
-            case MONTH:
-                timestamp = Timestamp.forMonth(random.nextInt(9998) + 1, random.nextInt(12) + 1);
-                break;
-            case DAY:
-                timestamp = Timestamp.forDay(
-                        random.nextInt(9998) + 1,
-                        random.nextInt(12) + 1,
-                        random.nextInt(28) + 1 // Use max 28 for simplicity. Not including up to 31 is not going to affect the measurement.
-                );
-                break;
-            case MINUTE:
-                timestamp = Timestamp.forMinute(
-                        random.nextInt(9998) + 1,
-                        random.nextInt(12) + 1,
-                        random.nextInt(28) + 1, // Use max 28 for simplicity. Not including up to 31 is not going to affect the measurement.
-                        random.nextInt(24),
-                        random.nextInt(60),
-                        localOffset(random)
-                );
-                break;
-            case SECOND:
-                timestamp = Timestamp.forSecond(
-                        random.nextInt(9998) + 1,
-                        random.nextInt(12) + 1,
-                        random.nextInt(28) + 1, // Use max 28 for simplicity. Not including up to 31 is not going to affect the measurement.
-                        random.nextInt(24),
-                        random.nextInt(60),
-                        random.nextInt(60),
-                        localOffset(random)
-                );
-                break;
-            case FRACTION:
-                int scale = random.nextInt(20);
-                timestamp = Timestamp.forSecond(
-                        random.nextInt(9998) + 1,
-                        random.nextInt(12) + 1,
-                        random.nextInt(28) + 1, // Use max 28 for simplicity. Not including up to 31 is not going to affect the measurement.
-                        random.nextInt(24),
-                        random.nextInt(60),
-                        randomSecondWithFraction(random,scale),
-                        localOffset(random)
-                );
-                break;
-            default:
-                throw new IllegalStateException();
+        // Preset the local offset.
+        Integer localOffset = localOffset(random);
+        // Create a range which contains the default lower bound and upper bound values.
+        IonSequence sequence = SYSTEM.newList( SYSTEM.newDecimal(MINIMUM_TIMESTAMP_IN_MILLIS_DECIMAL), SYSTEM.newDecimal(MAXIMUM_TIMESTAMP_IN_MILLIS_DECIMAL));
+        Range range = new Range(sequence);
+        // Preset the default precision.
+        Timestamp.Precision precision = PRECISIONS[random.nextInt(PRECISIONS.length)];
+        TimestampPrecision timestampPrecision = (TimestampPrecision) constraintMapClone.remove("timestamp_precision");
+        ValidValues validValues = (ValidValues) constraintMapClone.remove("valid_values");
+        if (!constraintMapClone.isEmpty()) {
+            throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
         }
-        return timestamp;
+        if (validValues == null) {
+            if (timestampPrecision != null) {
+                precision = TimestampPrecision.getRandomTimestampPrecision(timestampPrecision.getRange());
+            }
+        } else {
+            if (timestampPrecision != null) {
+                throw new IllegalStateException("Cannot handle 'valid_values' and constraint from " + VALID_TIMESTAMP_CONSTRAINTS + "at the same time.");
+            } else {
+                range = validValues.getRange();
+                IonTimestamp upperBound = range.upperBound(IonTimestamp.class);
+                localOffset = upperBound.getLocalOffset();
+                precision = upperBound.timestampValue().getPrecision();
+            }
+        }
+        // Generate a random millisecond within the provided range.
+        BigDecimal randomMillis = range.getRandomQuantifiableValueFromRange();
+        // Generate timestamp based on the provided millisecond value and precision.
+        Timestamp regeneratedTimestamp = Timestamp.forMillis(randomMillis, localOffset);
+
+        int year = regeneratedTimestamp.getYear();
+        int month = regeneratedTimestamp.getMonth();
+        int day = regeneratedTimestamp.getDay();
+        int minute = regeneratedTimestamp.getMinute();
+        int hour = regeneratedTimestamp.getHour();
+        int seconds = regeneratedTimestamp.getSecond();
+        BigDecimal fracSecond = regeneratedTimestamp.getDecimalSecond().subtract(BigDecimal.valueOf(seconds));
+        return Timestamp.createFromUtcFields(precision, year, month, day, hour, minute, seconds, fracSecond, localOffset);
     }
 
     /**
      * Construct clob/blob which is conformed with the constraints provided in ISL.
      * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
      * and the value is in ReparsedConstraint format.
+     * @return the constructed bytes.
      */
     public static byte[] constructLobs( Map<String, ReparsedConstraint> constraintMapClone) {
         int byte_length;
