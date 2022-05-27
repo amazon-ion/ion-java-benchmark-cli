@@ -357,7 +357,7 @@ class WriteRandomIonValues {
                 case TIMESTAMP:
                     writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(constraintMapClone));
                     break;
-// Temporally comment the struct and list generating process.
+// Temporarily comment the struct and list generating process.
 //                case STRUCT:
 //                    WriteRandomIonValues.constructAndWriteIonStruct(constraintStruct, writer);
 //                    break;
