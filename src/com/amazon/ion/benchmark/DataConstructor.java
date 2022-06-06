@@ -17,7 +17,6 @@ package com.amazon.ion.benchmark;
 
 import com.amazon.ion.IonList;
 import com.amazon.ion.IonReader;
-import com.amazon.ion.IonSequence;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonTimestamp;
@@ -38,7 +37,6 @@ import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 import com.amazon.ion.system.IonBinaryWriterBuilder;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
-import com.amazon.ion.system.IonTextWriterBuilder;
 import com.github.curiousoddman.rgxgen.RgxGen;
 
 import java.io.BufferedInputStream;
@@ -64,7 +62,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Generate specific scalar type of Ion data randomly, for some specific type, e.g. String, Decimal, Timestamp, users can put specifications on these types of Ion data.
  */
-class WriteRandomIonValues {
+class DataConstructor {
     // The constant defined below are used as placeholder in the method WriteRandomIonValues.writeRequestedSizeFile.
     final static private IonSystem SYSTEM = IonSystemBuilder.standard().build();
     final static private List<Integer> DEFAULT_RANGE = Arrays.asList(0, 0x10FFFF);
@@ -78,29 +76,6 @@ class WriteRandomIonValues {
     final static private Set<String> VALID_TIMESTAMP_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("timestamp_offset", "timestamp_precision")));
     // Create a range which contains the default lower bound and upper bound values.
     final static private Range RANGE = new Range(SYSTEM.newList( SYSTEM.newDecimal(62135769600000L), SYSTEM.newDecimal(253402300800000L)));
-    /**
-     * Build up the writer based on the provided format (ion_text|ion_binary)
-     * @param format the option to decide which writer to be constructed.
-     * @param file the generated file which contains specified Ion data.
-     * @return the writer which conforms with the required format.
-     * @throws Exception if an error occurs while creating a file output stream.
-     */
-    public static IonWriter formatWriter(String format, File file) throws Exception {
-        IonWriter writer;
-        OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-        Format formatName = Format.valueOf(format.toUpperCase());
-        switch (formatName) {
-            case ION_BINARY:
-                writer = IonBinaryWriterBuilder.standard().withLocalSymbolTableAppendEnabled().build(out);
-                break;
-            case ION_TEXT:
-                writer = IonTextWriterBuilder.standard().build(out);
-                break;
-            default:
-                throw new IllegalStateException("Please input the format ion_text or ion_binary");
-        }
-        return writer;
-    }
 
     /**
      * Use Ion-java parser to parse the data provided in the options which specify the range of data.
@@ -216,111 +191,11 @@ class WriteRandomIonValues {
     }
 
     /**
-     * This method is not available now.
-     * @throws Exception
-     */
-    private static void writeRandomAnnotatedFloats() throws Exception {
-        File file = new File("randomAnnotatedFloats.10n");
-        List<String> annotations = new ArrayList<>(500);
-        Random random = new Random();
-        for (int i = 0; i < 500; i++) {
-            int length = random.nextInt(20);
-            StringBuilder sb = new StringBuilder();
-            for (int j = 0; j < length; j++) {
-                int codePoint;
-                int type;
-                do {
-                    codePoint = random.nextInt(Character.MAX_CODE_POINT);
-                    type = Character.getType(codePoint);
-                } while (type == Character.PRIVATE_USE || type == Character.SURROGATE || type == Character.UNASSIGNED);
-                sb.appendCodePoint(codePoint);
-            }
-            annotations.add(sb.toString());
-        }
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-                IonWriter writer = IonBinaryWriterBuilder.standard().build(out)) {
-            // Target about 100MB of data. Annotated floats will average around 14 bytes.
-            for (int i = 0; i < (100_000_000 / 14); i++) {
-                // 60% of values will have 1 annotation; 40% will have 2 or 3.
-                int numberOfAnnotations = random.nextInt(5) + 1;
-                if (numberOfAnnotations > 3) {
-                    numberOfAnnotations = 1;
-                }
-                for (int j = 0; j < numberOfAnnotations; j++) {
-                    writer.addTypeAnnotation(annotations.get(random.nextInt(500)));
-                }
-                writer.writeFloat(Double.longBitsToDouble(random.nextLong()));
-            }
-        }
-    }
-
-    /**
-     * This method is not available now. Refactor required.
-     * @param size specifies the size in bytes of the generated file.
-     * @param format the format of output file (ion_binary | ion_text).
-     * @param path the destination of the generated file.
-     * @throws Exception if an error occurs when building up the writer.
-     */
-    public static void writeRandomSymbolValues(int size, String format, String path) throws Exception {
-        File file = new File(path);
-        try (IonWriter writer = WriteRandomIonValues.formatWriter(format, file)) {
-            List<String> symbols = new ArrayList<>(500);
-            Random random = new Random();
-            for (int i = 0; i < 500; i++) {
-                int length = random.nextInt(20);
-                StringBuilder sb = new StringBuilder();
-                for (int j = 0; j < length; j++) {
-                    int codePoint;
-                    int charactereType;
-                    do {
-                        codePoint = random.nextInt(Character.MAX_CODE_POINT);
-                        charactereType = Character.getType(codePoint);
-                    } while (charactereType == Character.PRIVATE_USE || charactereType == Character.SURROGATE || charactereType == Character.UNASSIGNED);
-                    sb.appendCodePoint(codePoint);
-                }
-                symbols.add(sb.toString());
-            }
-            for (int i = 0; i < size / 2; i++) {
-                writer.writeSymbol(symbols.get(random.nextInt(500)));
-            }
-        }
-        WriteRandomIonValues.printInfo(path);
-    }
-
-    /**
-     * This method is used for generating requested size file by comparing the current file size and the target size.
-     * @param size specifies the size in bytes of the generated file.
-     * @param writer writer is IonWriter.
-     * @param file the generated file which contains specified Ion data.
+     * Constructing data which is conformed with provided type definition.
      * @param parsedTypeDefinition is parsed from ion schema file as IonStruct format, it contains the top-level constraints.
-     * @throws Exception if an error occur when writing generated data.
+     * @return constructed ion data.
      */
-    public static void writeRequestedSizeFile(int size, IonWriter writer, File file, ReparsedType parsedTypeDefinition) throws Exception {
-        int currentSize = 0;
-        int count = 0;
-        // Determine how many values should be written before the writer.flush(), and this process aims to reduce the execution time of writer.flush().
-        while (currentSize <= 0.05 * size) {
-            WriteRandomIonValues.writeDataToFile(writer, parsedTypeDefinition);
-            count += 1;
-            writer.flush();
-            currentSize = (int) file.length();
-        }
-        while (currentSize <= size) {
-            for (int i = 0; i < count; i++) {
-                WriteRandomIonValues.writeDataToFile(writer, parsedTypeDefinition);
-            }
-            writer.flush();
-            currentSize = (int) file.length();
-        }
-    }
-
-    /**
-     * Generating data which is conformed with provided constraints and writing it to the output file.
-     * @param writer is IonWriter.
-     * @param parsedTypeDefinition is parsed from ion schema file as IonStruct format, it contains the top-level constraints.
-     * @throws Exception if an error occur during the data writing process.
-     */
-    private static void writeDataToFile(IonWriter writer, ReparsedType parsedTypeDefinition) throws Exception {
+    public static IonValue constructIonData(ReparsedType parsedTypeDefinition) {
         // The first step is to check whether parsedTypeDefinition contains 'valid_values'. The reason we prioritize checking
         // 'valid_values' is that the constraint 'type' might not be contained in the type definition, in that case we cannot trigger
         // the following data constructing process.
@@ -330,44 +205,28 @@ class WriteRandomIonValues {
         constraintMapClone.putAll(constraintMap);
         ValidValues validValues = (ValidValues) constraintMap.get("valid_values");
         if (validValues != null && !validValues.isRange()) {
-            IonValue validValue = getRandomValueFromList(validValues.getValidValues());
-            validValue.writeTo(writer);
+            return getRandomValueFromList(validValues.getValidValues());
         } else if (parsedTypeDefinition.getIonType() == null) {
             throw new IllegalStateException("Constraint 'type' is required.");
         } else {
             IonType type = parsedTypeDefinition.getIonType();
             switch (type) {
                 case FLOAT:
-                    writer.writeFloat(WriteRandomIonValues.constructFloat(constraintMapClone));
-                    break;
+                    return SYSTEM.newFloat(constructFloat(constraintMapClone));
                 case SYMBOL:
-                    writer.writeSymbol(WriteRandomIonValues.constructString(constraintMapClone));
-                    break;
+                    return  SYSTEM.newSymbol(constructString(constraintMapClone));
                 case INT:
-                    writer.writeInt(WriteRandomIonValues.constructInt(constraintMapClone));
-                    break;
+                    return SYSTEM.newInt(constructInt(constraintMapClone));
                 case STRING:
-                    writer.writeString(WriteRandomIonValues.constructString(constraintMapClone));
-                    break;
+                    return SYSTEM.newString(constructString(constraintMapClone));
                 case DECIMAL:
-                    writer.writeDecimal(WriteRandomIonValues.constructDecimal(constraintMapClone));
-                    break;
+                    return SYSTEM.newDecimal(constructDecimal(constraintMapClone));
                 case TIMESTAMP:
-                    writer.writeTimestamp(WriteRandomIonValues.constructTimestamp(constraintMapClone));
-                    break;
-// Temporarily comment the struct and list generating process.
-//                case STRUCT:
-//                    WriteRandomIonValues.constructAndWriteIonStruct(constraintStruct, writer);
-//                    break;
-//                case LIST:
-//                    WriteRandomIonValues.constructAndWriteIonList(writer, constraintStruct);
-//                    break;
+                    return SYSTEM.newTimestamp(constructTimestamp(constraintMapClone));
                 case BLOB:
-                    writer.writeBlob(WriteRandomIonValues.constructLobs(constraintMapClone));
-                    break;
+                    return SYSTEM.newBlob(constructLobs(constraintMapClone));
                 case CLOB:
-                    writer.writeClob(WriteRandomIonValues.constructLobs(constraintMapClone));
-                    break;
+                    return SYSTEM.newClob(constructLobs(constraintMapClone));
                 default:
                     throw new IllegalStateException(type + " is not supported.");
             }
