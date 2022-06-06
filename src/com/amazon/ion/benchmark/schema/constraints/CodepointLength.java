@@ -8,7 +8,7 @@ public class CodepointLength extends QuantifiableConstraints {
      * Initializing the CodepointLength object.
      * @param value represents constraint field 'codepoint_length'.
      */
-    public CodepointLength(IonValue value) {
+    private CodepointLength(IonValue value) {
         super(value);
     }
 

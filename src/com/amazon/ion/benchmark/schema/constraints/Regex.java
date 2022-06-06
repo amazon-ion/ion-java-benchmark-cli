@@ -2,8 +2,8 @@ package com.amazon.ion.benchmark.schema.constraints;
 
 import com.amazon.ion.IonValue;
 
-public class Regex extends ReparsedConstraint{
-    String pattern;
+public class Regex implements ReparsedConstraint{
+    private final String pattern;
 
     /**
      * Initializing the newly created object.

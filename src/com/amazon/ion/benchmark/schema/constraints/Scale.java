@@ -8,7 +8,7 @@ public class Scale extends QuantifiableConstraints{
      * Initializing the Scale object.
      * @param value represents constraint field 'scale'.
      */
-    public Scale(IonValue value) {
+    private Scale(IonValue value) {
         super(value);
     }
 

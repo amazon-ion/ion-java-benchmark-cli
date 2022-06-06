@@ -7,7 +7,7 @@ import com.amazon.ion.IonValue;
 // valid_values: [ <VALUE>... ]
 // valid_values: <RANGE<NUMBER>>
 // valid_values: <RANGE<TIMESTAMP>>
-public class ValidValues extends ReparsedConstraint {
+public class ValidValues implements ReparsedConstraint {
     // TODO: Handling min and max value
     final private IonList validValues;
     final private Range range;

@@ -76,10 +76,8 @@ class WriteRandomIonValues {
     final static private Set<String> VALID_STRING_SYMBOL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("regex", "codepoint_length")));
     final static private Set<String> VALID_DECIMAL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("precision", "scale")));
     final static private Set<String> VALID_TIMESTAMP_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("timestamp_offset", "timestamp_precision")));
-    // 0001-01-01T00:00:00.0Z in millis.
-    final static private BigDecimal MINIMUM_TIMESTAMP_IN_MILLIS_DECIMAL = new BigDecimal(-62135769600000L);
-    // 10000T in millis, upper bound exclusive.
-    final static private BigDecimal MAXIMUM_TIMESTAMP_IN_MILLIS_DECIMAL = new BigDecimal(253402300800000L);
+    // Create a range which contains the default lower bound and upper bound values.
+    final static private Range RANGE = new Range(SYSTEM.newList( SYSTEM.newDecimal(62135769600000L), SYSTEM.newDecimal(253402300800000L)));
     /**
      * Build up the writer based on the provided format (ion_text|ion_binary)
      * @param format the option to decide which writer to be constructed.
@@ -537,11 +535,9 @@ class WriteRandomIonValues {
      */
     public static Timestamp constructTimestamp(Map<String, ReparsedConstraint> constraintMapClone) {
         Random random = new Random();
+        Range range = RANGE;
         // Preset the local offset.
         Integer localOffset = localOffset(random);
-        // Create a range which contains the default lower bound and upper bound values.
-        IonSequence sequence = SYSTEM.newList( SYSTEM.newDecimal(MINIMUM_TIMESTAMP_IN_MILLIS_DECIMAL), SYSTEM.newDecimal(MAXIMUM_TIMESTAMP_IN_MILLIS_DECIMAL));
-        Range range = new Range(sequence);
         // Preset the default precision.
         Timestamp.Precision precision = PRECISIONS[random.nextInt(PRECISIONS.length)];
         TimestampPrecision timestampPrecision = (TimestampPrecision) constraintMapClone.remove("timestamp_precision");

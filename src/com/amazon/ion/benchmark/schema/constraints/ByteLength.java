@@ -8,7 +8,7 @@ public class ByteLength extends QuantifiableConstraints{
      * Initializing the ByteLength object.
      * @param value represents constraint field 'byte_length'.
      */
-    public ByteLength(IonValue value) {
+    private ByteLength(IonValue value) {
         super(value);
     }
 

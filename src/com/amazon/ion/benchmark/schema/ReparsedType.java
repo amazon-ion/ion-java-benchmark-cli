@@ -23,7 +23,7 @@ public class ReparsedType {
     private static final String KEYWORD_VALID_VALUES = "valid_values";
     private static final String KEYWORD_NAME = "name";
     // Using map to avoid processing the multiple repeat constraints situation.
-    Map<String, ReparsedConstraint> constraintMap;
+    private final Map<String, ReparsedConstraint> constraintMap;
 
     /**
      * Initializing the newly created ReparsedType object.

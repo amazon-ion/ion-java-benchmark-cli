@@ -8,7 +8,7 @@ public class Precision extends QuantifiableConstraints{
      * Initializing the Precision object.
      * @param value represents constraint field 'precision'.
      */
-    public Precision(IonValue value) {
+    private Precision(IonValue value) {
         super(value);
     }
 

@@ -11,7 +11,7 @@ public class TimestampPrecision extends QuantifiableConstraints{
      * Initializing the newly created TimestampPrecision object.
      * @param value represent the value of constraint 'timestamp_precision'.
      */
-    public TimestampPrecision(IonValue value) {
+    private TimestampPrecision(IonValue value) {
         super(value);
     }
 

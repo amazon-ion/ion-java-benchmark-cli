@@ -21,7 +21,7 @@ public class GeneratorOptions {
         String path = optionsMap.get("<output_file>").toString();
         String inputFilePath = optionsMap.get("--input-ion-schema").toString();
         // Check whether the input schema file is valid and get the loaded schema.
-        Schema schema = IonSchemaUtilities.checkValidationOfSchema(inputFilePath);
+        Schema schema = IonSchemaUtilities.loadSchemaDefinition(inputFilePath);
         ReadGeneralConstraints.readIonSchemaAndGenerate(size, schema, format, path);
     }
 }

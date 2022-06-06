@@ -26,7 +26,7 @@ public class ReadGeneralConstraints {
      * @throws Exception if errors occur when writing data.
      */
     public static void readIonSchemaAndGenerate(int size, Schema schema, String format, String outputFile) throws Exception {
-        // Assume there's only one constraint between schema_header and schema_footer.
+        // Assume there's only one type definition between schema_header and schema_footer.
         // If more constraints added, here is the point where developers should start.
         Type schemaType = schema.getTypes().next();
         ReparsedType parsedTypeDefinition = new ReparsedType(schemaType);

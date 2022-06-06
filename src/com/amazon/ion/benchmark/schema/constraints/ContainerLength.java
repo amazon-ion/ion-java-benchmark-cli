@@ -8,7 +8,7 @@ public class ContainerLength extends QuantifiableConstraints{
      * Initializing the ContainerLength object.
      * @param value represents constraint field 'container_length'.
      */
-    public ContainerLength(IonValue value) {
+    private ContainerLength(IonValue value) {
         super(value);
     }
 
