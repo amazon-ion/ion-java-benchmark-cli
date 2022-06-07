@@ -93,15 +93,11 @@ public class ReparsedType {
             //TODO: Add cases of constraints 'annotation' and 'occurs'.
             //TODO: Add container type constraints: 'element', 'ordered_element', 'fields', these might cover some of the implemented constraints.
             case KEYWORD_BYTE_LENGTH:
-                return ByteLength.of(field);
             case KEYWORD_PRECISION:
-                return Precision.of(field);
             case KEYWORD_SCALE:
-                return Scale.of(field);
             case KEYWORD_CODE_POINT_LENGTH:
-                return CodepointLength.of(field);
             case KEYWORD_CONTAINER_LENGTH:
-                return ContainerLength.of(field);
+                return QuantifiableConstraints.of(field);
             case KEYWORD_VALID_VALUES:
                 return ValidValues.of(field);
             case KEYWORD_REGEX:

@@ -31,7 +31,7 @@ public class TimestampPrecision extends QuantifiableConstraints{
      */
     public static Timestamp.Precision getRandomTimestampPrecision(Range range) {
         Random random = new Random();
-        IonSequence constraintSequence = range.sequence;
+        IonSequence constraintSequence = range.getSequence();
         Timestamp.Precision[] precisions = Timestamp.Precision.values();
         String lowerBound = constraintSequence.get(0).toString();
         String upperBound = constraintSequence.get(1).toString();

@@ -13,7 +13,7 @@ import java.util.Random;
 // Processing the constraint value which contains 'range' annotation.
 public class Range {
     private static final String KEYWORD_RANGE = "range";
-    public final IonSequence sequence;
+    private final IonSequence sequence;
 
     /**
      * Initializing the newly created Range object.
@@ -21,6 +21,14 @@ public class Range {
      */
     public Range(IonSequence sequence) {
        this.sequence = sequence;
+    }
+
+    /**
+     * Helping to access the private variable sequence.
+     * @return IonSequence which represents the range value.
+     */
+    public IonSequence getSequence() {
+        return this.sequence;
     }
 
     /**

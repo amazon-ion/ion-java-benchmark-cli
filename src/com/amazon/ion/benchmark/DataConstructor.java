@@ -25,13 +25,10 @@ import com.amazon.ion.IonValue;
 import com.amazon.ion.IonWriter;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.benchmark.schema.ReparsedType;
-import com.amazon.ion.benchmark.schema.constraints.ByteLength;
-import com.amazon.ion.benchmark.schema.constraints.CodepointLength;
-import com.amazon.ion.benchmark.schema.constraints.Precision;
+import com.amazon.ion.benchmark.schema.constraints.QuantifiableConstraints;
 import com.amazon.ion.benchmark.schema.constraints.Range;
 import com.amazon.ion.benchmark.schema.constraints.Regex;
 import com.amazon.ion.benchmark.schema.constraints.ReparsedConstraint;
-import com.amazon.ion.benchmark.schema.constraints.Scale;
 import com.amazon.ion.benchmark.schema.constraints.TimestampPrecision;
 import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 import com.amazon.ion.system.IonBinaryWriterBuilder;
@@ -75,7 +72,7 @@ class DataConstructor {
     final static private Set<String> VALID_DECIMAL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("precision", "scale")));
     final static private Set<String> VALID_TIMESTAMP_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("timestamp_offset", "timestamp_precision")));
     // Create a range which contains the default lower bound and upper bound values.
-    final static private Range RANGE = new Range(SYSTEM.newList( SYSTEM.newDecimal(62135769600000L), SYSTEM.newDecimal(253402300800000L)));
+    final static private Range DEFAULT_TIMESTAMP_IN_MILLIS_DECIMAL_RANGE = new Range(SYSTEM.newList( SYSTEM.newDecimal(62135769600000L), SYSTEM.newDecimal(253402300800000L)));
 
     /**
      * Use Ion-java parser to parse the data provided in the options which specify the range of data.
@@ -253,7 +250,7 @@ class DataConstructor {
     public static String constructString(Map<String, ReparsedConstraint> constraintMapClone) {
         Random random = new Random();
         Regex regex = (Regex) constraintMapClone.remove("regex");
-        CodepointLength codepoint_length = (CodepointLength) constraintMapClone.remove("codepoint_length");
+        QuantifiableConstraints codepoint_length = (QuantifiableConstraints) constraintMapClone.remove("codepoint_length");
 
         if (!constraintMapClone.isEmpty()) {
             throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
@@ -335,8 +332,8 @@ class DataConstructor {
         // If there is no constraints provided, assign scale and precision with default values.
         int scaleValue = random.nextInt(DEFAULT_SCALE_UPPER_BOUND - DEFAULT_SCALE_LOWER_BOUND + 1) + DEFAULT_SCALE_LOWER_BOUND;
         int precisionValue = random.nextInt(DEFAULT_PRECISION);
-        Scale scale = (Scale) constraintMapClone.remove("scale");
-        Precision precision = (Precision) constraintMapClone.remove("precision");
+        QuantifiableConstraints scale = (QuantifiableConstraints) constraintMapClone.remove("scale");
+        QuantifiableConstraints precision = (QuantifiableConstraints) constraintMapClone.remove("precision");
         ValidValues validValues = (ValidValues) constraintMapClone.remove("valid_values");
         StringBuilder rs = new StringBuilder();
         rs.append(random.nextInt(9) + 1);
@@ -394,7 +391,7 @@ class DataConstructor {
      */
     public static Timestamp constructTimestamp(Map<String, ReparsedConstraint> constraintMapClone) {
         Random random = new Random();
-        Range range = RANGE;
+        Range range = DEFAULT_TIMESTAMP_IN_MILLIS_DECIMAL_RANGE;
         // Preset the local offset.
         Integer localOffset = localOffset(random);
         // Preset the default precision.
@@ -442,7 +439,7 @@ class DataConstructor {
     public static byte[] constructLobs( Map<String, ReparsedConstraint> constraintMapClone) {
         int byte_length;
         Random random = new Random();
-        ByteLength byteLength = (ByteLength) constraintMapClone.remove("byte_length");
+        QuantifiableConstraints byteLength = (QuantifiableConstraints) constraintMapClone.remove("byte_length");
         if (!constraintMapClone.isEmpty()) {
             throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
         }
