@@ -10,7 +10,6 @@ import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.system.IonTextWriterBuilder;
 import com.amazon.ionschema.Schema;
 import com.amazon.ionschema.Type;
-import com.google.common.io.CountingOutputStream;
 
 import java.io.FileOutputStream;
 import java.io.OutputStream;
