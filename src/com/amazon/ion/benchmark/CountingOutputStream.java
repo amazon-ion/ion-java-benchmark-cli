@@ -30,4 +30,10 @@ public class CountingOutputStream extends FilterOutputStream {
         out.write(b, off, len);
         this.count += len;
     }
+
+    @Override
+    public void write(int b) throws IOException {
+        out.write(b);
+        this.count++;
+    }
 }

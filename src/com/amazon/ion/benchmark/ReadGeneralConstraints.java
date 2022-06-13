@@ -35,12 +35,24 @@ public class ReadGeneralConstraints {
         Type schemaType = schema.getTypes().next();
         ReparsedType parsedTypeDefinition = new ReparsedType(schemaType);
         CountingOutputStream outputStreamCounter = new CountingOutputStream(new FileOutputStream(outputFile));
-        long count = 0;
         try (IonWriter writer = formatWriter(format, outputStreamCounter)) {
-            while (count <= size) {
+            int count = 0;
+            long currentSize = 0;
+            // Determine how many values should be written before the writer.flush(), and this process aims to reduce the execution time of writer.flush().
+            while (currentSize <= 0.05 * size) {
                 IonValue constructedData = DataConstructor.constructIonData(parsedTypeDefinition);
                 constructedData.writeTo(writer);
-                count = outputStreamCounter.getCount();
+                count ++;
+                writer.flush();
+                currentSize = outputStreamCounter.getCount();
+            }
+            while (currentSize <= size) {
+                for (int i = 0; i < count; i++) {
+                    IonValue constructedData = DataConstructor.constructIonData(parsedTypeDefinition);
+                    constructedData.writeTo(writer);
+                }
+                writer.flush();
+                currentSize = outputStreamCounter.getCount();
             }
         }
         // Print the successfully generated data notification which includes the file path information.
