@@ -105,6 +105,8 @@ public class ReparsedType {
             case KEYWORD_TIMESTAMP_PRECISION:
                 return TimestampPrecision.of(field);
             default:
+                // For now, Ion Data Generator doesn't support processing 'open' content.
+                // If the constraint 'content' included in the ISL , the data generator will throw an exception.
                 throw new IllegalArgumentException("This field is not understood: " + field);
         }
     }
