@@ -254,7 +254,7 @@ class DataConstructor {
         }
         // Writing field value to IonStruct based on the relevant constraint.
         for (String fieldName : fieldMap.keySet()) {
-            // Get the constraint for each field.
+            // Get the type definition for each field.
             ReparsedType fieldTypeDefinition = fieldMap.get(fieldName);
             // 'occurs' included in the field constraint determines the occurrences of the specified field.
             int occurTime = ReparsedType.getOccurs(fieldTypeDefinition.getConstraintStruct());
