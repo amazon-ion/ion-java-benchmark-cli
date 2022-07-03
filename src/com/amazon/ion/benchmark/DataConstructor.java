@@ -244,7 +244,7 @@ class DataConstructor {
      * and the value is constraint value in ReparsedConstraint format.
      * @return the constructed IonStruct value.
      */
-    private static IonValue constructIonStruct(Map<String, ReparsedConstraint> constraintMapClone) {
+    private static IonStruct constructIonStruct(Map<String, ReparsedConstraint> constraintMapClone) {
         Fields fields = (Fields)constraintMapClone.remove("fields");
         IonStruct constructedIonStruct = SYSTEM.newEmptyStruct();
         Map<String, ReparsedType> fieldMap = fields.getFieldMap();
@@ -253,14 +253,14 @@ class DataConstructor {
             throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
         }
         // Writing field value to IonStruct based on the relevant constraint.
-        for (String fieldName : fieldMap.keySet()) {
+        for (Map.Entry<String, ReparsedType> entry : fieldMap.entrySet()) {
             // Get the type definition for each field.
-            ReparsedType fieldTypeDefinition = fieldMap.get(fieldName);
+            ReparsedType fieldTypeDefinition = entry.getValue();
             // 'occurs' included in the field constraint determines the occurrences of the specified field.
             int occurTime = ReparsedType.getOccurs(fieldTypeDefinition.getConstraintStruct());
             int i = 0;
             while (i < occurTime) {
-                constructedIonStruct.add(fieldName, constructIonData(fieldTypeDefinition));
+                constructedIonStruct.add(entry.getKey(), constructIonData(fieldTypeDefinition));
                 i++;
             }
         }
@@ -273,7 +273,7 @@ class DataConstructor {
      * and the value is constraint value in ReparsedConstraint format.
      * @return the constructed IonList value.
      */
-    private static IonValue constructIonList(Map<String, ReparsedConstraint> constraintMapClone) {
+    private static IonList constructIonList(Map<String, ReparsedConstraint> constraintMapClone) {
         Contains contains = (Contains)constraintMapClone.remove("contains");
         OrderedElements elementsConstraints = (OrderedElements)constraintMapClone.remove("ordered_elements");
         if (!constraintMapClone.isEmpty()) {
@@ -283,7 +283,7 @@ class DataConstructor {
             throw new IllegalStateException("Can only handle one of : " + VALID_LIST_CONSTRAINTS);
         } else if (contains != null) {
             // TODO: The return IonList should also include other random values except the values provided by 'contains'.
-            return contains.getExpectedContainedValue();
+            return contains.getExpectedContainedValues();
         } else {
             ArrayList<ReparsedType> orderedElementsConstraints = elementsConstraints.getOrderedElementsConstraints();
             IonList resultList = SYSTEM.newEmptyList();

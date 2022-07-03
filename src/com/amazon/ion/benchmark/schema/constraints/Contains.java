@@ -8,22 +8,22 @@ import com.amazon.ion.IonValue;
  * values, in no particular order.
  */
 public class Contains implements ReparsedConstraint {
-    private final IonList expectedContainedValue;
+    private final IonList expectedContainedValues;
 
     /**
      * Initializing the newly created Object.
      * @param expectedContainedValue represents the value of constraint 'contains'.
      */
-    public Contains(IonValue expectedContainedValue) {
-        this.expectedContainedValue = (IonList) expectedContainedValue;
+    private Contains(IonValue expectedContainedValue) {
+        this.expectedContainedValues = (IonList) expectedContainedValue;
     }
 
     /**
      * Helping to access the private attribute expectedContainedValue.
      * @return IonList which represents the value of constraint 'contains'.
      */
-    public IonList getExpectedContainedValue() {
-        return this.expectedContainedValue;
+    public IonList getExpectedContainedValues() {
+        return this.expectedContainedValues;
     }
 
     /**
