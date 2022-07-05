@@ -246,6 +246,7 @@ class DataConstructor {
      */
     private static IonStruct constructIonStruct(Map<String, ReparsedConstraint> constraintMapClone) {
         Fields fields = (Fields)constraintMapClone.remove("fields");
+        Random random = new Random();
         IonStruct constructedIonStruct = SYSTEM.newEmptyStruct();
         Map<String, ReparsedType> fieldMap = fields.getFieldMap();
         // Check if there is unhandled constraint provided.
@@ -257,7 +258,8 @@ class DataConstructor {
             // Get the type definition for each field.
             ReparsedType fieldTypeDefinition = entry.getValue();
             // 'occurs' included in the field constraint determines the occurrences of the specified field.
-            int occurTime = ReparsedType.getOccurs(fieldTypeDefinition.getConstraintStruct());
+            int occurs = ReparsedType.getOccurs(fieldTypeDefinition.getConstraintStruct());
+            int occurTime = occurs == -1 ? random.nextInt(2) : occurs;
             int i = 0;
             while (i < occurTime) {
                 constructedIonStruct.add(entry.getKey(), constructIonData(fieldTypeDefinition));
@@ -289,7 +291,8 @@ class DataConstructor {
             IonList resultList = SYSTEM.newEmptyList();
             for (ReparsedType constraint : orderedElementsConstraints) {
                 // 'occurs' included in the constraint of 'ordered_element' indicates the occurrences of the specified element.
-                int occurTime = ReparsedType.getOccurs(constraint.getConstraintStruct());
+                int occurs = ReparsedType.getOccurs(constraint.getConstraintStruct());
+                int occurTime = occurs == -1 ? 1 : occurs;
                 int i = 0;
                 while (i < occurTime) {
                     resultList.add(constructIonData(constraint));

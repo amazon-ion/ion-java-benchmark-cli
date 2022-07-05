@@ -79,8 +79,7 @@ public class ReparsedType {
         // For constraint Field, the default value of occurs is optional.
         // For constraint ordered_elements, the default value of occurs is required.
         if (occursValue == null) {
-            // TODO: Processing the default value of occurs referring to specific constraint.
-            return 1;
+            return -1;
         } else {
             Occurs occurs = Occurs.of(occursValue);
             return occurs.getOccurRange().getRandomQuantifiableValueFromRange().intValue();
