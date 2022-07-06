@@ -2,8 +2,8 @@ package com.amazon.ion.benchmark.schema.constraints;
 
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonValue;
+import com.amazon.ion.benchmark.IonSchemaUtilities;
 import com.amazon.ion.benchmark.schema.ReparsedType;
-import com.amazon.ion.benchmark.schema.TypeReference;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +36,7 @@ public class Fields implements ReparsedConstraint {
      * @param value represents the value of the field contained in constraint 'fields'.
      */
     private void handleField(IonValue value) {
-        fieldMap.put(value.getFieldName(), new TypeReference(value).getTypeDefinition());
+        fieldMap.put(value.getFieldName(), IonSchemaUtilities.parseTypeReference(value));
     }
 
     /**

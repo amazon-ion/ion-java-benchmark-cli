@@ -2,8 +2,8 @@ package com.amazon.ion.benchmark.schema.constraints;
 
 import com.amazon.ion.IonList;
 import com.amazon.ion.IonValue;
+import com.amazon.ion.benchmark.IonSchemaUtilities;
 import com.amazon.ion.benchmark.schema.ReparsedType;
-import com.amazon.ion.benchmark.schema.TypeReference;
 
 import java.util.ArrayList;
 
@@ -45,6 +45,6 @@ public class OrderedElements implements ReparsedConstraint {
      * @param type represents the element contained in the constraint value container of 'ordered_elements'.
      */
     private void handleField(IonValue type) {
-        this.orderedElementsConstraints.add(new TypeReference(type).getTypeDefinition());
+        this.orderedElementsConstraints.add(IonSchemaUtilities.parseTypeReference(type));
     }
 }
