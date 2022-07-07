@@ -25,6 +25,9 @@ import com.amazon.ion.IonValue;
 import com.amazon.ion.IonWriter;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.benchmark.schema.ReparsedType;
+import com.amazon.ion.benchmark.schema.constraints.Contains;
+import com.amazon.ion.benchmark.schema.constraints.Fields;
+import com.amazon.ion.benchmark.schema.constraints.OrderedElements;
 import com.amazon.ion.benchmark.schema.constraints.QuantifiableConstraints;
 import com.amazon.ion.benchmark.schema.constraints.Range;
 import com.amazon.ion.benchmark.schema.constraints.Regex;
@@ -71,6 +74,7 @@ class DataConstructor {
     final static private Set<String> VALID_STRING_SYMBOL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("regex", "codepoint_length")));
     final static private Set<String> VALID_DECIMAL_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("precision", "scale")));
     final static private Set<String> VALID_TIMESTAMP_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("timestamp_offset", "timestamp_precision")));
+    final static private Set<String> VALID_LIST_CONSTRAINTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("contains", "ordered_elements")));
     // Create a range which contains the default lower bound and upper bound values.
     final static private Range DEFAULT_TIMESTAMP_IN_MILLIS_DECIMAL_RANGE = new Range(SYSTEM.newList( SYSTEM.newDecimal(62135769600000L), SYSTEM.newDecimal(253402300800000L)));
 
@@ -224,9 +228,78 @@ class DataConstructor {
                     return SYSTEM.newBlob(constructLobs(constraintMapClone));
                 case CLOB:
                     return SYSTEM.newClob(constructLobs(constraintMapClone));
+                case STRUCT:
+                    return constructIonStruct(constraintMapClone);
+                case LIST:
+                    return constructIonList(constraintMapClone);
                 default:
                     throw new IllegalStateException(type + " is not supported.");
             }
+        }
+    }
+
+    /**
+     * Constructing IonStruct which is aligned with the constraints provided in the constraintMap.
+     * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
+     * and the value is constraint value in ReparsedConstraint format.
+     * @return the constructed IonStruct value.
+     */
+    private static IonStruct constructIonStruct(Map<String, ReparsedConstraint> constraintMapClone) {
+        Fields fields = (Fields)constraintMapClone.remove("fields");
+        Random random = new Random();
+        IonStruct constructedIonStruct = SYSTEM.newEmptyStruct();
+        Map<String, ReparsedType> fieldMap = fields.getFieldMap();
+        // Check if there is unhandled constraint provided.
+        if (!constraintMapClone.isEmpty()) {
+            throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
+        }
+        // Writing field value to IonStruct based on the relevant constraint.
+        for (Map.Entry<String, ReparsedType> entry : fieldMap.entrySet()) {
+            // Get the type definition for each field.
+            ReparsedType fieldTypeDefinition = entry.getValue();
+            // 'occurs' included in the field constraint determines the occurrences of the specified field.
+            int occurs = ReparsedType.getOccurs(fieldTypeDefinition.getConstraintStruct());
+            int occurTime = occurs == -1 ? random.nextInt(2) : occurs;
+            int i = 0;
+            while (i < occurTime) {
+                constructedIonStruct.add(entry.getKey(), constructIonData(fieldTypeDefinition));
+                i++;
+            }
+        }
+        return constructedIonStruct;
+    }
+
+    /**
+     * Constructing IonList which is aligned with the constraints provided in the constraintMap.
+     * @param constraintMapClone collects the constraints from ISL file, the key represents the name of constraints,
+     * and the value is constraint value in ReparsedConstraint format.
+     * @return the constructed IonList value.
+     */
+    private static IonList constructIonList(Map<String, ReparsedConstraint> constraintMapClone) {
+        Contains contains = (Contains)constraintMapClone.remove("contains");
+        OrderedElements elementsConstraints = (OrderedElements)constraintMapClone.remove("ordered_elements");
+        if (!constraintMapClone.isEmpty()) {
+            throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
+        }
+        if (contains != null && elementsConstraints != null) {
+            throw new IllegalStateException("Can only handle one of : " + VALID_LIST_CONSTRAINTS);
+        } else if (contains != null) {
+            // TODO: The return IonList should also include other random values except the values provided by 'contains'.
+            return contains.getExpectedContainedValues();
+        } else {
+            ArrayList<ReparsedType> orderedElementsConstraints = elementsConstraints.getOrderedElementsConstraints();
+            IonList resultList = SYSTEM.newEmptyList();
+            for (ReparsedType constraint : orderedElementsConstraints) {
+                // 'occurs' included in the constraint of 'ordered_element' indicates the occurrences of the specified element.
+                int occurs = ReparsedType.getOccurs(constraint.getConstraintStruct());
+                int occurTime = occurs == -1 ? 1 : occurs;
+                int i = 0;
+                while (i < occurTime) {
+                    resultList.add(constructIonData(constraint));
+                    i++;
+                }
+            }
+            return resultList;
         }
     }
 

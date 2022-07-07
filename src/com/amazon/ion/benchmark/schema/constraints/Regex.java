@@ -9,7 +9,7 @@ public class Regex implements ReparsedConstraint{
      * Initializing the newly created object.
      * @param pattern represents the value of constraint 'regex'.
      */
-    public Regex(IonValue pattern) {
+    private Regex(IonValue pattern) {
         this.pattern = pattern.toString().replace("\"","");
     }
 

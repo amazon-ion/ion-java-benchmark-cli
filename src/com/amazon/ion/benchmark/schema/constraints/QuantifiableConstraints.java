@@ -29,6 +29,6 @@ public class QuantifiableConstraints implements ReparsedConstraint {
      * @return object Range which represents constraint value.
      */
     public Range getRange() {
-        return range;
+        return this.range;
     }
 }
