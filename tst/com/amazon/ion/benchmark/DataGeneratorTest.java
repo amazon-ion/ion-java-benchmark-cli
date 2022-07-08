@@ -47,6 +47,8 @@ public class DataGeneratorTest {
     private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/benchmark/testNestedStruct.isl";
     private final static String INPUT_ION_DECIMAL_FILE_PATH = "./tst/com/amazon/ion/benchmark/testDecimal.isl";
     private final static String INPUT_ION_TIMESTAMP_FILE_PATH = "./tst/com/amazon/ion/benchmark/testTimestamp.isl";
+    private final static String INPUT_ION_STRUCT_SCHEMA_CONTAINS_ELEMENT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testSchemaContainsElement.isl";
+    private final static String INPUT_ION_SEXP_FILE_PATH = "./tst/com/amazon/ion/benchmark/testSexp.isl";
     private final static String INPUT_ION_CLOB_FILE_PATH = "./tst/com/amazon/ion/benchmark/testClob.isl";
     private final static String INPUT_ION_BLOB_FILE_PATH = "./tst/com/amazon/ion/benchmark/testBlob.isl";
     private final static String INPUT_ION_FLOAT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testFloat.isl";
@@ -182,12 +184,30 @@ public class DataGeneratorTest {
     }
 
     /**
+     * Test if there's violation when generating Ion Sexp based on Ion Schema.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testViolationOfSexp() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_ION_SEXP_FILE_PATH);
+    }
+
+    /**
      * Test if there's violation when generating nested Ion Struct based on Ion Schema.
      * @throws Exception if error occurs during the violation detecting process.
      */
     @Test
     public void testViolationOfNestedIonList() throws Exception {
         DataGeneratorTest.violationDetect(INPUT_NESTED_ION_LIST_PATH);
+    }
+
+    /**
+     * Test if there's violation when generating IonStruct based on Ion Schema contains constraint 'element'.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testViolationOfIonStructWithElement() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_ION_STRUCT_SCHEMA_CONTAINS_ELEMENT_FILE_PATH);
     }
 
     /**
