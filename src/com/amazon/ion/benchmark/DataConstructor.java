@@ -294,7 +294,7 @@ class DataConstructor {
      * @param container represents one of the element from set (IonList | IonSexp).
      * @return the constructed IonSequence value.
      */
-    private static IonValue constructSequenceTypeData(Map<String, ReparsedConstraint> constraintMapClone, IonSequence container) {
+    private static IonSequence constructSequenceTypeData(Map<String, ReparsedConstraint> constraintMapClone, IonSequence container) {
         Contains contains = (Contains)constraintMapClone.remove("contains");
         OrderedElements elementsConstraints = (OrderedElements)constraintMapClone.remove("ordered_elements");
         Element element = (Element)constraintMapClone.remove("element");
