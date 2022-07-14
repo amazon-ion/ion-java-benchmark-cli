@@ -55,6 +55,7 @@ public class DataGeneratorTest {
     private final static String INPUT_ION_FLOAT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testFloat.isl";
     private final static String INPUT_ION_FLOAT_VALID_VALUE_FILE_PATH = "./tst/com/amazon/ion/benchmark/testFloatValidValue.isl";
     private final static String INPUT_ION_SYMBOL_FILE_PATH = "./tst/com/amazon/ion/benchmark/testSymbol.isl";
+    private final static String INPUT_SCHEMA_CONTAINS_ANNOTATIONS = "./tst/com/amazon/ion/benchmark/testAnnotations.isl";
     private final static String INPUT_ION_STRING_FILE_PATH = "./tst/com/amazon/ion/benchmark/testString.isl";
     private final static String INPUT_ION_INT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testInt.isl";
     private final static String SCORE_DIFFERENCE = "scoreDifference";
@@ -182,6 +183,15 @@ public class DataGeneratorTest {
     @Test
     public void testViolationOfNestedIonStruct() throws Exception {
         DataGeneratorTest.violationDetect(INPUT_NESTED_ION_STRUCT_PATH);
+    }
+
+    /**
+     * Test if there's violation when generating IonValue from ISL which contains constraint 'annotations'.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testAnnotations() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_SCHEMA_CONTAINS_ANNOTATIONS);
     }
 
     /**

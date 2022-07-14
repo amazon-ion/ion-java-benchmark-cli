@@ -3,6 +3,7 @@ package com.amazon.ion.benchmark.schema;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
+import com.amazon.ion.benchmark.schema.constraints.Annotations;
 import com.amazon.ion.benchmark.schema.constraints.Contains;
 import com.amazon.ion.benchmark.schema.constraints.Element;
 import com.amazon.ion.benchmark.schema.constraints.Fields;
@@ -13,6 +14,7 @@ import com.amazon.ion.benchmark.schema.constraints.ReparsedConstraint;
 import com.amazon.ion.benchmark.schema.constraints.TimestampPrecision;
 import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 
+import java.lang.reflect.AnnotatedArrayType;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +35,7 @@ public class ReparsedType {
     private static final String KEYWORD_ELEMENT = "element";
     private static final String KEYWORD_CONTAINS = "contains";
     private static final String KEYWORD_ORDERED_ELEMENTS = "ordered_elements";
+    private static final String KEYWORD_ANNOTATIONS = "annotations";
     // Using map to avoid processing the multiple repeat constraints situation.
     private final Map<String, ReparsedConstraint> constraintMap;
     private final IonStruct constraintStruct;
@@ -142,6 +145,8 @@ public class ReparsedType {
                 return Contains.of(field);
             case KEYWORD_ELEMENT:
                 return Element.of(field);
+            case KEYWORD_ANNOTATIONS:
+                return Annotations.of(field);
             default:
                 // For now, Ion Data Generator doesn't support processing 'open' content.
                 // If the constraint 'content' included in the ISL , the data generator will throw an exception.

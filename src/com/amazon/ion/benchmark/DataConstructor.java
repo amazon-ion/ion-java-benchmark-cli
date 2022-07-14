@@ -27,6 +27,7 @@ import com.amazon.ion.IonValue;
 import com.amazon.ion.IonWriter;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.benchmark.schema.ReparsedType;
+import com.amazon.ion.benchmark.schema.constraints.Annotations;
 import com.amazon.ion.benchmark.schema.constraints.Contains;
 import com.amazon.ion.benchmark.schema.constraints.Element;
 import com.amazon.ion.benchmark.schema.constraints.Fields;
@@ -202,6 +203,7 @@ class DataConstructor {
      * @return constructed ion data.
      */
     public static IonValue constructIonData(ReparsedType parsedTypeDefinition) {
+        IonValue result;
         // The first step is to check whether parsedTypeDefinition contains 'valid_values'. The reason we prioritize checking
         // 'valid_values' is that the constraint 'type' might not be contained in the type definition, in that case we cannot trigger
         // the following data constructing process.
@@ -210,41 +212,60 @@ class DataConstructor {
         Map<String, ReparsedConstraint> constraintMapClone = new HashMap<>();
         constraintMapClone.putAll(constraintMap);
         ValidValues validValues = (ValidValues) constraintMap.get("valid_values");
+        Annotations annotations = (Annotations)constraintMapClone.remove("annotations");
         if (validValues != null && !validValues.isRange()) {
-            return getRandomValueFromList(validValues.getValidValues());
+            result = getRandomValueFromList(validValues.getValidValues());
         } else if (parsedTypeDefinition.getIonType() == null) {
             throw new IllegalStateException("Constraint 'type' is required.");
         } else {
             IonType type = parsedTypeDefinition.getIonType();
             switch (type) {
                 case FLOAT:
-                    return SYSTEM.newFloat(constructFloat(constraintMapClone));
+                    result = SYSTEM.newFloat(constructFloat(constraintMapClone));
+                    break;
                 case SYMBOL:
-                    return  SYSTEM.newSymbol(constructString(constraintMapClone));
+                    result = SYSTEM.newSymbol(constructString(constraintMapClone));
+                    break;
                 case INT:
-                    return SYSTEM.newInt(constructInt(constraintMapClone));
+                    result = SYSTEM.newInt(constructInt(constraintMapClone));
+                    break;
                 case STRING:
-                    return SYSTEM.newString(constructString(constraintMapClone));
+                    result = SYSTEM.newString(constructString(constraintMapClone));
+                    break;
                 case DECIMAL:
-                    return SYSTEM.newDecimal(constructDecimal(constraintMapClone));
+                    result = SYSTEM.newDecimal(constructDecimal(constraintMapClone));
+                    break;
                 case TIMESTAMP:
-                    return SYSTEM.newTimestamp(constructTimestamp(constraintMapClone));
+                    result = SYSTEM.newTimestamp(constructTimestamp(constraintMapClone));
+                    break;
                 case BLOB:
-                    return SYSTEM.newBlob(constructLobs(constraintMapClone));
+                    result = SYSTEM.newBlob(constructLobs(constraintMapClone));
+                    break;
                 case CLOB:
-                    return SYSTEM.newClob(constructLobs(constraintMapClone));
+                    result = SYSTEM.newClob(constructLobs(constraintMapClone));
+                    break;
                 case STRUCT:
-                    return constructIonStruct(constraintMapClone);
+                    result = constructIonStruct(constraintMapClone);
+                    break;
                 case LIST:
                     IonList listContainer = SYSTEM.newEmptyList();
-                    return constructSequenceTypeData(constraintMapClone, listContainer);
+                    result = constructSequenceTypeData(constraintMapClone, listContainer);
+                    break;
                 case SEXP:
                     IonSexp sexpContainer = SYSTEM.newEmptySexp();
-                    return constructSequenceTypeData(constraintMapClone, sexpContainer);
+                    result = constructSequenceTypeData(constraintMapClone, sexpContainer);
+                    break;
                 default:
                     throw new IllegalStateException(type + " is not supported.");
             }
         }
+        if (annotations != null && annotations.getAnnotations() != null) {
+            IonList annotationsList = annotations.getAnnotations();
+            for (int i = 0; i < annotationsList.size(); i++) {
+                result.addTypeAnnotation(annotationsList.get(i).toString());
+            }
+        }
+        return result;
     }
 
     /**
