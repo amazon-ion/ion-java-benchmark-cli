@@ -39,8 +39,13 @@ public class Annotations implements ReparsedConstraint {
      */
     private IonList parseAnnotations(IonValue field) {
         String[] annotationsSpecificationList = field.getTypeAnnotations();
-        // If the constraint 'annotation' is not annotated or annotated with "optional",
-        if (annotationsSpecificationList.length == 0 || Arrays.asList(annotationsSpecificationList).contains("optional")) {
+        // We do not consider the features of 'annotations' in the element level.
+        // i.e. 'annotations' has annotation for each listed annotation in the constraint value.(required | optional)
+        // For the list level annotation, we only consider the default condition (when the constraint 'annotations' is not annotated).
+        // For the rest of the list level features (required | closed | ordered), we categorise them as one condition and then return the value of constraint annotations directly.
+
+        // If the constraint 'annotations' is not annotated, the list of annotations will be considered as optional.
+        if (annotationsSpecificationList.length == 0) {
             return randomlyReturnAnnotations(field);
         } else {
             return (IonList)field;

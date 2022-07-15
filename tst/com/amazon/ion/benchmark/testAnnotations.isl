@@ -1,7 +1,7 @@
 type::{
     name: TestAnnotations,
     type: struct,
-    annotations:optional::[struct, nestedStruct],
+    annotations:[struct, nestedStruct],
     fields: {
       firstName: { type: string, occurs: required, annotations: required::[test] },
       lastName: { type: string, occurs: optional, annotations: ordered::[test, ordered, annotations]  },
