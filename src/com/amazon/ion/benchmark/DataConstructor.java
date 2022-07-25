@@ -390,18 +390,19 @@ class DataConstructor {
     }
 
     /**
-     * Generate unicode codepoint randomly.
+     * Generate unicode codepoint randomly which matches the character from [A-Z] and [a-z].
      * @return generated codepoint.
      */
     private static int getCodePoint() {
-        Random random = new Random();
-        int type;
-        int codePoint;
-        do {
-            codePoint = random.nextInt(DEFAULT_RANGE.get(1) - DEFAULT_RANGE.get(0) + 1) + DEFAULT_RANGE.get(0);
-            type = Character.getType(codePoint);
-        } while (type == Character.PRIVATE_USE || type == Character.SURROGATE || type == Character.UNASSIGNED);
-        return codePoint;
+        int index = ThreadLocalRandom.current().nextInt(20);
+        int randomIndex = ThreadLocalRandom.current().nextInt(26);
+        if (index >= 0 && index < 10) {
+            // Randomly generate the unicode of character from [A-Z].
+            return randomIndex + 65;
+        } else {
+            // Randomly generate the unicode of character from [a-z].
+            return randomIndex + 97;
+        }
     }
 
     /**
@@ -497,7 +498,15 @@ class DataConstructor {
             return validValues.getRange().getRandomQuantifiableValueFromRange().longValue();
         } else {
             // If there is no constraint provided, the generator will construct a random value.
-            return ThreadLocalRandom.current().nextLong();
+            // Randomly generate integers in the distribution that more than 80% of integers would be smaller than 1024.
+            // In this case, the generated integers would be more similar to the real world data.
+            Random random = new Random();
+            int index = random.nextInt(20);
+            if (index >= 0 && index < 16) {
+                return ThreadLocalRandom.current().nextInt(1024);
+            } else {
+                return ThreadLocalRandom.current().nextLong();
+            }
         }
     }
 
@@ -512,8 +521,8 @@ class DataConstructor {
         Range range = DEFAULT_TIMESTAMP_IN_MILLIS_DECIMAL_RANGE;
         // Preset the local offset.
         Integer localOffset = localOffset(random);
-        // Preset the default precision.
-        Timestamp.Precision precision = PRECISIONS[random.nextInt(PRECISIONS.length)];
+        // Preset the default precision as 'Day'.
+        Timestamp.Precision precision = PRECISIONS[2];
         TimestampPrecision timestampPrecision = (TimestampPrecision) constraintMapClone.remove("timestamp_precision");
         ValidValues validValues = (ValidValues) constraintMapClone.remove("valid_values");
         if (!constraintMapClone.isEmpty()) {
