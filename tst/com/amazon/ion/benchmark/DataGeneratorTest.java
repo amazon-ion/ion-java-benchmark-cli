@@ -47,6 +47,7 @@ public class DataGeneratorTest {
     private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/benchmark/testNestedStruct.isl";
     private final static String INPUT_ION_DECIMAL_FILE_PATH = "./tst/com/amazon/ion/benchmark/testDecimal.isl";
     private final static String INPUT_ION_TIMESTAMP_FILE_PATH = "./tst/com/amazon/ion/benchmark/testTimestamp.isl";
+    private final static String INPUT_SCHEMA_CONTAINS_CODEPOINT_LENGTH = "./tst/com/amazon/ion/benchmark/testStringCodepointLength.isl";
     private final static String INPUT_ION_STRUCT_SCHEMA_CONTAINS_ELEMENT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testSchemaContainsElement.isl";
     private final static String INPUT_ION_SEXP_FILE_PATH = "./tst/com/amazon/ion/benchmark/testSexp.isl";
     private final static String INPUT_TEST_ELEMENT_SCHEMA = "./tst/com/amazon/ion/benchmark/testElement.isl";
@@ -183,6 +184,15 @@ public class DataGeneratorTest {
     @Test
     public void testViolationOfNestedIonStruct() throws Exception {
         DataGeneratorTest.violationDetect(INPUT_NESTED_ION_STRUCT_PATH);
+    }
+
+    /**
+     * Test if there's violation when generating string based on the ISL contains constraint 'codepoint_length'.
+     * @throws Exception if error occurs during the violation detecting process.
+     */
+    @Test
+    public void testCodepointLength() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_SCHEMA_CONTAINS_CODEPOINT_LENGTH);
     }
 
     /**
