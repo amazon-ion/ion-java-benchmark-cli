@@ -70,9 +70,12 @@ class DataConstructor {
     // The constant defined below are used as placeholder in the method WriteRandomIonValues.writeRequestedSizeFile.
     final static private IonSystem SYSTEM = IonSystemBuilder.standard().build();
     final static private List<Integer> DEFAULT_RANGE = Arrays.asList(0, 0x10FFFF);
-    final static public Timestamp.Precision[] PRECISIONS = Timestamp.Precision.values();
     final static public IonStruct NO_CONSTRAINT_STRUCT = null;
     final static private int DEFAULT_PRECISION = 20;
+    // The ASCII_CODE_LOWERCASE_A represents the ASCII code of character "a".
+    final static private int ASCII_CODE_LOWERCASE_A = 97;
+    // The ASCII_CODE_UPPERCASE_A represents the ASCII code of character "A".
+    final static private int ASCII_CODE_UPPERCASE_A = 65;
     final static private int DEFAULT_SCALE_LOWER_BOUND = -20;
     final static private int DEFAULT_SCALE_UPPER_BOUND = 20;
     final static private int DEFAULT_CONTAINER_LENGTH = 20;
@@ -396,12 +399,12 @@ class DataConstructor {
     private static int getCodePoint() {
         int index = ThreadLocalRandom.current().nextInt(20);
         int randomIndex = ThreadLocalRandom.current().nextInt(26);
-        if (index >= 0 && index < 10) {
+        if (index < 10) {
             // Randomly generate the unicode of character from [A-Z].
-            return randomIndex + 65;
+            return randomIndex + ASCII_CODE_UPPERCASE_A;
         } else {
             // Randomly generate the unicode of character from [a-z].
-            return randomIndex + 97;
+            return randomIndex + ASCII_CODE_LOWERCASE_A;
         }
     }
 
@@ -502,7 +505,7 @@ class DataConstructor {
             // In this case, the generated integers would be more similar to the real world data.
             Random random = new Random();
             int index = random.nextInt(20);
-            if (index >= 0 && index < 16) {
+            if (index < 16) {
                 return ThreadLocalRandom.current().nextInt(1024);
             } else {
                 return ThreadLocalRandom.current().nextLong();
@@ -522,7 +525,7 @@ class DataConstructor {
         // Preset the local offset.
         Integer localOffset = localOffset(random);
         // Preset the default precision as 'Day'.
-        Timestamp.Precision precision = PRECISIONS[2];
+        Timestamp.Precision precision = Timestamp.Precision.DAY;
         TimestampPrecision timestampPrecision = (TimestampPrecision) constraintMapClone.remove("timestamp_precision");
         ValidValues validValues = (ValidValues) constraintMapClone.remove("valid_values");
         if (!constraintMapClone.isEmpty()) {
