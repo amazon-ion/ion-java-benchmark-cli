@@ -41,33 +41,34 @@ import static org.junit.Assert.assertTrue;
 public class DataGeneratorTest {
     private static String outputFile = null;
     private final static IonSystem SYSTEM = IonSystemBuilder.standard().build();
-    private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testStruct.isl";
-    private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/benchmark/testList.isl";
-    private final static String INPUT_NESTED_ION_LIST_PATH = "./tst/com/amazon/ion/benchmark/testNestedList.isl";
-    private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/benchmark/testNestedStruct.isl";
-    private final static String INPUT_ION_DECIMAL_FILE_PATH = "./tst/com/amazon/ion/benchmark/testDecimal.isl";
-    private final static String INPUT_ION_TIMESTAMP_FILE_PATH = "./tst/com/amazon/ion/benchmark/testTimestamp.isl";
-    private final static String INPUT_SCHEMA_CONTAINS_CODEPOINT_LENGTH = "./tst/com/amazon/ion/benchmark/testStringCodepointLength.isl";
-    private final static String INPUT_ION_STRUCT_SCHEMA_CONTAINS_ELEMENT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testSchemaContainsElement.isl";
-    private final static String INPUT_ION_SEXP_FILE_PATH = "./tst/com/amazon/ion/benchmark/testSexp.isl";
-    private final static String INPUT_ION_INT_SCHEMA = "./tst/com/amazon/ion/benchmark/testIntWithoutConstraint.isl";
-    private final static String INPUT_TEST_ELEMENT_SCHEMA = "./tst/com/amazon/ion/benchmark/testElement.isl";
-    private final static String INPUT_ION_CLOB_FILE_PATH = "./tst/com/amazon/ion/benchmark/testClob.isl";
-    private final static String INPUT_ION_BLOB_FILE_PATH = "./tst/com/amazon/ion/benchmark/testBlob.isl";
-    private final static String INPUT_ION_FLOAT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testFloat.isl";
-    private final static String INPUT_ION_FLOAT_VALID_VALUE_FILE_PATH = "./tst/com/amazon/ion/benchmark/testFloatValidValue.isl";
-    private final static String INPUT_ION_SYMBOL_FILE_PATH = "./tst/com/amazon/ion/benchmark/testSymbol.isl";
-    private final static String INPUT_SCHEMA_CONTAINS_ANNOTATIONS = "./tst/com/amazon/ion/benchmark/testAnnotations.isl";
-    private final static String INPUT_ION_STRING_FILE_PATH = "./tst/com/amazon/ion/benchmark/testString.isl";
-    private final static String INPUT_ION_INT_FILE_PATH = "./tst/com/amazon/ion/benchmark/testInt.isl";
+    private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testStruct.isl";
+    private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testList.isl";
+    private final static String INPUT_NESTED_ION_LIST_PATH = "./tst/com/amazon/ion/datagenerator/testNestedList.isl";
+    private final static String INPUT_NESTED_ION_STRUCT_PATH = "./tst/com/amazon/ion/datagenerator/testNestedStruct.isl";
+    private final static String INPUT_ION_DECIMAL_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testDecimal.isl";
+    private final static String INPUT_ION_TIMESTAMP_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testTimestamp.isl";
+    private final static String INPUT_SCHEMA_CONTAINS_CODEPOINT_LENGTH = "./tst/com/amazon/ion/datagenerator/testStringCodepointLength.isl";
+    private final static String INPUT_ION_STRUCT_SCHEMA_CONTAINS_ELEMENT_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testSchemaContainsElement.isl";
+    private final static String INPUT_ION_SEXP_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testSexp.isl";
+    private final static String INPUT_ION_INT_SCHEMA = "./tst/com/amazon/ion/datagenerator/testIntWithoutConstraint.isl";
+    private final static String INPUT_TEST_ELEMENT_SCHEMA = "./tst/com/amazon/ion/datagenerator/testElement.isl";
+    private final static String INPUT_ION_CLOB_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testClob.isl";
+    private final static String INPUT_ION_BLOB_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testBlob.isl";
+    private final static String INPUT_ION_FLOAT_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testFloat.isl";
+    private final static String INPUT_ION_FLOAT_VALID_VALUE_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testFloatValidValue.isl";
+    private final static String INPUT_ION_SYMBOL_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testSymbol.isl";
+    private final static String INPUT_SCHEMA_CONTAINS_ANNOTATIONS = "./tst/com/amazon/ion/datagenerator/testAnnotations.isl";
+    private final static String INPUT_ION_STRING_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testString.isl";
+    private final static String INPUT_ION_INT_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testInt.isl";
     private final static String SCORE_DIFFERENCE = "scoreDifference";
-    private final static String COMPARISON_REPORT_WITHOUT_REGRESSION = "./tst/com/amazon/ion/benchmark/testComparisonReportWithoutRegression.ion";
-    private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/benchmark/testComparisonReport.ion";
-    private final static String BENCHMARK_RESULT_PREVIOUS = "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultPrevious.ion";
-    private final static String BENCHMARK_RESULT_NEW = "./tst/com/amazon/ion/benchmark/IonLoaderBenchmarkResultNew.ion";
+    private final static String COMPARISON_REPORT_WITHOUT_REGRESSION = "./tst/com/amazon/ion/workflow/testComparisonReportWithoutRegression.ion";
+    private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/workflow/testComparisonReport.ion";
+    private final static String BENCHMARK_RESULT_PREVIOUS = "./tst/com/amazon/ion/workflow/IonLoaderBenchmarkResultPrevious.ion";
+    private final static String BENCHMARK_RESULT_NEW = "./tst/com/amazon/ion/workflow/IonLoaderBenchmarkResultNew.ion";
     private final static BigDecimal EXPECTED_GC_ALLOCATE_THRESHOLD = new BigDecimal("-0.010774139119162");
     private final static BigDecimal EXPECTED_SPEED_THRESHOLD = new BigDecimal("-0.326936");
     private final static BigDecimal EXPECTED_HEAP_USAGE_THRESHOLD = new BigDecimal("-0.184482");
+    private final static BigDecimal EXPECTED_REGRESSION_VALUE = new BigDecimal("-0.2851051607559");
     private final static BigDecimal EXPECTED_SERIALIZED_SIZE = new BigDecimal("0.000000");
     private final static String GC_ALLOCATE = "·gc.alloc.rate";
     private final static String HEAP_USAGE = "Heap usage";
@@ -397,9 +398,10 @@ public class DataGeneratorTest {
     public void testRegressionDetected() throws Exception {
         Map<String, BigDecimal> scoreMap = constructScoreMap(COMPARISON_REPORT);
         Map<String, BigDecimal> thresholdMap = ParseAndCompareBenchmarkResults.getThresholdMap(BENCHMARK_RESULT_PREVIOUS, BENCHMARK_RESULT_NEW);
-        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(thresholdMap, scoreMap, COMPARISON_REPORT);
-        assertEquals("The performance regression detected when benchmark the ion-java from the new commit with the test data: testList.10n and parameters: read::{format:\"ION_BINARY\",type:\"FILE\",api:\"DOM\"}\n" +
-                "The following aspects have regressions: {·gc.alloc.rate=-0.2851051607559}\n", detectionResult);
+        Map<String, BigDecimal> detectionResult = ParseAndCompareBenchmarkResults.detectRegression(thresholdMap, scoreMap, COMPARISON_REPORT);
+        Map<String, BigDecimal> expectedResult = new HashMap<>();
+        expectedResult.put(GC_ALLOCATE, EXPECTED_REGRESSION_VALUE);
+        assertEquals(expectedResult, detectionResult);
     }
 
     /**
@@ -411,8 +413,8 @@ public class DataGeneratorTest {
     public void testRegressionNotDetected() throws Exception {
         Map<String, BigDecimal> scoreMap = constructScoreMap(COMPARISON_REPORT_WITHOUT_REGRESSION);
         Map<String, BigDecimal> thresholdMap = ParseAndCompareBenchmarkResults.getThresholdMap(BENCHMARK_RESULT_PREVIOUS, BENCHMARK_RESULT_NEW);
-        String detectionResult = ParseAndCompareBenchmarkResults.detectRegression(thresholdMap, scoreMap, COMPARISON_REPORT_WITHOUT_REGRESSION);
-        assertNull(detectionResult);
+        Map<String, BigDecimal> detectionResult = ParseAndCompareBenchmarkResults.detectRegression(thresholdMap, scoreMap, COMPARISON_REPORT_WITHOUT_REGRESSION);
+        assertTrue(detectionResult.size() == 0);
     }
 
     /**

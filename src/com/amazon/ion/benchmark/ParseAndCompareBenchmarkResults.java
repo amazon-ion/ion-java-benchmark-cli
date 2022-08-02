@@ -36,6 +36,8 @@ public class ParseAndCompareBenchmarkResults {
     private static final String SECONDARY_METRIC = "secondaryMetrics";
     private static final String SCORE = "score";
     private static final String SPEED = "speed";
+    private final static String GC_ALLOCATE = "·gc.alloc.rate";
+    private final static String HEAP_USAGE = "Heap usage";
     private static final String FORMAT = "format";
     private static final String TYPE = "type";
     private static final String API = "api";
@@ -232,10 +234,12 @@ public class ParseAndCompareBenchmarkResults {
             writer.stepOut();
             writer.stepOut();
         }
-        String regressionDetectResult = detectRegression(thresholdMap, scoreMap, outputFilePath);
-        // This print out value will be passed to one environment variable in the GitHub Actions workflow.
-        if (regressionDetectResult != null) {
-            System.out.println(regressionDetectResult);
+        Map<String, BigDecimal> regressionResult = detectRegression(thresholdMap, scoreMap, outputFilePath);
+        // This print out value will be passed to the environment variable in the GitHub Actions workflow.
+        if (regressionResult.size() != 0) {
+            System.out.println(String.format("%s, %s, %s", regressionResult.get(GC_ALLOCATE), regressionResult.get(HEAP_USAGE), regressionResult.get(SPEED)));
+        } else {
+            System.out.println("no regression detected");
         }
     }
 
@@ -245,30 +249,21 @@ public class ParseAndCompareBenchmarkResults {
      * @param thresholdMap is a hashmap which match threshold of the score with the aspect it represents.
      * @param scoreMap is a hashmap which match relative change of the score with the aspect it represents.
      * @param outputFilePath is the destination of generated report after comparison process.
-     * @return a String which contains the information about whether performance regression happened.
+     * @return a map which contains regression scores.
      * @throws Exception if occur happen when reading Ion Data.
      */
-    public static String detectRegression(Map<String, BigDecimal> thresholdMap, Map<String, BigDecimal> scoreMap, String outputFilePath) throws Exception {
+    public static Map<String, BigDecimal> detectRegression(Map<String, BigDecimal> thresholdMap, Map<String, BigDecimal> scoreMap, String outputFilePath) throws Exception {
         try (IonReader comparisonResultReader = IonReaderBuilder.standard().build(new BufferedInputStream(new FileInputStream(outputFilePath)))) {
             IonDatagram comparisonResult = ReadGeneralConstraints.LOADER.load(comparisonResultReader);
             IonStruct comparisonResultStruct = (IonStruct) comparisonResult.get(0);
             comparisonResultStruct.remove(RELATIVE_DIFFERENCE_SCORE);
-            IonString inputFile = (IonString) comparisonResultStruct.get(INPUT);
-            String fileName = inputFile.stringValue();
             Map<String, BigDecimal> regressions = new HashMap<>();
             for (String keyWord : scoreMap.keySet()) {
                 if (scoreMap.get(keyWord).compareTo(thresholdMap.get(keyWord)) < 0) {
                     regressions.put(keyWord, scoreMap.get(keyWord));
                 }
             }
-            if (regressions.size() != 0) {
-                return "The performance regression detected when benchmark the ion-java from the new commit with the test data: "
-                        + fileName.substring(fileName.lastIndexOf(File.separator) + 1) + " and parameters: " + comparisonResultStruct.get(PARAMETERS) + System.lineSeparator()
-                        + "The following aspects have regressions: " + regressions + System.lineSeparator();
-            } else {
-                // Only regression detected messages are expected, and if no regression detected after executing the current ion-java-benchmark invoke an empty string will be returned.
-                return null;
-            }
+            return regressions;
         }
     }
 }
