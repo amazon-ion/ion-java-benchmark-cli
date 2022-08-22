@@ -37,6 +37,7 @@ import com.amazon.ion.benchmark.schema.constraints.Range;
 import com.amazon.ion.benchmark.schema.constraints.Regex;
 import com.amazon.ion.benchmark.schema.constraints.ReparsedConstraint;
 import com.amazon.ion.benchmark.schema.constraints.TimestampPrecision;
+import com.amazon.ion.benchmark.schema.constraints.TypeName;
 import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 import com.amazon.ion.system.IonBinaryWriterBuilder;
 import com.amazon.ion.system.IonReaderBuilder;
@@ -216,13 +217,13 @@ class DataConstructor {
         constraintMapClone.putAll(constraintMap);
         ValidValues validValues = (ValidValues) constraintMap.get("valid_values");
         Annotations annotations = (Annotations)constraintMapClone.remove("annotations");
+        TypeName type = (TypeName)constraintMapClone.remove("type");
         if (validValues != null && !validValues.isRange()) {
             result = getRandomValueFromList(validValues.getValidValues());
-        } else if (parsedTypeDefinition.getIonType() == null) {
+        } else if (type == null) {
             throw new IllegalStateException("Constraint 'type' is required.");
         } else {
-            IonType type = parsedTypeDefinition.getIonType();
-            switch (type) {
+            switch (type.getTypeName()) {
                 case FLOAT:
                     result = SYSTEM.newFloat(constructFloat(constraintMapClone));
                     break;

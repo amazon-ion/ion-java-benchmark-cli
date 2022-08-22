@@ -35,14 +35,13 @@ public class ReadGeneralConstraints {
         // If more constraints added, here is the point where developers should start.
         Type schemaType = schema.getTypes().next();
         IonStruct constraintStruct = (IonStruct)schemaType.getIsl();
-        ReparsedType parsedTypeDefinition = new ReparsedType(constraintStruct);
         CountingOutputStream outputStreamCounter = new CountingOutputStream(new FileOutputStream(outputFile));
         try (IonWriter writer = formatWriter(format, outputStreamCounter)) {
             int count = 0;
             long currentSize = 0;
             // Determine how many values should be written before the writer.flush(), and this process aims to reduce the execution time of writer.flush().
             while (currentSize <= 0.05 * size) {
-                IonValue constructedData = DataConstructor.constructIonData(parsedTypeDefinition);
+                IonValue constructedData = DataConstructor.constructIonData(new ReparsedType(constraintStruct));
                 constructedData.writeTo(writer);
                 count ++;
                 writer.flush();
@@ -50,7 +49,7 @@ public class ReadGeneralConstraints {
             }
             while (currentSize <= size) {
                 for (int i = 0; i < count; i++) {
-                    IonValue constructedData = DataConstructor.constructIonData(parsedTypeDefinition);
+                    IonValue constructedData = DataConstructor.constructIonData(new ReparsedType(constraintStruct));
                     constructedData.writeTo(writer);
                 }
                 writer.flush();
