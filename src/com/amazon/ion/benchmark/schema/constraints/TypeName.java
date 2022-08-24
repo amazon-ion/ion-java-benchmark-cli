@@ -3,6 +3,9 @@ package com.amazon.ion.benchmark.schema.constraints;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
 
+/**
+ * This class is used for parsing the value of constraint 'type' to object TypeName, and the attribute of this object represents the 'type_name' in IonType format.
+ */
 public class TypeName implements ReparsedConstraint {
     private IonType typeName;
 
