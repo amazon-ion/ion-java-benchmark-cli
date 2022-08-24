@@ -60,6 +60,8 @@ public class DataGeneratorTest {
     private final static String INPUT_SCHEMA_CONTAINS_ANNOTATIONS = "./tst/com/amazon/ion/datagenerator/testAnnotations.isl";
     private final static String INPUT_ION_STRING_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testString.isl";
     private final static String INPUT_ION_INT_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testInt.isl";
+    private final static String INPUT_SCHEMA_WITH_ANY_OF = "./tst/com/amazon/ion/datagenerator/testAnyOf.isl";
+    private final static String INPUT_SCHEMA_WITH_ONE_OF = "./tst/com/amazon/ion/datagenerator/testOneOf.isl";
     private final static String SCORE_DIFFERENCE = "scoreDifference";
     private final static String COMPARISON_REPORT_WITHOUT_REGRESSION = "./tst/com/amazon/ion/workflow/testComparisonReportWithoutRegression.ion";
     private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/workflow/testComparisonReport.ion";
@@ -140,6 +142,24 @@ public class DataGeneratorTest {
             byte[] buffer = Files.readAllBytes(path);
             assertEquals(Format.valueOf(format.toUpperCase()) == Format.ION_BINARY, IonStreamUtils.isIonBinary(buffer));
         }
+    }
+
+    /**
+     * Test if there's violation when generating ion data from the schema which contains constraint 'any_of'.
+     * @throws Exception if error occurs during violation detecting process.
+     */
+    @Test
+    public void testLogicConstraintAnyOf() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_SCHEMA_WITH_ANY_OF);
+    }
+
+    /**
+     * Test if there's violation when generating ion data from the schema which contains constraint 'one_of'.
+     * @throws Exception if error occurs during violation detecting process.
+     */
+    @Test
+    public void testLogicConstraintOneOf() throws Exception {
+        DataGeneratorTest.violationDetect(INPUT_SCHEMA_WITH_ONE_OF);
     }
 
     /**

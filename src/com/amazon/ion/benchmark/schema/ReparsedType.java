@@ -1,8 +1,10 @@
 package com.amazon.ion.benchmark.schema;
 
+import com.amazon.ion.IonList;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
+import com.amazon.ion.benchmark.IonSchemaUtilities;
 import com.amazon.ion.benchmark.schema.constraints.Annotations;
 import com.amazon.ion.benchmark.schema.constraints.Contains;
 import com.amazon.ion.benchmark.schema.constraints.Element;
@@ -12,11 +14,12 @@ import com.amazon.ion.benchmark.schema.constraints.QuantifiableConstraints;
 import com.amazon.ion.benchmark.schema.constraints.Regex;
 import com.amazon.ion.benchmark.schema.constraints.ReparsedConstraint;
 import com.amazon.ion.benchmark.schema.constraints.TimestampPrecision;
+import com.amazon.ion.benchmark.schema.constraints.TypeName;
 import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 
-import java.lang.reflect.AnnotatedArrayType;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 // Parsing the type definition in ISL file into ReparsedType format which allows getting constraints information directly.
 public class ReparsedType {
@@ -36,6 +39,9 @@ public class ReparsedType {
     private static final String KEYWORD_CONTAINS = "contains";
     private static final String KEYWORD_ORDERED_ELEMENTS = "ordered_elements";
     private static final String KEYWORD_ANNOTATIONS = "annotations";
+    private static final String KEYWORD_ANY_OF = "any_of";
+    private static final String KEYWORD_ONE_OF = "one_of";
+    private static final String KEYWORD_CONTENT = "content";
     // Using map to avoid processing the multiple repeat constraints situation.
     private final Map<String, ReparsedConstraint> constraintMap;
     private final IonStruct constraintStruct;
@@ -65,8 +71,17 @@ public class ReparsedType {
     private void handleField(IonValue field) {
         switch (field.getFieldName()) {
             case KEYWORD_NAME:
-            case KEYWORD_TYPE:
             case KEYWORD_OCCURS:
+            case KEYWORD_CONTENT:
+                return;
+            case KEYWORD_ANY_OF:
+            case KEYWORD_ONE_OF:
+                Random random = new Random();
+                IonList typeReferenceList = (IonList)field;
+                int index = random.nextInt(typeReferenceList.size());
+                IonValue chosenItem = typeReferenceList.get(index);
+                ReparsedType reparsedType = IonSchemaUtilities.parseTypeReference(chosenItem);
+                constraintMap.putAll(reparsedType.getConstraintMap());
                 return;
             default:
                 constraintMap.put(field.getFieldName(), toConstraint(field));
@@ -123,7 +138,6 @@ public class ReparsedType {
      */
     private ReparsedConstraint toConstraint(IonValue field) {
         switch (field.getFieldName()) {
-            //TODO: Add cases of constraints 'annotation'.
             //TODO: Add container type constraints: 'element', these might cover some of the implemented constraints.
             case KEYWORD_BYTE_LENGTH:
             case KEYWORD_PRECISION:
@@ -147,6 +161,8 @@ public class ReparsedType {
                 return Element.of(field);
             case KEYWORD_ANNOTATIONS:
                 return Annotations.of(field);
+            case KEYWORD_TYPE:
+                return TypeName.of(field);
             default:
                 // For now, Ion Data Generator doesn't support processing 'open' content.
                 // If the constraint 'content' included in the ISL , the data generator will throw an exception.
