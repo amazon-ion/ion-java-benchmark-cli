@@ -302,8 +302,7 @@ class DataConstructor {
                 // Get the type definition for each field.
                 ReparsedType fieldTypeDefinition = entry.getValue();
                 // 'occurs' included in the field constraint determines the occurrences of the specified field.
-                int occurs = ReparsedType.getOccurs(fieldTypeDefinition.getConstraintStruct());
-                int occurTime = occurs == -1 ? random.nextInt(2) : occurs;
+                int occurTime = ReparsedType.getOccurs(fieldTypeDefinition.getConstraintStruct());
                 for (int i = 0; i < occurTime; i++) {
                     constructedIonStruct.add(entry.getKey(), constructIonData(fieldTypeDefinition));
                 }
@@ -343,8 +342,7 @@ class DataConstructor {
             ArrayList<ReparsedType> orderedElementsConstraints = elementsConstraints.getOrderedElementsConstraints();
             for (ReparsedType constraint : orderedElementsConstraints) {
                 // 'occurs' included in the constraint of 'ordered_element' indicates the occurrences of the specified element.
-                int occurs = ReparsedType.getOccurs(constraint.getConstraintStruct());
-                int occurTime = occurs == -1 ? 1 : occurs;
+                int occurTime = ReparsedType.getOccurs(constraint.getConstraintStruct());
                 for (int i = 0; i < occurTime; i++) {
                     container.add(constructIonData(constraint));
                 }
