@@ -3,6 +3,7 @@ package com.amazon.ion.benchmark;
 import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonDecimal;
 import com.amazon.ion.IonFloat;
+import com.amazon.ion.IonLoader;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonSystem;
@@ -16,6 +17,7 @@ import com.amazon.ionschema.Schema;
 import com.amazon.ionschema.Type;
 import com.amazon.ionschema.Violations;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -23,6 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.junit.After;
 import org.junit.Test;
 
@@ -35,12 +38,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+
 
 public class DataGeneratorTest {
     private static String outputFile = null;
     private final static IonSystem SYSTEM = IonSystemBuilder.standard().build();
+    private final static IonLoader LOADER = SYSTEM.newLoader();
     private final static String INPUT_ION_STRUCT_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testStruct.isl";
     private final static String INPUT_ION_LIST_FILE_PATH = "./tst/com/amazon/ion/datagenerator/testList.isl";
     private final static String INPUT_NESTED_ION_LIST_PATH = "./tst/com/amazon/ion/datagenerator/testNestedList.isl";
@@ -76,6 +80,9 @@ public class DataGeneratorTest {
     private final static String HEAP_USAGE = "Heap usage";
     private final static String SERIALIZED_SIZE = "Serialized size";
     private final static String SPEED = "speed";
+    private final static File[] TEST_ISL_FILES = new File("./tst/com/amazon/ion/datagenerator/").listFiles();
+    private final static String BEFORE = "testSeed0.ion";
+    private final static String AFTER = "testSeed1.ion";
 
     /**
      * Construct IonReader for current output file in order to finish the following test process.
@@ -124,6 +131,43 @@ public class DataGeneratorTest {
                 assertTrue("Violations " + violations + "found in value " + value, violations.isValid());
             }
         }
+    }
+
+    /**
+     * This method executes Ion Data Generation twice and compare the generated data then provide the comparison result which represents by the boolean value.
+     * @param seedOption represents whether the '--seed' option is specified. If it is specified, the value of this option is 'true'. Otherwise, the value is 'false'.
+     * @return Boolean value which represents the comparison result. If there is any difference between two generated ion files, the return value will be set to 'false'.
+     * @throws Exception if there is error when executing data generation.
+     */
+    public Boolean generateAndCompare(Boolean seedOption) throws Exception {
+        Boolean result = true;
+        for (File testFile : TEST_ISL_FILES) {
+            String testFilePath = testFile.getPath();
+            for (int i = 0; i < 2; i++) {
+                String outputFile = "testSeed" + i + ".ion";
+                Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--format", "ion_text", "--input-ion-schema", testFilePath, outputFile);
+                if (seedOption == true) {
+                    optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--seed", "200", "--format", "ion_text", "--input-ion-schema", testFilePath, outputFile);
+                }
+                GeneratorOptions.executeGenerator(optionsMap);
+            }
+            IonDatagram datagramBefore = LOADER.load(new FileInputStream(BEFORE));
+            IonDatagram datagramAfter = LOADER.load(new FileInputStream(AFTER));
+            if (datagramBefore.size() == datagramAfter.size()) {
+                for (int i = 0; i < datagramBefore.size(); i++) {
+                    if (!datagramBefore.get(i).equals(datagramAfter.get(i))) {
+                        result = false;
+                        break;
+                    }
+                }
+            } else {
+                result = false;
+                continue;
+            }
+            Files.delete(Paths.get(BEFORE));
+            Files.delete(Paths.get(AFTER));
+        }
+        return result;
     }
 
     /**
@@ -215,6 +259,24 @@ public class DataGeneratorTest {
     @Test
     public void testCodepointLength() throws Exception {
         DataGeneratorTest.violationDetect(INPUT_SCHEMA_CONTAINS_CODEPOINT_LENGTH);
+    }
+
+    /**
+     * Test if the '--seed' option allows us to generate the same random value.
+     * @throws Exception if error occurs during the executing and comparison process.
+     */
+    @Test
+    public void testSeedOption() throws Exception {
+        assertTrue(generateAndCompare(true));
+    }
+
+    /**
+     * Test if the generated data is randomized when there is no '--seed' option provided.
+     * @throws Exception if error occurs during the executing and comparison process.
+     */
+    @Test
+    public void testWithoutSeed() throws Exception {
+        assertTrue(!generateAndCompare(false));
     }
 
     /**

@@ -4,6 +4,7 @@ import com.amazon.ion.IonList;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
+import com.amazon.ion.benchmark.GeneratorOptions;
 import com.amazon.ion.benchmark.IonSchemaUtilities;
 import com.amazon.ion.benchmark.schema.constraints.Annotations;
 import com.amazon.ion.benchmark.schema.constraints.Contains;
@@ -19,7 +20,6 @@ import com.amazon.ion.benchmark.schema.constraints.ValidValues;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 // Parsing the type definition in ISL file into ReparsedType format which allows getting constraints information directly.
 public class ReparsedType {
@@ -76,9 +76,8 @@ public class ReparsedType {
                 return;
             case KEYWORD_ANY_OF:
             case KEYWORD_ONE_OF:
-                Random random = new Random();
                 IonList typeReferenceList = (IonList)field;
-                int index = random.nextInt(typeReferenceList.size());
+                int index = GeneratorOptions.randomSeed.nextInt(typeReferenceList.size());
                 IonValue chosenItem = typeReferenceList.get(index);
                 ReparsedType reparsedType = IonSchemaUtilities.parseTypeReference(chosenItem);
                 constraintMap.putAll(reparsedType.getConstraintMap());

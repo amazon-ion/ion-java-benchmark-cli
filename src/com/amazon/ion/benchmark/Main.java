@@ -42,7 +42,7 @@ public class Main {
             + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... [--ion-reader-buffer-size <int>]... "
             + "[--json-use-big-decimals <bool>]... <input_file>\n"
         
-        + "  ion-java-benchmark generate (--data-size <data_size>) (--format <type>) (--input-ion-schema <file_path>) <output_file>\n"
+        + "  ion-java-benchmark generate [--seed <seed_value>] (--data-size <data_size>) (--format <type>) (--input-ion-schema <file_path>) <output_file>\n"
 
         + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>) <output_file>\n"
 
@@ -250,6 +250,8 @@ public class Main {
 
         + "  -Q --input-ion-schema <file_path>      This option will specify the path of Ion Schema file which contains all constraints that the "
             + "generated Ion data would conform with.\n"
+
+        + "  -M --seed <seed_value>   This option will be specified when users would like to get the same random data from the same schema file.\n"
 
         // 'compare' options
 

@@ -14,6 +14,7 @@ import com.amazon.ionschema.Type;
 
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.util.Random;
 
 /**
  * Parse Ion Schema file and extract the type definition as ReparsedType object then pass the re-parsed type definition to the Ion data generator.
@@ -32,7 +33,6 @@ public class ReadGeneralConstraints {
      */
     public static void constructAndWriteIonData(int size, Schema schema, String format, String outputFile) throws Exception {
         // Assume there's only one type definition between schema_header and schema_footer.
-        // If more constraints added, here is the point where developers should start.
         Type schemaType = schema.getTypes().next();
         IonStruct constraintStruct = (IonStruct)schemaType.getIsl();
         CountingOutputStream outputStreamCounter = new CountingOutputStream(new FileOutputStream(outputFile));

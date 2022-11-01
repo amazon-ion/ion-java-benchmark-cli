@@ -282,7 +282,6 @@ class DataConstructor {
         Fields fields = (Fields)constraintMapClone.remove("fields");
         Element element = (Element)constraintMapClone.remove("element");
         QuantifiableConstraints container_length = (QuantifiableConstraints)constraintMapClone.remove("container_length");
-        Random random = new Random();
         IonStruct constructedIonStruct = SYSTEM.newEmptyStruct();
         // Check if there is unhandled constraint provided.
         if (!constraintMapClone.isEmpty()) {
@@ -293,7 +292,7 @@ class DataConstructor {
         } else if (element != null) {
             int length = container_length == null ? DEFAULT_CONTAINER_LENGTH : container_length.getRange().getRandomQuantifiableValueFromRange().intValue();
             for (int i = 0; i < length; i++) {
-                constructedIonStruct.add(constructStringFromCodepointLength(random.nextInt(20)), constructIonData(element.getElement()));
+                constructedIonStruct.add(constructStringFromCodepointLength(GeneratorOptions.randomSeed.nextInt(20)), constructIonData(element.getElement()));
             }
         } else {
             Map<String, ReparsedType> fieldMap = fields.getFieldMap();
@@ -369,7 +368,6 @@ class DataConstructor {
      * @return constructed string.
      */
     public static String constructString(Map<String, ReparsedConstraint> constraintMapClone) {
-        Random random = new Random();
         Regex regex = (Regex) constraintMapClone.remove("regex");
         QuantifiableConstraints codepoint_length = (QuantifiableConstraints) constraintMapClone.remove("codepoint_length");
         if (!constraintMapClone.isEmpty()) {
@@ -380,14 +378,14 @@ class DataConstructor {
         } else if (regex != null) {
             String pattern = regex.getPattern();
             RgxGen rgxGen = new RgxGen(pattern);
-            return rgxGen.generate();
+            return rgxGen.generate(GeneratorOptions.randomSeed);
         } else if (codepoint_length != null) {
             int length = codepoint_length.getRange().getRandomQuantifiableValueFromRange().intValue();
             return constructStringFromCodepointLength(length);
         } else {
             // If there is no constraints provided, a randomly constructed string with
             // preset Unicode codepoints length will be generated.
-            return constructStringFromCodepointLength(random.nextInt(20));
+            return constructStringFromCodepointLength(GeneratorOptions.randomSeed.nextInt(20));
         }
     }
 
@@ -396,8 +394,8 @@ class DataConstructor {
      * @return generated codepoint.
      */
     private static int getCodePoint() {
-        int index = ThreadLocalRandom.current().nextInt(20);
-        int randomIndex = ThreadLocalRandom.current().nextInt(26);
+        int index = GeneratorOptions.randomSeed.nextInt(20);
+        int randomIndex = GeneratorOptions.randomSeed.nextInt(26);
         if (index < 10) {
             // Randomly generate the unicode of character from [A-Z].
             return randomIndex + ASCII_CODE_UPPERCASE_A;
@@ -438,7 +436,7 @@ class DataConstructor {
         if (validValues != null) {
             return validValues.getRange().getRandomQuantifiableValueFromRange().doubleValue();
         } else {
-            return ThreadLocalRandom.current().nextDouble();
+            return GeneratorOptions.randomSeed.nextDouble();
         }
     }
 
@@ -449,15 +447,14 @@ class DataConstructor {
      * @return the constructed decimal.
      */
     public static BigDecimal constructDecimal(Map<String, ReparsedConstraint> constraintMapClone) {
-        Random random = new Random();
         // If there is no constraints provided, assign scale and precision with default values.
-        int scaleValue = random.nextInt(DEFAULT_SCALE_UPPER_BOUND - DEFAULT_SCALE_LOWER_BOUND + 1) + DEFAULT_SCALE_LOWER_BOUND;
-        int precisionValue = random.nextInt(DEFAULT_PRECISION);
+        int scaleValue = GeneratorOptions.randomSeed.nextInt(DEFAULT_SCALE_UPPER_BOUND - DEFAULT_SCALE_LOWER_BOUND + 1) + DEFAULT_SCALE_LOWER_BOUND;
+        int precisionValue = GeneratorOptions.randomSeed.nextInt(DEFAULT_PRECISION);
         QuantifiableConstraints scale = (QuantifiableConstraints) constraintMapClone.remove("scale");
         QuantifiableConstraints precision = (QuantifiableConstraints) constraintMapClone.remove("precision");
         ValidValues validValues = (ValidValues) constraintMapClone.remove("valid_values");
         StringBuilder rs = new StringBuilder();
-        rs.append(random.nextInt(9) + 1);
+        rs.append(GeneratorOptions.randomSeed.nextInt(9) + 1);
         if (!constraintMapClone.isEmpty()) {
             throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
         }
@@ -469,7 +466,7 @@ class DataConstructor {
                 precisionValue = precision.getRange().getRandomQuantifiableValueFromRange().intValue();
             }
             for (int digit = 1; digit < precisionValue; digit++) {
-                rs.append(random.nextInt(10));
+                rs.append(GeneratorOptions.randomSeed.nextInt(10));
             }
             BigInteger unscaledValue = new BigInteger(rs.toString());
             return new BigDecimal(unscaledValue, scaleValue);
@@ -502,12 +499,11 @@ class DataConstructor {
             // If there is no constraint provided, the generator will construct a random value.
             // Randomly generate integers in the distribution that more than 80% of integers would be smaller than 1024.
             // In this case, the generated integers would be more similar to the real world data.
-            Random random = new Random();
-            int index = random.nextInt(20);
+            int index = GeneratorOptions.randomSeed.nextInt(20);
             if (index < 16) {
-                return ThreadLocalRandom.current().nextInt(1024);
+                return GeneratorOptions.randomSeed.nextInt(1024);
             } else {
-                return ThreadLocalRandom.current().nextLong();
+                return GeneratorOptions.randomSeed.nextLong();
             }
         }
     }
@@ -519,10 +515,9 @@ class DataConstructor {
      * @return the constructed timestamp.
      */
     public static Timestamp constructTimestamp(Map<String, ReparsedConstraint> constraintMapClone) {
-        Random random = new Random();
         Range range = DEFAULT_TIMESTAMP_IN_MILLIS_DECIMAL_RANGE;
         // Preset the local offset.
-        Integer localOffset = localOffset(random);
+        Integer localOffset = localOffset(GeneratorOptions.randomSeed);
         // Preset the default precision as 'Day'.
         Timestamp.Precision precision = Timestamp.Precision.DAY;
         TimestampPrecision timestampPrecision = (TimestampPrecision) constraintMapClone.remove("timestamp_precision");
@@ -567,7 +562,6 @@ class DataConstructor {
      */
     public static byte[] constructLobs( Map<String, ReparsedConstraint> constraintMapClone) {
         int byte_length;
-        Random random = new Random();
         QuantifiableConstraints byteLength = (QuantifiableConstraints) constraintMapClone.remove("byte_length");
         if (!constraintMapClone.isEmpty()) {
             throw new IllegalStateException ("Found unhandled constraints : " + constraintMapClone.values());
@@ -575,10 +569,10 @@ class DataConstructor {
         if (byteLength != null) {
             byte_length = byteLength.getRange().getRandomQuantifiableValueFromRange().intValue();
         } else {
-            byte_length = random.nextInt(512);
+            byte_length = GeneratorOptions.randomSeed.nextInt(512);
         }
         byte[] randomBytes = new byte[byte_length];
-        random.nextBytes(randomBytes);
+        GeneratorOptions.randomSeed.nextBytes(randomBytes);
         return randomBytes;
     }
 
