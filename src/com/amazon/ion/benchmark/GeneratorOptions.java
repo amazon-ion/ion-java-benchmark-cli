@@ -10,7 +10,7 @@ import java.util.Random;
  * Execute Ion Data Generator after receiving the hashmap of command line options.
  */
 public class GeneratorOptions {
-    public static Random randomSeed;
+    public static Random random;
 
     /**
      * Check the validation of input ion schema and execute the Ion Data generating process.
@@ -23,9 +23,9 @@ public class GeneratorOptions {
         String path = optionsMap.get("<output_file>").toString();
         String inputFilePath = optionsMap.get("--input-ion-schema").toString();
         if (optionsMap.get("--seed") != null) {
-            randomSeed = new Random(Long.valueOf(optionsMap.get("--seed").toString()));
+            random = new Random(Long.valueOf(optionsMap.get("--seed").toString()));
         } else {
-            randomSeed = new Random();
+            random = new Random();
         }
         // Check whether the input schema file is valid and get the loaded schema.
         Schema schema = IonSchemaUtilities.loadSchemaDefinition(inputFilePath);

@@ -37,7 +37,7 @@ public class TimestampPrecision extends QuantifiableConstraints{
         String upperBound = constraintSequence.get(1).toString();
         int lowerBoundOrdinal = lowerBound.equals(IonSchemaUtilities.KEYWORD_MIN) ? 0 : Timestamp.Precision.valueOf(lowerBound.toUpperCase()).ordinal();
         int upperBoundOrdinal = upperBound.equals(IonSchemaUtilities.KEYWORD_MAX) ? precisions.length : Timestamp.Precision.valueOf(upperBound.toUpperCase()).ordinal();
-        int randomIndex = GeneratorOptions.randomSeed.nextInt(upperBoundOrdinal - lowerBoundOrdinal + 1) + lowerBoundOrdinal;
+        int randomIndex = GeneratorOptions.random.nextInt(upperBoundOrdinal - lowerBoundOrdinal + 1) + lowerBoundOrdinal;
         return precisions[randomIndex];
     }
 }

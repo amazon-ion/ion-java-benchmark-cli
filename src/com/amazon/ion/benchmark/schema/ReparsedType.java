@@ -77,7 +77,7 @@ public class ReparsedType {
             case KEYWORD_ANY_OF:
             case KEYWORD_ONE_OF:
                 IonList typeReferenceList = (IonList)field;
-                int index = GeneratorOptions.randomSeed.nextInt(typeReferenceList.size());
+                int index = GeneratorOptions.random.nextInt(typeReferenceList.size());
                 IonValue chosenItem = typeReferenceList.get(index);
                 ReparsedType reparsedType = IonSchemaUtilities.parseTypeReference(chosenItem);
                 constraintMap.putAll(reparsedType.getConstraintMap());

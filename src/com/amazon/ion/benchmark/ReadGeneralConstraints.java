@@ -14,7 +14,6 @@ import com.amazon.ionschema.Type;
 
 import java.io.FileOutputStream;
 import java.io.OutputStream;
-import java.util.Random;
 
 /**
  * Parse Ion Schema file and extract the type definition as ReparsedType object then pass the re-parsed type definition to the Ion data generator.

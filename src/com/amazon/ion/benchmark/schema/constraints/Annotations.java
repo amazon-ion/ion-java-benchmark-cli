@@ -56,7 +56,7 @@ public class Annotations implements ReparsedConstraint {
      * @return a null value or a list of annotations randomly.
      */
     private IonList randomlyReturnAnnotations(IonValue field) {
-        int value = GeneratorOptions.randomSeed.nextInt(2);
+        int value = GeneratorOptions.random.nextInt(2);
         switch (value) {
             case 1:
                 return (IonList)field;

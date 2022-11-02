@@ -39,7 +39,7 @@ import java.nio.file.Paths;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.assertFalse;
 
 public class DataGeneratorTest {
     private static String outputFile = null;
@@ -81,8 +81,6 @@ public class DataGeneratorTest {
     private final static String SERIALIZED_SIZE = "Serialized size";
     private final static String SPEED = "speed";
     private final static File[] TEST_ISL_FILES = new File("./tst/com/amazon/ion/datagenerator/").listFiles();
-    private final static String BEFORE = "testSeed0.ion";
-    private final static String AFTER = "testSeed1.ion";
 
     /**
      * Construct IonReader for current output file in order to finish the following test process.
@@ -141,18 +139,22 @@ public class DataGeneratorTest {
      */
     public Boolean generateAndCompare(Boolean seedOption) throws Exception {
         Boolean result = true;
+        String outputBefore = "testSeed0.ion";
+        String outputAfter = "testSeed1.ion";
         for (File testFile : TEST_ISL_FILES) {
             String testFilePath = testFile.getPath();
             for (int i = 0; i < 2; i++) {
                 String outputFile = "testSeed" + i + ".ion";
-                Map <String, Object> optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--format", "ion_text", "--input-ion-schema", testFilePath, outputFile);
+                Map<String, Object> optionsMap;
                 if (seedOption == true) {
                     optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--seed", "200", "--format", "ion_text", "--input-ion-schema", testFilePath, outputFile);
+                } else {
+                    optionsMap = Main.parseArguments("generate", "--data-size", "5000", "--format", "ion_text", "--input-ion-schema", testFilePath, outputFile);
                 }
                 GeneratorOptions.executeGenerator(optionsMap);
             }
-            IonDatagram datagramBefore = LOADER.load(new FileInputStream(BEFORE));
-            IonDatagram datagramAfter = LOADER.load(new FileInputStream(AFTER));
+            IonDatagram datagramBefore = LOADER.load(new FileInputStream(outputBefore));
+            IonDatagram datagramAfter = LOADER.load(new FileInputStream(outputAfter));
             if (datagramBefore.size() == datagramAfter.size()) {
                 for (int i = 0; i < datagramBefore.size(); i++) {
                     if (!datagramBefore.get(i).equals(datagramAfter.get(i))) {
@@ -164,8 +166,8 @@ public class DataGeneratorTest {
                 result = false;
                 continue;
             }
-            Files.delete(Paths.get(BEFORE));
-            Files.delete(Paths.get(AFTER));
+            Files.delete(Paths.get(outputBefore));
+            Files.delete(Paths.get(outputAfter));
         }
         return result;
     }
@@ -276,7 +278,7 @@ public class DataGeneratorTest {
      */
     @Test
     public void testWithoutSeed() throws Exception {
-        assertTrue(!generateAndCompare(false));
+        assertFalse(generateAndCompare(false));
     }
 
     /**

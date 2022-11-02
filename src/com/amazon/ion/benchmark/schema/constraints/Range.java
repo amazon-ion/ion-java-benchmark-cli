@@ -85,6 +85,6 @@ public class Range {
         IonValue upperBound = sequence.get(1);
         BigDecimal lowerBoundBigDecimal = lowerBound.getType().equals(IonType.TIMESTAMP) ? ((IonTimestamp)lowerBound).getDecimalMillis() : new BigDecimal(lowerBound.toString());
         BigDecimal upperBoundBigDecimal = upperBound.getType().equals(IonType.TIMESTAMP) ? ((IonTimestamp)upperBound).getDecimalMillis() : new BigDecimal(upperBound.toString());
-        return lowerBoundBigDecimal.add(new BigDecimal(GeneratorOptions.randomSeed.nextDouble()).multiply(upperBoundBigDecimal.subtract(lowerBoundBigDecimal)));
+        return lowerBoundBigDecimal.add(new BigDecimal(GeneratorOptions.random.nextDouble()).multiply(upperBoundBigDecimal.subtract(lowerBoundBigDecimal)));
     }
 }
