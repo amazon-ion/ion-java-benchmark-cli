@@ -252,7 +252,7 @@ public class Main {
             + "generated Ion data would conform with.\n"
 
         + "  -M --seed <long>      This option will be specified when users would like to get the same random data from the same schema file."
-            + "The provided value should be 64 bits of long seed value which will be used for creating pseudorandom number generator. \n"
+            + "The provided value should be up to 64 bits of long seed value, which will be used for creating a pseudorandom number generator. \n"
 
         // 'compare' options
 
