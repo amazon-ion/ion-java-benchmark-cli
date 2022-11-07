@@ -2,9 +2,7 @@ package com.amazon.ion.benchmark.schema.constraints;
 
 import com.amazon.ion.IonList;
 import com.amazon.ion.IonValue;
-
-import java.util.Arrays;
-import java.util.Random;
+import com.amazon.ion.benchmark.GeneratorOptions;
 
 /**
  * This class aims to process the constraint 'annotations'. After parsing the constraint value to Annotations object, we
@@ -58,8 +56,7 @@ public class Annotations implements ReparsedConstraint {
      * @return a null value or a list of annotations randomly.
      */
     private IonList randomlyReturnAnnotations(IonValue field) {
-        Random random = new Random();
-        int value = random.nextInt(2);
+        int value = GeneratorOptions.random.nextInt(2);
         switch (value) {
             case 1:
                 return (IonList)field;

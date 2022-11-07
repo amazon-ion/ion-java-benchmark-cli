@@ -4,11 +4,13 @@ import com.amazon.ionschema.Schema;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Execute Ion Data Generator after receiving the hashmap of command line options.
  */
 public class GeneratorOptions {
+    public static Random random;
 
     /**
      * Check the validation of input ion schema and execute the Ion Data generating process.
@@ -20,6 +22,11 @@ public class GeneratorOptions {
         String format = ((List<String>) optionsMap.get("--format")).get(0);
         String path = optionsMap.get("<output_file>").toString();
         String inputFilePath = optionsMap.get("--input-ion-schema").toString();
+        if (optionsMap.get("--seed") != null) {
+            random = new Random(Long.valueOf(optionsMap.get("--seed").toString()));
+        } else {
+            random = new Random();
+        }
         // Check whether the input schema file is valid and get the loaded schema.
         Schema schema = IonSchemaUtilities.loadSchemaDefinition(inputFilePath);
         ReadGeneralConstraints.constructAndWriteIonData(size, schema, format, path);

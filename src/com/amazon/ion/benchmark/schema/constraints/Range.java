@@ -5,10 +5,10 @@ import com.amazon.ion.IonSequence;
 import com.amazon.ion.IonTimestamp;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
+import com.amazon.ion.benchmark.GeneratorOptions;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.Random;
 
 // Processing the constraint value which contains 'range' annotation.
 public class Range {
@@ -81,11 +81,10 @@ public class Range {
      * @return a BigDecimal which is within the provided range. This value would be cast into different data types as needed.
      */
     public BigDecimal getRandomQuantifiableValueFromRange() {
-        Random random = new Random();
         IonValue lowerBound = sequence.get(0);
         IonValue upperBound = sequence.get(1);
         BigDecimal lowerBoundBigDecimal = lowerBound.getType().equals(IonType.TIMESTAMP) ? ((IonTimestamp)lowerBound).getDecimalMillis() : new BigDecimal(lowerBound.toString());
         BigDecimal upperBoundBigDecimal = upperBound.getType().equals(IonType.TIMESTAMP) ? ((IonTimestamp)upperBound).getDecimalMillis() : new BigDecimal(upperBound.toString());
-        return lowerBoundBigDecimal.add(new BigDecimal(random.nextDouble()).multiply(upperBoundBigDecimal.subtract(lowerBoundBigDecimal)));
+        return lowerBoundBigDecimal.add(new BigDecimal(GeneratorOptions.random.nextDouble()).multiply(upperBoundBigDecimal.subtract(lowerBoundBigDecimal)));
     }
 }

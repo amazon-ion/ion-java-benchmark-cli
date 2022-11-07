@@ -32,7 +32,6 @@ public class ReadGeneralConstraints {
      */
     public static void constructAndWriteIonData(int size, Schema schema, String format, String outputFile) throws Exception {
         // Assume there's only one type definition between schema_header and schema_footer.
-        // If more constraints added, here is the point where developers should start.
         Type schemaType = schema.getTypes().next();
         IonStruct constraintStruct = (IonStruct)schemaType.getIsl();
         CountingOutputStream outputStreamCounter = new CountingOutputStream(new FileOutputStream(outputFile));
