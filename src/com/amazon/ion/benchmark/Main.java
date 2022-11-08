@@ -42,7 +42,7 @@ public class Main {
             + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... [--ion-reader-buffer-size <int>]... "
             + "[--json-use-big-decimals <bool>]... <input_file>\n"
         
-        + "  ion-java-benchmark generate [--seed <seed_value>] (--data-size <data_size>) (--format <type>) (--input-ion-schema <file_path>) <output_file>\n"
+        + "  ion-java-benchmark generate [--seed <seed_value>] [--format <type>] (--data-size <data_size>) (--input-ion-schema <file_path>) <output_file>\n"
 
         + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>) <output_file>\n"
 
