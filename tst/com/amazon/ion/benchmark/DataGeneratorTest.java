@@ -71,11 +71,11 @@ public class DataGeneratorTest {
     private final static String COMPARISON_REPORT = "./tst/com/amazon/ion/workflow/testComparisonReport.ion";
     private final static String BENCHMARK_RESULT_PREVIOUS = "./tst/com/amazon/ion/workflow/IonLoaderBenchmarkResultPrevious.ion";
     private final static String BENCHMARK_RESULT_NEW = "./tst/com/amazon/ion/workflow/IonLoaderBenchmarkResultNew.ion";
-    private final static BigDecimal EXPECTED_GC_ALLOCATE_THRESHOLD = new BigDecimal("-0.010774139119162");
-    private final static BigDecimal EXPECTED_SPEED_THRESHOLD = new BigDecimal("-0.326936");
-    private final static BigDecimal EXPECTED_HEAP_USAGE_THRESHOLD = new BigDecimal("-0.184482");
+    private final static BigDecimal EXPECTED_GC_ALLOCATE_THRESHOLD = new BigDecimal("-0.0222208892471180");
+    private final static BigDecimal EXPECTED_SPEED_THRESHOLD = new BigDecimal("-0.5587159");
+    private final static BigDecimal EXPECTED_HEAP_USAGE_THRESHOLD = new BigDecimal("-0.0073837");
     private final static BigDecimal EXPECTED_REGRESSION_VALUE = new BigDecimal("-0.2851051607559");
-    private final static BigDecimal EXPECTED_SERIALIZED_SIZE = new BigDecimal("0.000000");
+    private final static BigDecimal EXPECTED_SERIALIZED_SIZE = new BigDecimal("0.0000000");
     private final static String GC_ALLOCATE = "·gc.alloc.rate";
     private final static String HEAP_USAGE = "Heap usage";
     private final static String SERIALIZED_SIZE = "Serialized size";

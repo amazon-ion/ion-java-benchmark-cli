@@ -99,8 +99,44 @@ public class ParseAndCompareBenchmarkResults {
             IonDecimal score = (IonDecimal) rawDataList.get(i);
             rawData.add(score.bigDecimalValue());
         }
-        BigDecimal threshold = calculateDifference(Collections.max(rawData), Collections.min(rawData));
-        return threshold;
+        Collections.sort(rawData);
+        return calculateThreshold(rawData);
+    }
+
+    /**
+     * Using IQR(interquartile range) method to calculate the threshold of detecting regression.
+     * IQR method is used for labeling outliers. The interquartile range is the range between the first (Q1) and the third quartiles (Q3).
+     * Any data lying outside Q3+1.5*IQR or Q1-1.5*IQR is considered as an outlier (IQR is defined as Q3 - Q1).
+     * Regression detection is equivalent as outlier detection.
+     * The relative difference between the edge of outlier detection range can be defined as the threshold of detecting regression.
+     * @param sortedRawData represents a list of sorted BigDecimal which represents the raw values of benchmark results.
+     * @return the calculated threshold value.
+     */
+    public static BigDecimal calculateThreshold(List<BigDecimal> sortedRawData) {
+        int length = sortedRawData.size();
+        BigDecimal Q1 = median(sortedRawData, 0, length / 2 - 1);
+        BigDecimal Q3 = median(sortedRawData, (length + 1) / 2, length - 1);
+        BigDecimal IQR = Q3.subtract(Q1);
+        BigDecimal range = IQR.multiply(BigDecimal.valueOf(1.5));
+        BigDecimal lowerFence = Q1.subtract(range);
+        BigDecimal upperFence = Q3.add(range);
+        return calculateDifference(upperFence, lowerFence);
+    }
+
+    /**
+     * Calculate the median value of a list of BigDecimal which starts from index left and end with index right (inclusive).
+     * @param sortedRawData represents a list of sorted BigDecimal which represents the raw values of benchmark results.
+     * @param left indicates the start of the list.
+     * @param right indicates the end of the list.
+     * @return the calculates median value of a specified list.
+     */
+    public static BigDecimal median(List<BigDecimal> sortedRawData, int left, int right ) {
+        int index = right - left;
+        if (index % 2 == 0) {
+            return sortedRawData.get((left + right) / 2);
+        } else {
+            return sortedRawData.get((right + left) / 2).add(sortedRawData.get((right + left) / 2 + 1)).divide(BigDecimal.valueOf(2));
+        }
     }
 
     /**
