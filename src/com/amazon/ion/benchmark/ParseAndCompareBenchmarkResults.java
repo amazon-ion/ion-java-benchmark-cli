@@ -128,7 +128,7 @@ public class ParseAndCompareBenchmarkResults {
      * @param sortedRawData represents a list of sorted BigDecimal which represents the raw values of benchmark results.
      * @param left indicates the start of the list.
      * @param right indicates the end of the list.
-     * @return the calculates median value of a specified list.
+     * @return the calculated median value of a specified list.
      */
     public static BigDecimal median(List<BigDecimal> sortedRawData, int left, int right ) {
         int index = right - left;
