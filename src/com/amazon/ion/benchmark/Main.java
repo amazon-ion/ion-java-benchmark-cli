@@ -41,7 +41,8 @@ public class Main {
             + "[--ion-use-symbol-tokens <bool>]... [--paths <file>] [--ion-reader <type>]... "
             + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... [--ion-reader-buffer-size <int>]... "
             + "[--json-use-big-decimals <bool>]... <input_file>\n"
-        
+
+        + "  ion-java-benchmark run-suite (--test-ion-data <file_path>) (--benchmark-options-combinations <file_path>) <output_file>\n"
 
         + "  ion-java-benchmark --help\n"
 
@@ -67,7 +68,6 @@ public class Main {
             + "DOM loader is included in each timed benchmark invocation. Therefore, it is important to provide "
             + "data that closely matches the size of data read by a single reader/loader instance in the real "
             + "world to ensure the initialization cost is properly amortized.\n"
-
 
         + "\n";
 
@@ -230,6 +230,12 @@ public class Main {
             + "top-level value in the Ion stream. Ignored unless --format ion_binary and --ion-reader incremental are "
             + "specified. May be specified multiple times to compare different settings.\n"
 
+        // 'run-suite' options
+
+        + "  -G --test-ion-data <file_path>      This option will specify the path of the directory which contains all test Ion data.\n"
+
+        + "  -B --benchmark-options-combinations <file_path>      This option will specify the path of an Ion text file which contains all options combinations of ion-java-benchmark-cli."
+
         + "\n";
 
     private static final String EXAMPLES =
@@ -326,8 +332,12 @@ public class Main {
             printHelpAndExit();
         }
         try {
-            OptionsMatrixBase options = OptionsMatrixBase.from(optionsMap);
-            options.executeBenchmark();
+            if (optionsMap.get("run-suite").equals(true)) {
+                GenerateAndOrganizeBenchmarkResults.generateAndSaveBenchmarkResults(optionsMap);
+            } else {
+                OptionsMatrixBase options = OptionsMatrixBase.from(optionsMap);
+                options.executeBenchmark();
+            }
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
