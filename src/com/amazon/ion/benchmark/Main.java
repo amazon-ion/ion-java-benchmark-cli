@@ -44,6 +44,8 @@ public class Main {
 
         + "  ion-java-benchmark run-suite (--test-ion-data <file_path>) (--benchmark-options-combinations <file_path>) <output_file>\n"
 
+        + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>) <output_file>\n"
+
         + "  ion-java-benchmark --help\n"
 
         + "  ion-java-benchmark --version\n\n";
@@ -234,7 +236,13 @@ public class Main {
 
         + "  -G --test-ion-data <file_path>      This option will specify the path of the directory which contains all test Ion data.\n"
 
-        + "  -B --benchmark-options-combinations <file_path>      This option will specify the path of an Ion text file which contains all options combinations of ion-java-benchmark-cli."
+        + "  -B --benchmark-options-combinations <file_path>      This option will specify the path of an Ion text file which contains all options combinations of ion-java-benchmark-cli.\n"
+
+        // 'compare' options
+
+        + "  -P --benchmark-result-previous <file_path>      This option will specify the path of benchmark result from the existing ion-java commit.\n"
+
+        + "  -X --benchmark-result-new <file_path>      This option will specify the path of benchmark result form the new ion-java commit.\n"
 
         + "\n";
 
@@ -334,6 +342,8 @@ public class Main {
         try {
             if (optionsMap.get("run-suite").equals(true)) {
                 GenerateAndOrganizeBenchmarkResults.generateAndSaveBenchmarkResults(optionsMap);
+            } else if (optionsMap.get("compare").equals(true)) {
+                ParseAndCompareBenchmarkResults.compareResult(optionsMap);
             } else {
                 OptionsMatrixBase options = OptionsMatrixBase.from(optionsMap);
                 options.executeBenchmark();
