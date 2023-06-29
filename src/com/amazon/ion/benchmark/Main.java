@@ -30,8 +30,8 @@ public class Main {
             + "[--results-file <file>] [--io-type <type>]... [--io-buffer-size <int>]... [--format <type>]... "
             + "[--api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
-            + "[--ion-use-symbol-tokens <bool>]... [--ion-writer-block-size <int>]... [--auto-flush <bool>]..."
-            + "[--json-use-big-decimals <bool>]... <input_file>\n"
+            + "[--ion-use-symbol-tokens <bool>]... [--ion-writer-block-size <int>]... [--auto-flush <bool>]... "
+            + "[--ion-minor-version <int>]... [--json-use-big-decimals <bool>]... <input_file>\n"
 
         + "  ion-java-benchmark read [--profile] [--limit <int>] [--mode <mode>] [--time-unit <unit>] "
             + "[--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
@@ -40,7 +40,7 @@ public class Main {
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
             + "[--ion-use-symbol-tokens <bool>]... [--paths <file>] [--ion-reader <type>]... "
             + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... [--ion-reader-buffer-size <int>]... "
-            + "[--json-use-big-decimals <bool>]... <input_file>\n"
+            + "[--ion-minor-version <int>]... [--json-use-big-decimals <bool>]... <input_file>\n"
 
         + "  ion-java-benchmark run-suite (--test-ion-data <file_path>) (--benchmark-options-combinations <file_path>) <output_file>\n"
 
@@ -235,6 +235,8 @@ public class Main {
             + "stream (whichever is smaller). To avoid resizing, this value should be larger than the largest "
             + "top-level value in the Ion stream. Ignored unless --format ion_binary and --ion-reader incremental are "
             + "specified. May be specified multiple times to compare different settings.\n"
+
+        + "  -V --ion-minor-version <int>           The Ion minor version to use when writing. [default: 0]\n"
 
         // 'run-suite' options
 

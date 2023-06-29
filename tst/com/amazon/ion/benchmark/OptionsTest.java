@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -218,6 +217,7 @@ public class OptionsTest {
         boolean useSymbolTokens = false;
         Integer floatWidth = null;
         boolean jsonUseBigDecimals = true;
+        Integer ionMinorVersion = 0;
 
         final T preallocation(Integer preallocation) {
             this.preallocation = preallocation;
@@ -279,6 +279,11 @@ public class OptionsTest {
             return (T) this;
         }
 
+        final T ionMinorVersion(Integer ionMinorVersion) {
+            this.ionMinorVersion = ionMinorVersion;
+            return (T) this;
+        }
+
         void assertOptionsEqual(U that) {
             assertEquals(flushPeriod, that.flushPeriod);
             assertEquals(api, that.api);
@@ -291,6 +296,7 @@ public class OptionsTest {
             assertEquals(ioBufferSize, that.ioBufferSize);
             assertEquals(floatWidth, that.floatWidth);
             assertEquals(jsonUseBigDecimals, that.jsonUseBigDecimals);
+            assertEquals(ionMinorVersion, that.ionMinorVersion);
         }
     }
 
@@ -1384,7 +1390,6 @@ public class OptionsTest {
         assertTrue(expectedCombinations.isEmpty());
     }
 
-    @Ignore // TODO amzn/ion-java-benchmark-cli/issues/2
     @Test
     public void readUsingLobChunks() throws Exception {
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
@@ -2101,5 +2106,139 @@ public class OptionsTest {
         double expectResult = -0.22035698907090617;
         double realResult = ParseAndCompareBenchmarkResults.detectRegression(before, after);
         assertEquals(expectResult, realResult, 1e-16);
+    }
+
+    @Test
+    public void readIon11() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--ion-minor-version",
+            "1",
+            "--io-type",
+            "buffer",
+            "binaryAllTypes11.10n"
+        );
+        assertReadTaskExecutesCorrectly(
+            "binaryAllTypes11.10n",
+            optionsCombination,
+            Format.ION_BINARY,
+            false
+        );
+    }
+
+    @Test
+    public void readIon11WithConversionFrom10() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--ion-minor-version",
+            "1",
+            "--io-type",
+            "buffer",
+            "binaryAllTypes.10n"
+        );
+        assertReadTaskExecutesCorrectly(
+            "binaryAllTypes.10n",
+            optionsCombination,
+            Format.ION_BINARY,
+            true
+        );
+    }
+
+    @Test
+    public void writeIon11() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--ion-minor-version",
+            "1",
+            "--io-type",
+            "buffer",
+            "binaryAllTypes11.10n"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "binaryAllTypes11.10n",
+            optionsCombination,
+            Format.ION_BINARY,
+            IoType.BUFFER
+        );
+    }
+
+    @Test
+    public void writeIon11WithConversionFrom10() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--ion-minor-version",
+            "1",
+            "--io-type",
+            "buffer",
+            "binaryAllTypes.10n"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "binaryAllTypes.10n",
+            optionsCombination,
+            Format.ION_BINARY,
+            IoType.BUFFER
+        );
+    }
+
+    private void writeAllTypes10And11(String file) throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "write",
+            "--format",
+            "ion_binary",
+            "--ion-minor-version",
+            "0",
+            "--ion-minor-version",
+            "1",
+            file
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
+
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(0));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1));
+
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> nullSafeEquals(candidate.ionMinorVersion, optionsCombination.ionMinorVersion));
+
+            assertWriteTaskExecutesCorrectly(file, optionsCombination, optionsCombination.format, IoType.FILE);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void writeAllTypes10And11() throws Exception {
+        writeAllTypes10And11("binaryAllTypes.10n");
+        writeAllTypes10And11("binaryAllTypes11.10n");
+    }
+
+    private void readAllTypes10And11(String file, int fileMinorVersion) throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--format",
+            "ion_binary",
+            "--ion-minor-version",
+            "0",
+            "--ion-minor-version",
+            "1",
+            file
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
+
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(0));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1));
+
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> nullSafeEquals(candidate.ionMinorVersion, optionsCombination.ionMinorVersion));
+
+            assertReadTaskExecutesCorrectly(file, optionsCombination, optionsCombination.format, optionsCombination.ionMinorVersion != fileMinorVersion);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void readAllTypes10And11() throws Exception {
+        readAllTypes10And11("binaryAllTypes.10n", 0);
+        readAllTypes10And11("binaryAllTypes11.10n", 1);
     }
 }

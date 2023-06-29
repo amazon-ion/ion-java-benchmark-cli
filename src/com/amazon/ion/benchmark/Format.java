@@ -3,11 +3,10 @@ package com.amazon.ion.benchmark;
 import com.amazon.ion.impl._Private_IonConstants;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Arrays;
+
+import static com.amazon.ion.benchmark.IonUtilities.isFormatHeaderPresent;
 
 /**
  * Data formats, e.g. Ion binary and Ion text.
@@ -22,6 +21,7 @@ enum Format {
                     boolean optionsRequireRewrite = options.flushPeriod != null
                         || options.preallocation != null
                         || options.floatWidth != null
+                        || (options.ionMinorVersion != null && !IonUtilities.minorVersionsEqual(options.ionMinorVersion, input.toFile()))
                         || (options.importsForBenchmarkFile != null
                             && !IonUtilities.importsEqual(options.importsForBenchmarkFile, input.toFile()))
                         || !IonUtilities.importsFilesEqual(options.importsForInputFile, options.importsForBenchmarkFile);
@@ -274,26 +274,6 @@ enum Format {
     abstract boolean isIon();
 
     /**
-     * Determine whether the given file starts with the given format header.
-     * @param formatHeader the format header to match.
-     * @param file the file.
-     * @return true if the first bytes in the file match the given format header; otherwise, false.
-     * @throws IOException if thrown while reading the file.
-     */
-    static boolean isFormatHeaderPresent(byte[] formatHeader, File file) throws IOException {
-        byte[] firstBytes = new byte[formatHeader.length];
-        try (InputStream inputStream = new FileInputStream(file)) {
-            int bytesRead = inputStream.read(firstBytes);
-            if (bytesRead == formatHeader.length) {
-                if (Arrays.equals(formatHeader, firstBytes)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
      * Determine which Format the data at the given path represents.
      * @param path the path to the data to be classified.
      * @return the Format of the data.
@@ -302,7 +282,8 @@ enum Format {
      */
     static Format classify(Path path) throws IOException {
         File file = path.toFile();
-        if (isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_0, file)) {
+        if (isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_0, file)
+            || isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_1, file)) {
             return Format.ION_BINARY;
         }
         if (isFormatHeaderPresent(CborUtilities.CBOR_SELF_IDENTIFICATION_TAG, file)) {

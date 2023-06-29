@@ -1,6 +1,7 @@
 package com.amazon.ion.benchmark;
 
 import com.amazon.ion.IonCatalog;
+import com.amazon.ion.IonEncodingVersion;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
@@ -8,8 +9,10 @@ import com.amazon.ion.IonWriter;
 import com.amazon.ion.OffsetSpan;
 import com.amazon.ion.SpanProvider;
 import com.amazon.ion.SymbolTable;
+import com.amazon.ion.impl._Private_IonConstants;
 import com.amazon.ion.impl._Private_IonSystem;
 import com.amazon.ion.impl.bin._Private_IonManagedBinaryWriterBuilder;
+import com.amazon.ion.system.IonBinaryWriterBuilder_1_1;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.system.IonTextWriterBuilder;
@@ -25,6 +28,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
@@ -136,6 +140,42 @@ class IonUtilities {
     }
 
     /**
+     * Determine whether the given file starts with the given format header.
+     * @param formatHeader the format header to match.
+     * @param file the file.
+     * @return true if the first bytes in the file match the given format header; otherwise, false.
+     * @throws IOException if thrown while reading the file.
+     */
+    static boolean isFormatHeaderPresent(byte[] formatHeader, File file) throws IOException {
+        byte[] firstBytes = new byte[formatHeader.length];
+        try (InputStream inputStream = new FileInputStream(file)) {
+            int bytesRead = inputStream.read(firstBytes);
+            if (bytesRead == formatHeader.length) {
+                if (Arrays.equals(formatHeader, firstBytes)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Determine whether the given file starts with binary Ion data in the given minor version.
+     * @param minorVersion the minor version to attempt to match (0 for Ion 1.0, 1 for Ion 1.1).
+     * @param input the file to examine.
+     * @return true if the file contains binary Ion data of the given minor version; otherwise, false.
+     * @throws IOException if thrown while reading the file.
+     */
+    static boolean minorVersionsEqual(int minorVersion, File input) throws IOException {
+        if (minorVersion == 1) {
+            return isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_1, input);
+        } else if (minorVersion == 0) {
+            return isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_0, input);
+        }
+        throw new IllegalStateException("Unknown Ion minor version: " + minorVersion);
+    }
+
+    /**
      * Supplies IonWriter instances.
      */
     @FunctionalInterface
@@ -152,12 +192,12 @@ class IonUtilities {
     }
 
     /**
-     * Creates a new IonWriterSupplier of binary IonWriter instances.
+     * Creates a new IonWriterSupplier of binary Ion 1.0 IonWriter instances.
      * @param options the options to use when creating writers.
      * @return a new instance.
      * @throws IOException if thrown when parsing shared symbol tables.
      */
-    static IonWriterSupplier newBinaryWriterSupplier(OptionsCombinationBase options) throws IOException {
+    private static IonWriterSupplier newBinaryWriterSupplier_1_0(OptionsCombinationBase options) throws IOException {
         _Private_IonManagedBinaryWriterBuilder builder = _Private_IonManagedBinaryWriterBuilder
             .create(_Private_IonManagedBinaryWriterBuilder.AllocatorMode.POOLED)
             .withPaddedLengthPreallocation(options.preallocation != null ? options.preallocation : 2)
@@ -183,6 +223,42 @@ class IonUtilities {
             }
         }
         return builder::newWriter;
+    }
+
+    /**
+     * Creates a new IonWriterSupplier of binary Ion 1.1 IonWriter instances.
+     * @param options the options to use when creating writers.
+     * @return a new instance.
+     * @throws IOException if thrown when parsing shared symbol tables.
+     */
+    private static IonWriterSupplier newBinaryWriterSupplier_1_1(OptionsCombinationBase options) throws IOException {
+        IonBinaryWriterBuilder_1_1 builder = IonEncodingVersion.ION_1_1.binaryWriterBuilder();
+        builder.withImports(parseImportsFromFile(options.importsForBenchmarkFile));
+        if (options instanceof WriteOptionsCombination) {
+            // When this method is used by the read benchmark for converting the input file, 'options' will be a
+            // ReadOptionsCombination, which does not have the 'ionWriterUserBufferSize' value, because this value
+            // does not affect the serialized Ion.
+            Integer ionWriterBlockSize = ((WriteOptionsCombination) options).ionWriterBlockSize;
+            if (ionWriterBlockSize != null) {
+                builder.withBlockSize(ionWriterBlockSize);
+            }
+        }
+        return builder::build;
+    }
+
+    /**
+     * Creates a new IonWriterSupplier of binary IonWriter instances.
+     * @param options the options to use when creating writers.
+     * @return a new instance.
+     * @throws IOException if thrown when parsing shared symbol tables.
+     */
+    static IonWriterSupplier newBinaryWriterSupplier(OptionsCombinationBase options) throws IOException {
+        if (options.ionMinorVersion == 0) {
+            return newBinaryWriterSupplier_1_0(options);
+        } else if (options.ionMinorVersion == 1) {
+            return newBinaryWriterSupplier_1_1(options);
+        }
+        throw new IllegalStateException();
     }
 
     /**
@@ -338,7 +414,8 @@ class IonUtilities {
                 options.flushPeriod == null &&
                 options.importsForInputFile == null &&
                 options.importsForBenchmarkFile == null &&
-                options.format == Format.ION_BINARY
+                options.format == Format.ION_BINARY &&
+                IonUtilities.minorVersionsEqual(options.ionMinorVersion, input.toFile())
             ) {
                 // Use system-level reader to preserve the same symbol tables from the input.
                 writer = writerSupplier.get(options.newOutputStream(outputFile));

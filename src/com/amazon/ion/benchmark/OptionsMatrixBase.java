@@ -30,6 +30,7 @@ import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_MINOR_VERSION_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_BUFFER_SIZE_NAME;
@@ -394,6 +395,15 @@ abstract class OptionsMatrixBase {
             optionsCombinationStructs,
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
             OPTION_ONLY_APPLIES_TO_ION_BINARY
+        );
+        parseAndCombine(
+            optionsMatrix.get("--ion-minor-version"),
+            ION_MINOR_VERSION_NAME,
+            OptionsMatrixBase::getIntOrAuto,
+            ION_SYSTEM::newInt,
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
+            OPTION_ONLY_APPLIES_TO_ION
         );
         parseAndCombine(
             optionsMatrix.get("--json-use-big-decimals"),
