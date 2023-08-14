@@ -21,8 +21,8 @@ import java.util.jar.Manifest;
 class VersionInfo {
 
     private static final String MANIFEST_FILE = "META-INF/MANIFEST.MF";
-    private static final String ION_JAVA_PROPERTIES_FILE = "META-INF/maven/com.amazon.ion/ion-java/pom.properties";
-    private static final String ION_JAVA_PROPERTIES_VERSION_KEY = "version";
+    private static final String ION_JAVA_PROPERTIES_FILE = "ion-java.properties";
+    private static final String ION_JAVA_PROPERTIES_VERSION_KEY = "build.version";
     private static final String ION_JAVA_PROJECT_VERSION_ATTRIBUTE = "Ion-Java-Project-Version";
     private static final String CLI_BUILD_TIME_ATTRIBUTE = "Ion-Java-Benchmark-Build-Time";
     private static final String CLI_PROJECT_VERSION_ATTRIBUTE = "Ion-Java-Benchmark-Project-Version";
