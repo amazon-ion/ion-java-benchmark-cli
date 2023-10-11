@@ -40,8 +40,8 @@ public class ParseAndCompareBenchmarkResults {
         String benchmarkResultNew = optionsMap.get("--benchmark-result-new").toString();
         Map<String, Double> comparisonResults = new HashMap<>();
         for (String benchmarkScoreKeyword : BENCHMARK_SCORE_KEYWORDS) {
-            double[] previousData = preProcess(benchmarkResultPrevious, benchmarkScoreKeyword);
-            double[] newData = preProcess(benchmarkResultNew, benchmarkScoreKeyword);
+            double[] previousData = loadKeywordSpecificBenchmarkResults(benchmarkResultPrevious, benchmarkScoreKeyword);
+            double[] newData = loadKeywordSpecificBenchmarkResults(benchmarkResultNew, benchmarkScoreKeyword);
             double comparisonResult = detectRegression(previousData, newData);
             if (comparisonResult > 0) {
                 comparisonResults.put(benchmarkScoreKeyword, comparisonResult);
@@ -73,11 +73,6 @@ public class ParseAndCompareBenchmarkResults {
         TTest tTest = new TTest();
         // Perform two-sample t-test
         double pValue = tTest.tTest(before, after);
-        // Calculate means of both datasets
-        double meanBefore = StatUtils.mean(before);
-        double meanAfter = StatUtils.mean(after);
-        // Calculate the difference in means (regression value)
-        double regressionValue = (meanAfter - meanBefore) / meanBefore;
         // Two-sample T-test is a hypothesis test used to compare the means of two independent groups.
         // Null hypothesis states that there is no difference between two groups.
         // P-value represents the probability of null hypothesis is true.
@@ -85,20 +80,24 @@ public class ParseAndCompareBenchmarkResults {
         // If the calculated p-value is greater than 0.05, then the result failed to reject the null hypothesis which means there isn't enough statistical evidence to say two groups are different.
         // If the p-value is smaller than 0.05, then the result is considered statistically significant and the null hypothesis would be rejected. There is strong evidence that two groups of sample data are different.
         if (pValue < 0.05) {
-            return regressionValue;
+            // Calculate means of both datasets
+            double meanBefore = StatUtils.mean(before);
+            double meanAfter = StatUtils.mean(after);
+            // Calculate the difference in means (regression value)
+            return (meanAfter - meanBefore) / meanBefore;
         } else {
             return 0;
         }
     }
 
     /**
-     * This method is used for preprocessing the raw data from benchmark results to make sure the data is ready to be fed into the regression-detection process.
+     * This method is used for loading and processing the keyword specific raw data from benchmark results to make sure the data is ready to be fed into the regression-detection process.
      * @param benchmarkResult represents the file path of the benchmark result.
      * @param keyWord represents the metric that will be extracted from the benchmark file.
      * @return the processed data which is ready to be fed into two-sample T-test algorithm.
      * @throws Exception if there's error occurred reading the benchmark result.
      */
-    public static double[] preProcess(String benchmarkResult, String keyWord) throws Exception {
+    public static double[] loadKeywordSpecificBenchmarkResults(String benchmarkResult, String keyWord) throws Exception {
         IonList rawData;
         IonStruct benchmarkResultStruct = readHelper(benchmarkResult);
         if (keyWord.equals(SPEED)) {
@@ -126,13 +125,7 @@ public class ParseAndCompareBenchmarkResults {
         double lowerBound = q1 - 1.5 * iqr;
         double upperBound = q3 + 1.5 * iqr;
 
-        List<Double> filteredData = new ArrayList<>();
-        for (double value : data) {
-            if (value >= lowerBound && value <= upperBound) {
-                filteredData.add(value);
-            }
-        }
-        return filteredData.stream().mapToDouble(d -> d).toArray();
+        return Arrays.stream(data).filter(d -> lowerBound <= d && d <= upperBound).toArray();
     }
 
     /**
@@ -140,13 +133,12 @@ public class ParseAndCompareBenchmarkResults {
      * @param data represents the input IonList.
      * @return the converted DoubleStream.
      */
-    public static DoubleStream toDouble(IonList data){
+    private static DoubleStream toDouble(IonList data){
         return data.stream().mapToDouble(value -> Double.parseDouble(value.toString()));
     }
 
     /**
      * This is a helper method which create a IonReader for benchmark result and extract the IonStruct which contain parameters or scores information.
-     *
      * @param benchmarkResultFilePath is the path of benchmark result.
      * @return an Ion Struct which contains information of parameters using during the benchmark process or scores.
      * @throws Exception if error occurs when reading Ion Data.
