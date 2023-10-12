@@ -44,7 +44,7 @@ public class Main {
 
         + "  ion-java-benchmark run-suite (--test-ion-data <file_path>) (--benchmark-options-combinations <file_path>) <output_file>\n"
 
-        + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>) <output_file>\n"
+        + "  ion-java-benchmark compare (--benchmark-result-previous <file_path>) (--benchmark-result-new <file_path>)\n"
 
         + "  ion-java-benchmark --help\n"
 

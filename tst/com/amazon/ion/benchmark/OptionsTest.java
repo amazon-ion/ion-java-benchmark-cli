@@ -33,6 +33,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertArrayEquals;
 
 public class OptionsTest {
 
@@ -2028,5 +2029,44 @@ public class OptionsTest {
             );
         }
         assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void testRemoveOutlier() {
+        double[] rawData = {2317.8413, 2444.9921, 3565.89510425, 2464.1393834, 2756.5279585, 2502.709975, 2368.079825, 2315.9788916, 2507.68439575, 2334.7744832, 2610.23078125, 2468.2974, 2745.353625, 2636.8432085, 2529.37710425};
+        double[] expectData = {2317.8413, 2444.9921, 2464.1393834, 2756.5279585, 2502.709975, 2368.079825, 2315.9788916, 2507.68439575, 2334.7744832, 2610.23078125, 2468.2974, 2745.353625, 2636.8432085, 2529.37710425};
+        double[] realData = ParseAndCompareBenchmarkResults.removeOutliers(rawData);
+        assertArrayEquals(realData, expectData, 1e-8);
+    }
+
+    @Test
+    public void testDetectRegression() {
+        double[] before = {
+                2.6463388452796752,
+                2.654846947182077,
+                2.6484266456858596,
+                2.649493941582465,
+                2.6527523702333853,
+                2.6584109809910332,
+                2.6495870550578795,
+                2.651507741048509,
+                2.652646695090216,
+                2.651927482854008
+        };
+        double[] after = {
+                2.0627006389999276,
+                2.0692887226592416,
+                2.0623657402776754,
+                2.0681855092653123,
+                2.0658282800258774,
+                2.069378082245394,
+                2.0703600383803478,
+                2.066000937352742,
+                2.0712030340921515,
+                2.0676553062828114
+        };
+        double expectResult = -0.22035698907090617;
+        double realResult = ParseAndCompareBenchmarkResults.detectRegression(before, after);
+        assertEquals(expectResult, realResult, 1e-16);
     }
 }
