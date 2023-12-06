@@ -19,9 +19,10 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.function.Function;
 
+import static com.amazon.ion.benchmark.Constants.API_NAME;
+import static com.amazon.ion.benchmark.Constants.AUTO_FLUSH_ENABLED;
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
-import static com.amazon.ion.benchmark.Constants.API_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
@@ -49,6 +50,7 @@ abstract class OptionsCombinationBase {
     final boolean useSymbolTokens;
     final int limit;
     final boolean jsonUseBigDecimals;
+    final boolean autoFlush;
 
     /**
      * Retrieves and translates a value from the struct, if the field is present and is not the 'auto' value. Otherwise,
@@ -89,6 +91,7 @@ abstract class OptionsCombinationBase {
         useSymbolTokens = getOrDefault(optionsCombinationStruct, ION_USE_SYMBOL_TOKENS_NAME, val -> ((IonBool) val).booleanValue(), false);
         limit = getOrDefault(optionsCombinationStruct, LIMIT_NAME, val -> ((IonInt) val).intValue(), Integer.MAX_VALUE);
         jsonUseBigDecimals = getOrDefault(optionsCombinationStruct, JSON_USE_BIG_DECIMALS_NAME, val -> ((IonBool) val).booleanValue(), true);
+        autoFlush = getOrDefault(optionsCombinationStruct, AUTO_FLUSH_ENABLED, val -> ((IonBool) val).booleanValue(), false);
     }
 
     /**

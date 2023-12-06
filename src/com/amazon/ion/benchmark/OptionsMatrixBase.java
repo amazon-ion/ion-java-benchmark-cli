@@ -23,9 +23,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.amazon.ion.benchmark.Constants.API_NAME;
+import static com.amazon.ion.benchmark.Constants.AUTO_FLUSH_ENABLED;
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
-import static com.amazon.ion.benchmark.Constants.API_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
@@ -402,6 +403,15 @@ abstract class OptionsMatrixBase {
             optionsCombinationStructs,
             () -> ION_SYSTEM.newBool(true),
             OPTION_ONLY_APPLIES_TO_JSON
+        );
+        parseAndCombine(
+            optionsMatrix.get("--auto-flush"),
+            AUTO_FLUSH_ENABLED,
+            OptionsMatrixBase::getTrueOrNull,
+            ION_SYSTEM::newBool,
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newBool(false),
+            OPTION_ONLY_APPLIES_TO_ION_STREAMING
         );
         parseCommandSpecificOptions(optionsMatrix, optionsCombinationStructs);
         serializedOptionsCombinations = serializeOptionsCombinations(optionsCombinationStructs);

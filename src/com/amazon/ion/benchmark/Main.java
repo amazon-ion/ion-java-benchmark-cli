@@ -30,7 +30,7 @@ public class Main {
             + "[--results-file <file>] [--io-type <type>]... [--io-buffer-size <int>]... [--format <type>]... "
             + "[--api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
-            + "[--ion-use-symbol-tokens <bool>]... [--ion-writer-block-size <int>]... "
+            + "[--ion-use-symbol-tokens <bool>]... [--ion-writer-block-size <int>]... [--auto-flush <bool>]..."
             + "[--json-use-big-decimals <bool>]... <input_file>\n"
 
         + "  ion-java-benchmark read [--profile] [--limit <int>] [--mode <mode>] [--time-unit <unit>] "
@@ -199,6 +199,10 @@ public class Main {
             + "buffer data, or 'auto', which uses the default value provided by the Ion writer builder. May be "
             + "specified multiple times to compare different values. Ignored unless the format is ion_binary. "
             + "[default: auto]\n"
+
+        + "  -m --auto-flush <bool>                 If this option is enabled, then the flush operation will be executed "
+            + "automatically when the size of the value exceeds the writer's block size. This option may be specified multiple times to compare different values."
+            + "[default: false]\n"
 
         // 'read' options:
 

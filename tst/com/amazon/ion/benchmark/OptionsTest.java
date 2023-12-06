@@ -353,6 +353,7 @@ public class OptionsTest {
         extends ExpectedOptionsCombinationBase<ExpectedWriteOptionsCombination, WriteOptionsCombination> {
 
         Integer ionWriterBlockSize = null;
+        Boolean autoFlush = null;
 
         static ExpectedWriteOptionsCombination defaultOptions() {
             return new ExpectedWriteOptionsCombination();
@@ -360,6 +361,11 @@ public class OptionsTest {
 
         final ExpectedWriteOptionsCombination ionWriterBlockSize(Integer ionWriterBlockSize) {
             this.ionWriterBlockSize = ionWriterBlockSize;
+            return this;
+        }
+
+        final ExpectedWriteOptionsCombination autoFlush(Boolean autoFlush) {
+            this.autoFlush = autoFlush;
             return this;
         }
 
@@ -1220,6 +1226,33 @@ public class OptionsTest {
 
             assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
             assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void autoFlush() throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+                "write",
+                "--auto-flush",
+                "true",
+                "--auto-flush",
+                "false",
+                "--io-type",
+                "buffer",
+                "binaryStructs.10n"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
+
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().autoFlush(true));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().autoFlush(false));
+
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> nullSafeEquals(candidate.autoFlush, optionsCombination.autoFlush));
+
+            assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, IoType.BUFFER);
+            assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, IoType.BUFFER);
         }
         assertTrue(expectedCombinations.isEmpty());
     }

@@ -25,6 +25,7 @@ class Constants {
     static final String JSON_USE_BIG_DECIMALS_NAME = "g";
     static final String AUTO_VALUE = "auto";
     static final String NONE_VALUE = "none";
+    static final String AUTO_FLUSH_ENABLED = "m";
 
     private Constants() {
         // Do not instantiate.

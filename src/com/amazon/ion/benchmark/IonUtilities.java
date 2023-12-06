@@ -168,6 +168,11 @@ class IonUtilities {
         } else {
             builder.withFloatBinary32Disabled();
         }
+        if(options.autoFlush) {
+            builder.withAutoFlushEnabled();
+        } else {
+            builder.withAutoFlushDisabled();
+        }
         if (options instanceof WriteOptionsCombination) {
             // When this method is used by the read benchmark for converting the input file, 'options' will be a
             // ReadOptionsCombination, which does not have the 'ionWriterUserBufferSize' value, because this value
