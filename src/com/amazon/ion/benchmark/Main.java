@@ -201,7 +201,7 @@ public class Main {
             + "[default: auto]\n"
 
         + "  -m --auto-flush <bool>                 If this option is enabled, then the flush operation will be executed "
-            + "automatically when the size of the value is overflow "
+            + "automatically when the size of the value exceeds the writer's block size. This option may be specified multiple times to compare different values."
             + "[default: false]\n"
 
         // 'read' options:
