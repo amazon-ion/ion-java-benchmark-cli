@@ -218,6 +218,8 @@ public class OptionsTest {
         Integer floatWidth = null;
         boolean jsonUseBigDecimals = true;
         Integer ionMinorVersion = 0;
+        Gradient ionInlineSymbols = null;
+        Gradient ionDelimitedContainers = null;
 
         final T preallocation(Integer preallocation) {
             this.preallocation = preallocation;
@@ -284,6 +286,16 @@ public class OptionsTest {
             return (T) this;
         }
 
+        final T ionInlineSymbols(Gradient ionInlineSymbols) {
+            this.ionInlineSymbols = ionInlineSymbols;
+            return (T) this;
+        }
+
+        final T ionDelimitedContainers(Gradient ionDelimitedContainers) {
+            this.ionDelimitedContainers = ionDelimitedContainers;
+            return (T) this;
+        }
+
         void assertOptionsEqual(U that) {
             assertEquals(flushPeriod, that.flushPeriod);
             assertEquals(api, that.api);
@@ -297,6 +309,8 @@ public class OptionsTest {
             assertEquals(floatWidth, that.floatWidth);
             assertEquals(jsonUseBigDecimals, that.jsonUseBigDecimals);
             assertEquals(ionMinorVersion, that.ionMinorVersion);
+            assertEquals(ionInlineSymbols, that.ionInlineSymbols);
+            assertEquals(ionDelimitedContainers, that.ionDelimitedContainers);
         }
     }
 
@@ -2240,5 +2254,115 @@ public class OptionsTest {
     public void readAllTypes10And11() throws Exception {
         readAllTypes10And11("binaryAllTypes.10n", 0);
         readAllTypes10And11("binaryAllTypes11.10n", 1);
+    }
+
+    private void readIonWithInlineSymbolsAndDelimitedContainers(String file, int fileMinorVersion) throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "read",
+            "--format",
+            "ion_binary",
+            "--ion-minor-version",
+            "0",
+            "--ion-minor-version",
+            "1",
+            "--ion-inline-symbols",
+            "all",
+            "--ion-inline-symbols",
+            "none",
+            "--ion-inline-symbols",
+            "auto",
+            "--ion-delimited-containers",
+            "all",
+            "--ion-delimited-containers",
+            "none",
+            "--ion-delimited-containers",
+            "auto",
+            file
+        );
+        assertEquals(10, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(10);
+
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(0));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.NONE).ionDelimitedContainers(Gradient.NONE));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.ALL).ionDelimitedContainers(Gradient.NONE));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.NONE).ionDelimitedContainers(Gradient.ALL));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.ALL).ionDelimitedContainers(Gradient.ALL));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.ALL));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.NONE));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionDelimitedContainers(Gradient.ALL));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionDelimitedContainers(Gradient.NONE));
+
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> nullSafeEquals(candidate.ionMinorVersion, 0) ||
+                (nullSafeEquals(candidate.ionInlineSymbols, optionsCombination.ionInlineSymbols)
+                    && nullSafeEquals(candidate.ionDelimitedContainers, optionsCombination.ionDelimitedContainers)));
+
+            boolean isConversionRequired = optionsCombination.ionMinorVersion != fileMinorVersion ||
+                optionsCombination.ionInlineSymbols != null ||
+                optionsCombination.ionDelimitedContainers != null;
+            assertReadTaskExecutesCorrectly(file, optionsCombination, optionsCombination.format, isConversionRequired);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void readIonWithInlineSymbolsAndDelimitedContainers() throws Exception {
+        readIonWithInlineSymbolsAndDelimitedContainers("binaryAllTypes.10n", 0);
+        readIonWithInlineSymbolsAndDelimitedContainers("binaryAllTypes11.10n", 1);
+    }
+
+    private void writeIonWithInlineSymbolsAndDelimitedContainers(String file) throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+            "write",
+            "--format",
+            "ion_binary",
+            "--ion-minor-version",
+            "0",
+            "--ion-minor-version",
+            "1",
+            "--ion-inline-symbols",
+            "all",
+            "--ion-inline-symbols",
+            "none",
+            "--ion-inline-symbols",
+            "auto",
+            "--ion-delimited-containers",
+            "all",
+            "--ion-delimited-containers",
+            "none",
+            "--ion-delimited-containers",
+            "auto",
+            file
+        );
+
+        assertEquals(10, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(10);
+
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(0));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.NONE).ionDelimitedContainers(Gradient.NONE));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.ALL).ionDelimitedContainers(Gradient.NONE));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.NONE).ionDelimitedContainers(Gradient.ALL));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.ALL).ionDelimitedContainers(Gradient.ALL));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.ALL));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionInlineSymbols(Gradient.NONE));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionDelimitedContainers(Gradient.ALL));
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().format(Format.ION_BINARY).ionMinorVersion(1).ionDelimitedContainers(Gradient.NONE));
+
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> nullSafeEquals(candidate.ionMinorVersion, 0) ||
+                (nullSafeEquals(candidate.ionInlineSymbols, optionsCombination.ionInlineSymbols)
+                    && nullSafeEquals(candidate.ionDelimitedContainers, optionsCombination.ionDelimitedContainers)));
+
+            assertWriteTaskExecutesCorrectly(file, optionsCombination, optionsCombination.format, IoType.FILE);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void writeIonWithInlineSymbolsAndDelimitedContainers() throws Exception {
+        writeIonWithInlineSymbolsAndDelimitedContainers("binaryAllTypes.10n");
+        writeIonWithInlineSymbolsAndDelimitedContainers("binaryAllTypes11.10n");
     }
 }

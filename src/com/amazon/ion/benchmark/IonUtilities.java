@@ -11,6 +11,8 @@ import com.amazon.ion.SpanProvider;
 import com.amazon.ion.SymbolTable;
 import com.amazon.ion.impl._Private_IonConstants;
 import com.amazon.ion.impl._Private_IonSystem;
+import com.amazon.ion.impl.bin.DelimitedContainerStrategy;
+import com.amazon.ion.impl.bin.SymbolInliningStrategy;
 import com.amazon.ion.impl.bin._Private_IonManagedBinaryWriterBuilder;
 import com.amazon.ion.system.IonBinaryWriterBuilder_1_1;
 import com.amazon.ion.system.IonReaderBuilder;
@@ -234,6 +236,8 @@ class IonUtilities {
     private static IonWriterSupplier newBinaryWriterSupplier_1_1(OptionsCombinationBase options) throws IOException {
         IonBinaryWriterBuilder_1_1 builder = IonEncodingVersion.ION_1_1.binaryWriterBuilder();
         builder.withImports(parseImportsFromFile(options.importsForBenchmarkFile));
+        builder.withSymbolInliningStrategy(options.ionInlineSymbols == Gradient.ALL ? SymbolInliningStrategy.ALWAYS_INLINE : SymbolInliningStrategy.NEVER_INLINE);
+        builder.withDelimitedContainerStrategy(options.ionDelimitedContainers == Gradient.ALL ? DelimitedContainerStrategy.ALWAYS_DELIMITED : DelimitedContainerStrategy.ALWAYS_PREFIXED);
         if (options instanceof WriteOptionsCombination) {
             // When this method is used by the read benchmark for converting the input file, 'options' will be a
             // ReadOptionsCombination, which does not have the 'ionWriterUserBufferSize' value, because this value
@@ -415,6 +419,7 @@ class IonUtilities {
                 options.importsForInputFile == null &&
                 options.importsForBenchmarkFile == null &&
                 options.format == Format.ION_BINARY &&
+                options.ionMinorVersion != 1 && // TODO remove once support for writing system values via the Ion 1.1 writer is added.
                 IonUtilities.minorVersionsEqual(options.ionMinorVersion, input.toFile())
             ) {
                 // Use system-level reader to preserve the same symbol tables from the input.

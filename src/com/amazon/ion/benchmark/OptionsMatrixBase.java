@@ -1,5 +1,6 @@
 package com.amazon.ion.benchmark;
 
+import com.amazon.ion.IonInt;
 import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonText;
 import com.amazon.ion.IonValue;
@@ -14,6 +15,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -27,9 +29,11 @@ import static com.amazon.ion.benchmark.Constants.API_NAME;
 import static com.amazon.ion.benchmark.Constants.AUTO_FLUSH_ENABLED;
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_DELIMITED_CONTAINERS_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_INLINE_SYMBOLS_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_MINOR_VERSION_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
@@ -52,12 +56,26 @@ abstract class OptionsMatrixBase {
     static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_ION_BINARY = s -> {
         return Format.ION_BINARY.name().equals(getStringValue(s, FORMAT_NAME));
     };
+    static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_ION_1_1_PLUS = s -> {
+        return getIntegerValue(s, ION_MINOR_VERSION_NAME, 0) > 0;
+    };
     static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_ION_STREAMING = s -> {
         return OPTION_ONLY_APPLIES_TO_ION.test(s) && API.STREAMING.name().equals(getStringValue(s, API_NAME));
     };
     static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_JSON = s -> {
         return Format.JSON.name().equals(getStringValue(s, FORMAT_NAME));
     };
+
+    static Predicate<IonStruct> allOf(List<Predicate<IonStruct>> predicates) {
+        return s -> {
+            for (Predicate<IonStruct> predicate : predicates) {
+                if (!predicate.test(s)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+    }
 
     private final String inputFile;
     private final String[] serializedOptionsCombinations;
@@ -77,6 +95,21 @@ abstract class OptionsMatrixBase {
             valueString = ((IonText) value).stringValue();
         }
         return valueString;
+    }
+
+    /**
+     * Retrieves the Integer value for the requested option, or null if the option is not present.
+     * @param optionsCombination an options combination struct.
+     * @param optionShortName the abbreviated name for the option.
+     * @return an Integer, or null if the option did not exist.
+     */
+    static int getIntegerValue(IonStruct optionsCombination, String optionShortName, int defaultValue) {
+        IonValue value = optionsCombination.get(optionShortName);
+        int valueInteger = defaultValue;
+        if (value != null) {
+            valueInteger = ((IonInt) value).intValue();
+        }
+        return valueInteger;
     }
 
     /**
@@ -233,6 +266,17 @@ abstract class OptionsMatrixBase {
             return null;
         }
         return Integer.parseInt(intOrAuto);
+    }
+
+    /**
+     * @param gradientOrAuto a String representation of an Gradient, or the String 'auto', or null.
+     * @return null if the input is null or is 'auto'; otherwise, the Gradient parsed from the input.
+     */
+    static Gradient getGradientOrAuto(String gradientOrAuto) {
+        if (gradientOrAuto == null || gradientOrAuto.equals(Constants.AUTO_VALUE)) {
+            return null;
+        }
+        return Gradient.valueOf(gradientOrAuto.toUpperCase());
     }
 
     /**
@@ -422,6 +466,24 @@ abstract class OptionsMatrixBase {
             optionsCombinationStructs,
             () -> ION_SYSTEM.newBool(false),
             OPTION_ONLY_APPLIES_TO_ION_STREAMING
+        );
+        parseAndCombine(
+            optionsMatrix.get("--ion-inline-symbols"),
+            ION_INLINE_SYMBOLS_NAME,
+            OptionsMatrixBase::getGradientOrAuto,
+            g -> ION_SYSTEM.newSymbol(g.name()),
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
+            allOf(Arrays.asList(OPTION_ONLY_APPLIES_TO_ION_1_1_PLUS, OPTION_ONLY_APPLIES_TO_ION_BINARY))
+        );
+        parseAndCombine(
+            optionsMatrix.get("--ion-delimited-containers"),
+            ION_DELIMITED_CONTAINERS_NAME,
+            OptionsMatrixBase::getGradientOrAuto,
+            g -> ION_SYSTEM.newSymbol(g.name()),
+            optionsCombinationStructs,
+            () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
+            allOf(Arrays.asList(OPTION_ONLY_APPLIES_TO_ION_1_1_PLUS, OPTION_ONLY_APPLIES_TO_ION_BINARY))
         );
         parseCommandSpecificOptions(optionsMatrix, optionsCombinationStructs);
         serializedOptionsCombinations = serializeOptionsCombinations(optionsCombinationStructs);

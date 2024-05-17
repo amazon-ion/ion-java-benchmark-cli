@@ -31,7 +31,8 @@ public class Main {
             + "[--api <api>]... [--ion-imports-for-input <file>] [--ion-imports-for-benchmark <file>]... "
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
             + "[--ion-use-symbol-tokens <bool>]... [--ion-writer-block-size <int>]... [--auto-flush <bool>]... "
-            + "[--ion-minor-version <int>]... [--json-use-big-decimals <bool>]... <input_file>\n"
+            + "[--ion-minor-version <int>]... [--ion-inline-symbols <option>]... [--ion-delimited-containers <option>]... "
+            + "[--json-use-big-decimals <bool>]... <input_file>\n"
 
         + "  ion-java-benchmark read [--profile] [--limit <int>] [--mode <mode>] [--time-unit <unit>] "
             + "[--warmups <int>] [--iterations <int>] [--forks <int>] [--results-format <type>] "
@@ -40,7 +41,8 @@ public class Main {
             + "[--ion-flush-period <int>]... [--ion-length-preallocation <int>]... [--ion-float-width <int>]... "
             + "[--ion-use-symbol-tokens <bool>]... [--paths <file>] [--ion-reader <type>]... "
             + "[--ion-use-lob-chunks <bool>]... [--ion-use-big-decimals <bool>]... [--ion-reader-buffer-size <int>]... "
-            + "[--ion-minor-version <int>]... [--json-use-big-decimals <bool>]... <input_file>\n"
+            + "[--ion-minor-version <int>]... [--ion-inline-symbols <option>]... [--ion-delimited-containers <option>]... "
+            + "[--json-use-big-decimals <bool>]... <input_file>\n"
 
         + "  ion-java-benchmark run-suite (--test-ion-data <file_path>) (--benchmark-options-combinations <file_path>) <output_file>\n"
 
@@ -188,6 +190,20 @@ public class Main {
             + "than Strings. Either 'true' or 'false'. Ignored unless --format is ion_text or ion_binary and --ion-api "
             + "is streaming. Must be 'true' when the streaming APIs are used with Ion streams that contain symbols "
             + "with unknown text. May be specified twice to compare both settings. [default: false]\n"
+
+        + "  -N --ion-inline-symbols <option>       Controls whether an Ion 1.1 binary writer writes symbol tokens "
+            + "inline, rather than using symbol IDs. Ignored unless --ion-minor-version is greater than 0 and --format "
+            + "is ion_binary. Selected from the set (all | none | auto). For write benchmarks, 'auto' causes 'none' "
+            + "to be used; for read benchmarks, 'auto' will not force rewrite of the input data before reading, but "
+            + "if a different option triggers rewrite then 'none' will be used. This option may be specified multiple "
+            + "times to compare different values. [default: auto]\n"
+
+        + "  -C --ion-delimited-containers <option>   Controls whether an Ion 1.1 binary writer writes containers using "
+            + "the delimited encoding, rather than using length-prefixing. Ignored unless --ion-minor-version is "
+            + "greater than 0 and --format is ion_binary. Selected from the set (all | none | auto). For write "
+            + "benchmarks, 'auto' causes 'none' to be used; for read benchmarks, 'auto' will not force rewrite of "
+            + "the input data before reading, but if a different option triggers rewrite then 'none' will be used. "
+            + "This option may be specified multiple times to compare different values. [default: auto]\n"
 
         + "  -g --json-use-big-decimals <bool>      When reading and/or writing JSON non-integer numeric values, use "
             + "BigDecimal in order to preserve precision. When false, `double` will be used and precision may be lost. "

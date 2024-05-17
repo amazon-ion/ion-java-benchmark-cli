@@ -22,6 +22,8 @@ class Constants {
     static final String ION_READER_BUFFER_SIZE_NAME = "Z";
     static final String PATHS_NAME = "s";
     static final String ION_WRITER_BLOCK_SIZE_NAME = "b";
+    static final String ION_INLINE_SYMBOLS_NAME = "N";
+    static final String ION_DELIMITED_CONTAINERS_NAME = "C";
     static final String ION_MINOR_VERSION_NAME = "V";
     static final String JSON_USE_BIG_DECIMALS_NAME = "g";
     static final String AUTO_VALUE = "auto";
