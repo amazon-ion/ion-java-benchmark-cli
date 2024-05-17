@@ -23,9 +23,11 @@ import static com.amazon.ion.benchmark.Constants.API_NAME;
 import static com.amazon.ion.benchmark.Constants.AUTO_FLUSH_ENABLED;
 import static com.amazon.ion.benchmark.Constants.FLUSH_PERIOD_NAME;
 import static com.amazon.ion.benchmark.Constants.FORMAT_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_DELIMITED_CONTAINERS_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_FLOAT_WIDTH_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_BENCHMARK_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_IMPORTS_FOR_INPUT_NAME;
+import static com.amazon.ion.benchmark.Constants.ION_INLINE_SYMBOLS_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_MINOR_VERSION_NAME;
 import static com.amazon.ion.benchmark.Constants.ION_USE_SYMBOL_TOKENS_NAME;
 import static com.amazon.ion.benchmark.Constants.IO_BUFFER_SIZE_NAME;
@@ -53,6 +55,8 @@ abstract class OptionsCombinationBase {
     final boolean jsonUseBigDecimals;
     final boolean autoFlush;
     final Integer ionMinorVersion;
+    final Gradient ionInlineSymbols;
+    final Gradient ionDelimitedContainers;
 
     /**
      * Retrieves and translates a value from the struct, if the field is present and is not the 'auto' value. Otherwise,
@@ -95,6 +99,8 @@ abstract class OptionsCombinationBase {
         jsonUseBigDecimals = getOrDefault(optionsCombinationStruct, JSON_USE_BIG_DECIMALS_NAME, val -> ((IonBool) val).booleanValue(), true);
         autoFlush = getOrDefault(optionsCombinationStruct, AUTO_FLUSH_ENABLED, val -> ((IonBool) val).booleanValue(), false);
         ionMinorVersion = getOrDefault(optionsCombinationStruct, ION_MINOR_VERSION_NAME, val -> ((IonInt) val).intValue(), 0);
+        ionInlineSymbols = getOrDefault(optionsCombinationStruct, ION_INLINE_SYMBOLS_NAME, val -> Gradient.valueOf(((IonText) val).stringValue()), null);
+        ionDelimitedContainers = getOrDefault(optionsCombinationStruct, ION_DELIMITED_CONTAINERS_NAME, val -> Gradient.valueOf(((IonText) val).stringValue()), null);
     }
 
     /**

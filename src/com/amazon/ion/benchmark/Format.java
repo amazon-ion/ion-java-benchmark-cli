@@ -19,6 +19,8 @@ enum Format {
             switch (sourceFormat) {
                 case ION_BINARY:
                     boolean optionsRequireRewrite = options.flushPeriod != null
+                        || options.ionDelimitedContainers != null
+                        || options.ionInlineSymbols != null
                         || options.preallocation != null
                         || options.floatWidth != null
                         || (options.ionMinorVersion != null && !IonUtilities.minorVersionsEqual(options.ionMinorVersion, input.toFile()))
