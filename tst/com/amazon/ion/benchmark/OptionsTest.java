@@ -1486,12 +1486,13 @@ public class OptionsTest {
             "incremental",
             "binaryLargeLobs.10n"
         );
-        assertEquals(4, optionsCombinations.size());
-        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(4);
+        assertEquals(5, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(5);
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().format(Format.ION_TEXT));
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.INCREMENTAL).format(Format.ION_BINARY));
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().readerType(IonReaderType.NON_INCREMENTAL).format(Format.ION_BINARY));
         expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().initialBufferSize(128).readerType(IonReaderType.INCREMENTAL).format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().initialBufferSize(128).readerType(IonReaderType.NON_INCREMENTAL).format(Format.ION_BINARY));
 
         for (ReadOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(candidate -> {
