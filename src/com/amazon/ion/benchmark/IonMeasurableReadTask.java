@@ -76,22 +76,20 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         // chosen with knowledge of the actual size of the data.
         readerBuilder = IonUtilities.newReaderBuilderForBenchmark(options).
             withIncrementalReadingEnabled(options.readerType == IonReaderType.INCREMENTAL);
-        if (readerBuilder.isIncrementalReadingEnabled()) {
-            if (options.initialBufferSize != null) {
+        if (options.initialBufferSize != null) {
+            readerBuilder.withBufferConfiguration(
+                IonBufferConfiguration.Builder.standard()
+                    .withInitialBufferSize(options.initialBufferSize)
+                    .build()
+            );
+        } else {
+            long inputSize = inputFile.length();
+            if (inputSize < DEFAULT_INCREMENTAL_BUFFER_SIZE) {
                 readerBuilder.withBufferConfiguration(
                     IonBufferConfiguration.Builder.standard()
-                        .withInitialBufferSize(options.initialBufferSize)
+                        .withInitialBufferSize(nextPowerOfTwo((int) inputSize))
                         .build()
                 );
-            } else {
-                long inputSize = inputFile.length();
-                if (inputSize < DEFAULT_INCREMENTAL_BUFFER_SIZE) {
-                    readerBuilder.withBufferConfiguration(
-                        IonBufferConfiguration.Builder.standard()
-                            .withInitialBufferSize(nextPowerOfTwo((int) inputSize))
-                            .build()
-                    );
-                }
             }
         }
     }

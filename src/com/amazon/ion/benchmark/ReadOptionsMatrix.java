@@ -78,11 +78,7 @@ class ReadOptionsMatrix extends OptionsMatrixBase {
             ION_SYSTEM::newInt,
             optionsCombinationStructs,
             () -> ION_SYSTEM.newSymbol(Constants.AUTO_VALUE),
-            (struct) -> {
-                // Do not apply this option to any options combinations that do not specify the incremental reader.
-                return OPTION_ONLY_APPLIES_TO_ION_BINARY.test(struct) &&
-                    IonReaderType.INCREMENTAL.name().equals(getStringValue(struct, ION_READER_NAME));
-            }
+            OPTION_ONLY_APPLIES_TO_ION_BINARY
         );
     }
 
