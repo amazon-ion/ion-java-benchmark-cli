@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.amazon.ion.benchmark.Constants.ION_1_1_TEXT_IVM;
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 
 /**
@@ -175,6 +176,32 @@ class IonUtilities {
             return isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_0, input);
         }
         throw new IllegalStateException("Unknown Ion minor version: " + minorVersion);
+    }
+
+    /**
+     * Get the minor version for the given text or binary Ion file.
+     * @param inputFormat the format of 'input'; must be ION_BINARY, ION_TEXT, or JSON.
+     * @param input the file to examine.
+     * @return the Ion minor version of the data in the input file.
+     * @throws IOException if thrown while reading the file.
+     */
+    static int getMinorVersion(Format inputFormat, File input) throws IOException {
+        if (inputFormat == Format.ION_BINARY) {
+            if (isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_0, input)) {
+                return 0;
+            }
+            if (isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_1, input)) {
+                return 1;
+            }
+        } else if (inputFormat == Format.ION_TEXT) {
+            if (isFormatHeaderPresent(ION_1_1_TEXT_IVM, input)) {
+                return 1;
+            }
+            return 0;
+        } else if (inputFormat == Format.JSON) {
+            return 0;
+        }
+        throw new IllegalStateException("File is either not Ion or has unknown minor version: " + input);
     }
 
     /**
@@ -401,13 +428,14 @@ class IonUtilities {
 
     /**
      * Rewrite the given Ion file using the given options.
+     * @param inputFormat the format of 'input'; must be ION_BINARY, ION_TEXT, or JSON.
      * @param input path to the file to re-write.
      * @param output path to the destination file.
      * @param options the options to use when rewriting.
      * @param writerSupplierFactory IonWriterSupplierFactory for retrieving suppliers of IonWriters with the given options.
      * @throws IOException if thrown when reading or writing.
      */
-    static void rewriteIonFile(Path input, Path output, OptionsCombinationBase options, IonWriterSupplierFactory writerSupplierFactory) throws IOException {
+    static void rewriteIonFile(Format inputFormat, Path input, Path output, OptionsCombinationBase options, IonWriterSupplierFactory writerSupplierFactory) throws IOException {
         File inputFile = input.toFile();
         File outputFile = output.toFile();
         IonUtilities.IonWriterSupplier writerSupplier = writerSupplierFactory.get(options);
@@ -419,8 +447,9 @@ class IonUtilities {
                 options.importsForInputFile == null &&
                 options.importsForBenchmarkFile == null &&
                 options.format == Format.ION_BINARY &&
-                options.ionMinorVersion != 1 && // TODO remove once support for writing system values via the Ion 1.1 writer is added.
-                IonUtilities.minorVersionsEqual(options.ionMinorVersion, input.toFile())
+                // Minor versions may add new kinds of system values, so it is not possible to maintain system value
+                // boundaries when downgrading to a previous minor version.
+                getMinorVersion(inputFormat, input.toFile()) <= options.ionMinorVersion
             ) {
                 // Use system-level reader to preserve the same symbol tables from the input.
                 writer = writerSupplier.get(options.newOutputStream(outputFile));

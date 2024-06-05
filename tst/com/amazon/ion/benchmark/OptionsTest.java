@@ -3,7 +3,9 @@ package com.amazon.ion.benchmark;
 import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
+import com.amazon.ion.IonType;
 import com.amazon.ion.SymbolTable;
+import com.amazon.ion.impl._Private_IonSystem;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.util.Equivalence;
 import com.amazon.ion.util.IonStreamUtils;
@@ -26,6 +28,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -2193,6 +2196,72 @@ public class OptionsTest {
             Format.ION_BINARY,
             IoType.BUFFER
         );
+    }
+
+    /**
+     * Converts "multipleLocalSymbolTables.ion" to the requested minor version and asserts that the symbol table
+     * boundaries are preserved.
+     * @param outputMinorVersion the desired minor version.
+     * @throws Exception if conversion fails.
+     */
+    private void convertAndVerifySymbolTableBoundaries(int outputMinorVersion) throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--ion-minor-version",
+            "" + outputMinorVersion,
+            "multipleLocalSymbolTables.ion"
+        );
+        Path input = fileInTestDirectory("multipleLocalSymbolTables.ion");
+        Path output = TemporaryFiles.newTempFile("multipleLocalSymbolTables_1_" + outputMinorVersion, ".10n");
+        String ionVersionMarkerString = "$ion_1_" + outputMinorVersion;
+        Format.ION_BINARY.convert(input, output, optionsCombination);
+        // Because the input and output versions have compatible system values, the system values should be preserved.
+        try (IonReader reader = ((_Private_IonSystem) ION_SYSTEM).newSystemReader(optionsCombination.newInputStream(output.toFile()))) {
+            assertEquals(IonType.SYMBOL, reader.next());
+            while (reader.getType() == IonType.SYMBOL) {
+                // If the output starts with more than one IVM, that's not harmful.
+                assertEquals(ionVersionMarkerString, reader.stringValue());
+                reader.next();
+            }
+            SymbolTable systemSymbolTable = reader.getSymbolTable();
+            int firstLocalSid = systemSymbolTable.getMaxId() + 1;
+            assertEquals(IonType.STRUCT, reader.getType());
+            assertEquals("$ion_symbol_table", reader.getTypeAnnotations()[0]);
+            assertEquals(IonType.SYMBOL, reader.next());
+            assertEquals(firstLocalSid, reader.symbolValue().getSid());
+            assertEquals(IonType.STRUCT, reader.next());
+            assertEquals("$ion_symbol_table", reader.getTypeAnnotations()[0]);
+            reader.stepIn();
+            assertEquals(IonType.SYMBOL, reader.next());
+            assertEquals("$ion_symbol_table", reader.stringValue()); // An LST append.
+            reader.stepOut();
+            assertEquals(IonType.SYMBOL, reader.next());
+            assertEquals(firstLocalSid + 1, reader.symbolValue().getSid());
+            assertEquals(IonType.STRUCT, reader.next());
+            assertEquals("$ion_symbol_table", reader.getTypeAnnotations()[0]);
+            assertEquals(IonType.SYMBOL, reader.next());
+            assertEquals(firstLocalSid, reader.symbolValue().getSid()); // The symbol table did not append, so the SIDs reset.
+            assertNull(reader.next());
+        }
+        // Now read with the user-level reader and verify the user values are as expected.
+        try (IonReader reader = IonReaderBuilder.standard().build(optionsCombination.newInputStream(output.toFile()))) {
+            assertEquals(IonType.SYMBOL, reader.next());
+            assertEquals("a", reader.stringValue());
+            assertEquals(IonType.SYMBOL, reader.next());
+            assertEquals("b", reader.stringValue());
+            assertEquals(IonType.SYMBOL, reader.next());
+            assertEquals("c", reader.stringValue());
+        }
+    }
+
+    @Test
+    public void rewriteIon10PreservesSymbolTables() throws Exception {
+        convertAndVerifySymbolTableBoundaries(0);
+    }
+
+    @Test
+    public void convertIon10ToIon11PreservesSymbolTables() throws Exception {
+        convertAndVerifySymbolTableBoundaries(1);
     }
 
     private void writeAllTypes10And11(String file) throws Exception {
