@@ -29,7 +29,7 @@ enum Format {
                         || !IonUtilities.importsFilesEqual(options.importsForInputFile, options.importsForBenchmarkFile);
                     if (optionsRequireRewrite) {
                         // This combination of settings requires re-encoding the input.
-                        IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newBinaryWriterSupplier);
+                        IonUtilities.rewriteIonFile(ION_BINARY, input, output, options, IonUtilities::newBinaryWriterSupplier);
                     } else if (options.limit == Integer.MAX_VALUE) {
                         // There are no settings that require mutating the original input.
                         return input;
@@ -39,12 +39,12 @@ enum Format {
                     }
                     break;
                 case ION_TEXT:
-                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newBinaryWriterSupplier);
+                    IonUtilities.rewriteIonFile(ION_TEXT, input, output, options, IonUtilities::newBinaryWriterSupplier);
                     break;
                 case JSON:
                     // TODO add an option to "upconvert" from JSON. For example, detect timestamps contained in
                     // JSON strings and write them as Ion timestamps.
-                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newBinaryWriterSupplier);
+                    IonUtilities.rewriteIonFile(JSON, input, output, options, IonUtilities::newBinaryWriterSupplier);
                     break;
                 case CBOR:
                     // TODO add an option to "upconvert" from CBOR. For example, detect symbol values.
@@ -89,15 +89,15 @@ enum Format {
                         // The input is already text and it is not being limited.
                         return input;
                     }
-                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newTextWriterSupplier);
+                    IonUtilities.rewriteIonFile(ION_TEXT, input, output, options, IonUtilities::newTextWriterSupplier);
                     break;
                 case ION_BINARY:
-                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newTextWriterSupplier);
+                    IonUtilities.rewriteIonFile(ION_BINARY, input, output, options, IonUtilities::newTextWriterSupplier);
                     break;
                 case JSON:
                     // TODO add an option to "upconvert" from JSON. For example, detect timestamps contained in
                     // JSON strings and write them as Ion timestamps.
-                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newTextWriterSupplier);
+                    IonUtilities.rewriteIonFile(JSON, input, output, options, IonUtilities::newTextWriterSupplier);
                     break;
                 case CBOR:
                     // TODO add an option to "upconvert" from CBOR. For example, detect symbol values.
@@ -140,7 +140,7 @@ enum Format {
                 case ION_TEXT:
                 case ION_BINARY:
                     // Down-convert to JSON.
-                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newJsonWriterSupplier);
+                    IonUtilities.rewriteIonFile(ION_BINARY, input, output, options, IonUtilities::newJsonWriterSupplier);
                     break;
                 case JSON:
                     if (options.limit == Integer.MAX_VALUE) {
@@ -188,7 +188,7 @@ enum Format {
             switch (sourceFormat) {
                 case ION_BINARY:
                 case ION_TEXT:
-                    IonUtilities.rewriteIonFile(input, output, options, IonUtilities::newCborWriterSupplier);
+                    IonUtilities.rewriteIonFile(ION_BINARY, input, output, options, IonUtilities::newCborWriterSupplier);
                     break;
                 case JSON:
                     JacksonUtilities.rewriteJsonToCbor(input, output, options);

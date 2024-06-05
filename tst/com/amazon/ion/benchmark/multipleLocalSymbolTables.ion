@@ -1,0 +1,14 @@
+$ion_1_0
+$ion_symbol_table::{
+    symbols: ["a"]
+}
+$10
+$ion_symbol_table::{
+    imports: $ion_symbol_table,
+    symbols: ["b"]
+}
+$11
+$ion_symbol_table::{
+    symbols: ["c"]
+}
+$10

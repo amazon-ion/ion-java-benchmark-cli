@@ -3,8 +3,11 @@ package com.amazon.ion.benchmark;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.system.IonSystemBuilder;
 
+import java.nio.charset.StandardCharsets;
+
 class Constants {
     static final IonSystem ION_SYSTEM = IonSystemBuilder.standard().build();
+    static final byte[] ION_1_1_TEXT_IVM = "$ion_1_1".getBytes(StandardCharsets.UTF_8);
     static final String LIMIT_NAME = "n";
     static final String PREALLOCATION_NAME = "L";
     static final String FLUSH_PERIOD_NAME = "d";
