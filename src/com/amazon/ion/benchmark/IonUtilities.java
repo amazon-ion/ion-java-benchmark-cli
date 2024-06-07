@@ -11,6 +11,7 @@ import com.amazon.ion.SpanProvider;
 import com.amazon.ion.SymbolTable;
 import com.amazon.ion.impl._Private_IonConstants;
 import com.amazon.ion.impl._Private_IonSystem;
+import com.amazon.ion.impl._Private_IonWriter;
 import com.amazon.ion.impl.bin.DelimitedContainerStrategy;
 import com.amazon.ion.impl.bin.SymbolInliningStrategy;
 import com.amazon.ion.impl.bin._Private_IonManagedBinaryWriterBuilder;
@@ -404,21 +405,52 @@ class IonUtilities {
         return input;
     }
 
+    @FunctionalInterface
+    interface TranscodeFunction {
+
+        /**
+         * Transcodes a value from the given reader to the given writer.
+         * @param reader a reader positioned on a value.
+         * @param writer a writer.
+         * @throws IOException if thrown during writing.
+         */
+        void transcode(IonReader reader, IonWriter writer) throws IOException;
+    }
+
+    /**
+     * Performs a standard transcode using {@link IonWriter#writeValue(IonReader)}, without transforming symbol IDs.
+     */
+    private static final TranscodeFunction STANDARD_TRANSCODE = (reader, writer) -> writer.writeValue(reader);
+
+    /**
+     * Transcodes using {@link _Private_IonWriter#writeValue(IonReader, _Private_IonWriter.IntTransformer)},
+     * transforming Ion 1.0 local symbol IDs to the Ion 1.1 equivalents.
+     */
+    private static final TranscodeFunction TRANSCODE_1_0_TO_1_1 = (reader, writer) -> {
+        ((_Private_IonWriter) writer).writeValue(reader, _Private_IonWriter.ION_1_0_SID_TO_ION_1_1_SID);
+    };
+
     /**
      * Rewrite values using the given options.
      * @param reader reader over the input data.
      * @param writer writer to the output data.
      * @param options the options to use when re-writing.
+     * @param transcodeFunction the function to use to transcode a value from a reader to a writer.
      * @throws IOException if thrown when reading or writing.
      */
-    private static void writeValuesWithOptions(IonReader reader, IonWriter writer, OptionsCombinationBase options) throws IOException {
+    private static void writeValuesWithOptions(
+        IonReader reader,
+        IonWriter writer,
+        OptionsCombinationBase options,
+        TranscodeFunction transcodeFunction
+    ) throws IOException {
         int i = 0;
         boolean isUnlimited = options.limit == Integer.MAX_VALUE;
         while (isUnlimited || i < options.limit) {
             if (reader.next() == null) {
                 break;
             }
-            writer.writeValue(reader);
+            transcodeFunction.transcode(reader, writer);
             if (options.flushPeriod != null && i % options.flushPeriod == 0) {
                 writer.flush();
             }
@@ -441,6 +473,7 @@ class IonUtilities {
         IonUtilities.IonWriterSupplier writerSupplier = writerSupplierFactory.get(options);
         IonWriter writer = null;
         IonReader reader = null;
+        TranscodeFunction transcodeFunction = STANDARD_TRANSCODE;
         try {
             if (
                 options.flushPeriod == null &&
@@ -454,12 +487,17 @@ class IonUtilities {
                 // Use system-level reader to preserve the same symbol tables from the input.
                 writer = writerSupplier.get(options.newOutputStream(outputFile));
                 reader = ((_Private_IonSystem) ION_SYSTEM).newSystemReader(options.newInputStream(inputFile));
+                if (options.ionMinorVersion > getMinorVersion(inputFormat, input.toFile())) {
+                    // Because symbol IDs will be transferred during the system transcode, *and* this is a format
+                    // upgrade, the symbol IDs need to be transformed to point to the same text in the new format.
+                    transcodeFunction = TRANSCODE_1_0_TO_1_1;
+                }
             } else {
                 // Do not preserve the existing symbol table boundaries.
                 writer = writerSupplier.get(options.newOutputStream(outputFile));
                 reader = newReaderBuilderForInput(options).build(options.newInputStream(inputFile));
             }
-            writeValuesWithOptions(reader, writer, options);
+            writeValuesWithOptions(reader, writer, options, transcodeFunction);
         } finally {
             if (writer != null) {
                 writer.close();
@@ -488,7 +526,7 @@ class IonUtilities {
             IonReader reader = new IonReaderFromCbor(JacksonUtilities.newCborFactoryForInput(options).createParser(input.toFile()));
             IonWriter writer = writerSupplierFactory.get(options).get(options.newOutputStream(output.toFile()));
         ) {
-            writeValuesWithOptions(reader, writer, options);
+            writeValuesWithOptions(reader, writer, options, STANDARD_TRANSCODE);
         }
     }
 
