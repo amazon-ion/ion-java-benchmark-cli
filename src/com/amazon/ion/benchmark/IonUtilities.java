@@ -12,7 +12,7 @@ import com.amazon.ion.SymbolTable;
 import com.amazon.ion.impl._Private_IonConstants;
 import com.amazon.ion.impl._Private_IonSystem;
 import com.amazon.ion.impl._Private_IonWriter;
-import com.amazon.ion.impl.bin.DelimitedContainerStrategy;
+import com.amazon.ion.impl.bin.LengthPrefixStrategy;
 import com.amazon.ion.impl.bin.SymbolInliningStrategy;
 import com.amazon.ion.impl.bin._Private_IonManagedBinaryWriterBuilder;
 import com.amazon.ion.system.IonBinaryWriterBuilder_1_1;
@@ -265,7 +265,7 @@ class IonUtilities {
         IonBinaryWriterBuilder_1_1 builder = IonEncodingVersion.ION_1_1.binaryWriterBuilder();
         builder.withImports(parseImportsFromFile(options.importsForBenchmarkFile));
         builder.withSymbolInliningStrategy(options.ionInlineSymbols == Gradient.ALL ? SymbolInliningStrategy.ALWAYS_INLINE : SymbolInliningStrategy.NEVER_INLINE);
-        builder.withDelimitedContainerStrategy(options.ionDelimitedContainers == Gradient.ALL ? DelimitedContainerStrategy.ALWAYS_DELIMITED : DelimitedContainerStrategy.ALWAYS_PREFIXED);
+        builder.withLengthPrefixStrategy(options.ionDelimitedContainers == Gradient.ALL ? LengthPrefixStrategy.NEVER_PREFIXED : LengthPrefixStrategy.ALWAYS_PREFIXED);
         if (options instanceof WriteOptionsCombination) {
             // When this method is used by the read benchmark for converting the input file, 'options' will be a
             // ReadOptionsCombination, which does not have the 'ionWriterUserBufferSize' value, because this value
