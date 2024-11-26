@@ -1,0 +1,42 @@
+$ion_1_1
+(:$ion::add_symbols
+  (::
+    "Pi"
+  )
+)
+(:$ion::add_macros
+  (
+    macro
+    $66
+    ()
+    3.14159
+  )
+)
+$66
+(:Pi)
+(:$ion::set_symbols
+  (::
+    "Pi"
+    "foo"
+  )
+)
+(:$ion::add_macros
+  (
+    macro
+    $2
+    ()
+    "bar"
+  )
+)
+(:foo)
+$1
+(:$ion::set_macros
+  (
+    macro
+    $2
+    ()
+    "baz"
+  )
+)
+(:foo)
+$2
