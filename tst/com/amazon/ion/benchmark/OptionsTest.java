@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -436,9 +437,11 @@ public class OptionsTest {
      * @param expectedFormat the format of the data that is expected to be tested.
      * @param isConversionRequired false if the task is expected to be able to read the input file without conversion
      *                             or copying; otherwise, false.
+     * @return the data that was read by the task. This will be different from the data in the input file if the options
+     *  require conversion.
      * @throws Exception if an unexpected error occurs.
      */
-    private static void assertReadTaskExecutesCorrectly(
+    private static byte[] assertReadTaskExecutesCorrectly(
         String inputFileName,
         ReadOptionsCombination optionsCombination,
         Format expectedFormat,
@@ -484,6 +487,7 @@ public class OptionsTest {
         }
         // Verify that the original file was not deleted.
         assertTrue(inputPath.toFile().exists());
+        return streamBytes;
     }
 
     /**
@@ -495,9 +499,10 @@ public class OptionsTest {
      * @param optionsCombination a combination of write command options.
      * @param expectedOutputFormat the expected format of the data to be written.
      * @param expectedIoType the expected IO type.
+     * @return the data that was written by the task.
      * @throws Exception if an unexpected error occurs.
      */
-    private static void assertWriteTaskExecutesCorrectly(
+    private static byte[] assertWriteTaskExecutesCorrectly(
         String inputFileName,
         WriteOptionsCombination optionsCombination,
         Format expectedOutputFormat,
@@ -557,6 +562,7 @@ public class OptionsTest {
         }
         assertNull(task.currentFile);
         assertNull(task.currentBuffer);
+        return outputBytes;
     }
 
     /**
@@ -2224,7 +2230,7 @@ public class OptionsTest {
                 reader.next();
             }
             SymbolTable systemSymbolTable = reader.getSymbolTable();
-            int firstLocalSid = systemSymbolTable.getMaxId() + 1;
+            int firstLocalSid = outputMinorVersion == 0 ? systemSymbolTable.getMaxId() + 1 : 1;
             assertEquals(IonType.STRUCT, reader.getType());
             assertEquals("$ion_symbol_table", reader.getTypeAnnotations()[0]);
             assertEquals(IonType.SYMBOL, reader.next());
@@ -2435,4 +2441,119 @@ public class OptionsTest {
         writeIonWithInlineSymbolsAndDelimitedContainers("binaryAllTypes.10n");
         writeIonWithInlineSymbolsAndDelimitedContainers("binaryAllTypes11.10n");
     }
+
+    /**
+     * Counts the number of times the given substring occurs in the given string.
+     * @param string the string.
+     * @param substring the substring.
+     * @return the number of occurrences.
+     */
+    private static int countOccurrencesOfSubstring(String string, String substring) {
+        int lastMatchIndex = 0;
+        int count = 0;
+        while (lastMatchIndex >= 0) {
+            lastMatchIndex = string.indexOf(substring, lastMatchIndex);
+            if (lastMatchIndex >= 0) {
+                lastMatchIndex += substring.length();
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Test
+    public void writeIon11WithMacros() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "ion_text",
+            "--ion-minor-version",
+            "1",
+            "--io-type",
+            "buffer",
+            "binaryMacroInvocations.10n"
+        );
+        byte[] data = assertWriteTaskExecutesCorrectly(
+            "binaryMacroInvocations.10n",
+            optionsCombination,
+            Format.ION_TEXT,
+            IoType.BUFFER
+        );
+        String ion11Text = new String(data, StandardCharsets.UTF_8);
+        assertEquals(1, countOccurrencesOfSubstring(ion11Text, "add_symbols"));
+        assertEquals(2, countOccurrencesOfSubstring(ion11Text, "add_macros"));
+        assertEquals(1, countOccurrencesOfSubstring(ion11Text, "set_symbols"));
+        assertEquals(1, countOccurrencesOfSubstring(ion11Text, "set_macros"));
+        assertEquals(1, countOccurrencesOfSubstring(ion11Text, "(:Pi)"));
+        assertEquals(2, countOccurrencesOfSubstring(ion11Text, "(:foo)"));
+    }
+
+    @Test
+    public void writeIon11WithMacrosToIon10() throws Exception {
+        WriteOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "write",
+            "--format",
+            "ion_text",
+            "--ion-minor-version",
+            "0", // This forces a conversion that cannot preserve the encoding directives or macro invocations.
+            "--io-type",
+            "buffer",
+            "binaryMacroInvocations.10n"
+        );
+        assertWriteTaskExecutesCorrectly(
+            "binaryMacroInvocations.10n",
+            optionsCombination,
+            Format.ION_TEXT,
+            IoType.BUFFER
+        );
+    }
+
+    @Test
+    public void readIon11WithMacros() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "ion_text",
+            "--ion-minor-version",
+            "1",
+            "--io-type",
+            "buffer",
+            "binaryMacroInvocations.10n"
+        );
+        byte[] data = assertReadTaskExecutesCorrectly(
+            "binaryMacroInvocations.10n",
+            optionsCombination,
+            Format.ION_TEXT,
+            true
+        );
+        String ion11Text = new String(data, StandardCharsets.UTF_8);
+        assertEquals(1, countOccurrencesOfSubstring(ion11Text, "add_symbols"));
+        assertEquals(2, countOccurrencesOfSubstring(ion11Text, "add_macros"));
+        assertEquals(1, countOccurrencesOfSubstring(ion11Text, "set_symbols"));
+        assertEquals(1, countOccurrencesOfSubstring(ion11Text, "set_macros"));
+        assertEquals(1, countOccurrencesOfSubstring(ion11Text, "(:Pi)"));
+        assertEquals(2, countOccurrencesOfSubstring(ion11Text, "(:foo)"));
+    }
+
+    @Test
+    public void readIon10ConvertedFromIon11WithMacros() throws Exception {
+        ReadOptionsCombination optionsCombination = parseSingleOptionsCombination(
+            "read",
+            "--format",
+            "ion_text",
+            "--ion-minor-version",
+            "0", // This forces a conversion that cannot preserve the encoding directives or macro invocations.
+            "--io-type",
+            "buffer",
+            "binaryMacroInvocations.10n"
+        );
+        assertReadTaskExecutesCorrectly(
+            "binaryMacroInvocations.10n",
+            optionsCombination,
+            Format.ION_TEXT,
+            true
+        );
+    }
+
+    // TODO test writing Ion 1.1 binary from Ion 1.1 text input (once supported by IonJava).
 }

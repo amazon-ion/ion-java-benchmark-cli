@@ -6,10 +6,13 @@ import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonWriter;
+import com.amazon.ion.MacroAwareIonReader;
+import com.amazon.ion.MacroAwareIonWriter;
 import com.amazon.ion.OffsetSpan;
 import com.amazon.ion.SpanProvider;
 import com.amazon.ion.SymbolTable;
 import com.amazon.ion.impl._Private_IonConstants;
+import com.amazon.ion.impl._Private_IonReaderBuilder;
 import com.amazon.ion.impl._Private_IonSystem;
 import com.amazon.ion.impl._Private_IonWriter;
 import com.amazon.ion.impl.bin.LengthPrefixStrategy;
@@ -19,6 +22,7 @@ import com.amazon.ion.system.IonBinaryWriterBuilder_1_1;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.system.IonSystemBuilder;
 import com.amazon.ion.system.IonTextWriterBuilder;
+import com.amazon.ion.system.IonTextWriterBuilder_1_1;
 import com.amazon.ion.system.SimpleCatalog;
 
 import java.io.BufferedInputStream;
@@ -28,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -311,7 +316,12 @@ class IonUtilities {
      * @throws IOException if thrown when parsing shared symbol tables.
      */
     static IonWriterSupplier newTextWriterSupplier(OptionsCombinationBase options) throws IOException {
-        return newTextWriterSupplier(options, IonTextWriterBuilder.standard());
+        if (options.ionMinorVersion == 0) {
+            return newTextWriterSupplier(options, IonTextWriterBuilder.standard());
+        } else if (options.ionMinorVersion == 1) {
+            return newTextWriterSupplier_1_1(options);
+        }
+        throw new IllegalStateException();
     }
 
     /**
@@ -325,7 +335,7 @@ class IonUtilities {
     }
 
     /**
-     * Creates a new IonWriterSupplier for text IonWriters.
+     * Creates a new IonWriterSupplier for Ion 1.0 text or JSON IonWriters.
      * @param options the options to use when creating writers.
      * @param builder the builder to use to construct new writers.
      * @return a new instance.
@@ -333,6 +343,18 @@ class IonUtilities {
      */
     private static IonWriterSupplier newTextWriterSupplier(OptionsCombinationBase options, IonTextWriterBuilder builder) throws IOException {
         return builder.withImports(parseImportsFromFile(options.importsForBenchmarkFile))::build;
+    }
+
+    /**
+     * Creates a new IonWriterSupplier for Ion 1.1 text IonWriters.
+     * @param options the options to use when creating writers.
+     * @return a new instance.
+     * @throws IOException if thrown when parsing shared symbol tables.
+     */
+    private static IonWriterSupplier newTextWriterSupplier_1_1(OptionsCombinationBase options) throws IOException {
+        IonTextWriterBuilder_1_1 builder = IonEncodingVersion.ION_1_1.textWriterBuilder();
+        builder.withImports(parseImportsFromFile(options.importsForBenchmarkFile));
+        return builder::build;
     }
 
     /**
@@ -459,6 +481,23 @@ class IonUtilities {
     }
 
     /**
+     * Rewrite the given Ion 1.1+ file to another Ion 1.1+ stream using the given options.
+     * @param input an ion 1.1+ file.
+     * @param options the options to use when re-writing.
+     * @param writer the writer of the new stream.
+     * @throws IOException if thrown when reading or writing.
+     */
+    private static void rewriteIon11File(Path input, OptionsCombinationBase options, IonWriter writer) throws IOException{
+        if (options.limit != Integer.MAX_VALUE) {
+            throw new UnsupportedOperationException("Macro-aware transcoding of Ion 1.1 with the --limit option not yet supported.");
+        }
+        // TODO add a method to MacroAwareIonReader to write one value at a time so that 'limit' can be used
+        try (MacroAwareIonReader macroAwareIonReader = ((_Private_IonReaderBuilder) newReaderBuilderForInput(options)).buildMacroAware(Files.readAllBytes(input))) {
+            macroAwareIonReader.transcodeTo((MacroAwareIonWriter) writer);
+        }
+    }
+
+    /**
      * Rewrite the given Ion file using the given options.
      * @param inputFormat the format of 'input'; must be ION_BINARY, ION_TEXT, or JSON.
      * @param input path to the file to re-write.
@@ -475,29 +514,33 @@ class IonUtilities {
         IonReader reader = null;
         TranscodeFunction transcodeFunction = STANDARD_TRANSCODE;
         try {
-            if (
-                options.flushPeriod == null &&
-                options.importsForInputFile == null &&
-                options.importsForBenchmarkFile == null &&
-                options.format == Format.ION_BINARY &&
-                // Minor versions may add new kinds of system values, so it is not possible to maintain system value
-                // boundaries when downgrading to a previous minor version.
-                getMinorVersion(inputFormat, input.toFile()) <= options.ionMinorVersion
-            ) {
-                // Use system-level reader to preserve the same symbol tables from the input.
-                writer = writerSupplier.get(options.newOutputStream(outputFile));
-                reader = ((_Private_IonSystem) ION_SYSTEM).newSystemReader(options.newInputStream(inputFile));
-                if (options.ionMinorVersion > getMinorVersion(inputFormat, input.toFile())) {
-                    // Because symbol IDs will be transferred during the system transcode, *and* this is a format
-                    // upgrade, the symbol IDs need to be transformed to point to the same text in the new format.
-                    transcodeFunction = TRANSCODE_1_0_TO_1_1;
-                }
+            int inputMinorVersion = getMinorVersion(inputFormat, input.toFile());
+            writer = writerSupplier.get(options.newOutputStream(outputFile));
+            if (inputMinorVersion > 0 && options.ionMinorVersion > 0) {
+                rewriteIon11File(input, options, writer);
             } else {
-                // Do not preserve the existing symbol table boundaries.
-                writer = writerSupplier.get(options.newOutputStream(outputFile));
-                reader = newReaderBuilderForInput(options).build(options.newInputStream(inputFile));
+                if (
+                    options.flushPeriod == null &&
+                    options.importsForInputFile == null &&
+                    options.importsForBenchmarkFile == null &&
+                    options.format == Format.ION_BINARY &&
+                    // Minor versions may add new kinds of system values, so it is not possible to maintain system value
+                    // boundaries when downgrading to a previous minor version.
+                    inputMinorVersion <= options.ionMinorVersion
+                ) {
+                    // Use system-level reader to preserve the same symbol tables from the input.
+                    reader = ((_Private_IonSystem) ION_SYSTEM).newSystemReader(options.newInputStream(inputFile));
+                    if (options.ionMinorVersion > inputMinorVersion) {
+                        // Because symbol IDs will be transferred during the system transcode, *and* this is a format
+                        // upgrade, the symbol IDs need to be transformed to point to the same text in the new format.
+                        transcodeFunction = TRANSCODE_1_0_TO_1_1;
+                    }
+                } else {
+                    // Do not preserve the existing symbol table boundaries.
+                    reader = newReaderBuilderForInput(options).build(options.newInputStream(inputFile));
+                }
+                writeValuesWithOptions(reader, writer, options, transcodeFunction);
             }
-            writeValuesWithOptions(reader, writer, options, transcodeFunction);
         } finally {
             if (writer != null) {
                 writer.close();
@@ -556,5 +599,19 @@ class IonUtilities {
             return ION_SYSTEM;
         }
         return IonSystemBuilder.standard().withCatalog(newCatalog(options.importsForInputFile)).build();
+    }
+
+    /**
+     * Create a MeasurableWriteTask of the appropriate type for the given input and options.
+     * @param inputPath the input data.
+     * @param options the benchmark options.
+     * @return a new MeasurableWriteTask.
+     * @throws IOException if thrown when trying to classify the input file.
+     */
+    static MeasurableWriteTask<?> createIonMeasurableWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
+        if (options.ionMinorVersion > 0 && getMinorVersion(Format.classify(inputPath), inputPath.toFile()) > 0) {
+            return new IonMeasurableWriteTask_1_1(inputPath, options);
+        }
+        return new IonMeasurableWriteTask(inputPath, options);
     }
 }

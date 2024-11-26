@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import static com.amazon.ion.benchmark.IonUtilities.getMinorVersion;
 import static com.amazon.ion.benchmark.IonUtilities.isFormatHeaderPresent;
 
 /**
@@ -71,7 +72,7 @@ enum Format {
 
         @Override
         MeasurableWriteTask createWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
-            return new IonMeasurableWriteTask(inputPath, options);
+            return IonUtilities.createIonMeasurableWriteTask(inputPath, options);
         }
 
         @Override
@@ -85,8 +86,8 @@ enum Format {
             Format sourceFormat = classify(input);
             switch (sourceFormat) {
                 case ION_TEXT:
-                    if (options.limit == Integer.MAX_VALUE) {
-                        // The input is already text and it is not being limited.
+                    if (options.limit == Integer.MAX_VALUE && (getMinorVersion(ION_TEXT, input.toFile()) == options.ionMinorVersion)) {
+                        // The input is already text in the requested minor version, and it is not being limited.
                         return input;
                     }
                     IonUtilities.rewriteIonFile(ION_TEXT, input, output, options, IonUtilities::newTextWriterSupplier);
@@ -124,7 +125,7 @@ enum Format {
 
         @Override
         MeasurableWriteTask createWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
-            return new IonMeasurableWriteTask(inputPath, options);
+            return IonUtilities.createIonMeasurableWriteTask(inputPath, options);
         }
 
         @Override
@@ -140,7 +141,7 @@ enum Format {
                 case ION_TEXT:
                 case ION_BINARY:
                     // Down-convert to JSON.
-                    IonUtilities.rewriteIonFile(ION_BINARY, input, output, options, IonUtilities::newJsonWriterSupplier);
+                    IonUtilities.rewriteIonFile(sourceFormat, input, output, options, IonUtilities::newJsonWriterSupplier);
                     break;
                 case JSON:
                     if (options.limit == Integer.MAX_VALUE) {
@@ -188,7 +189,7 @@ enum Format {
             switch (sourceFormat) {
                 case ION_BINARY:
                 case ION_TEXT:
-                    IonUtilities.rewriteIonFile(ION_BINARY, input, output, options, IonUtilities::newCborWriterSupplier);
+                    IonUtilities.rewriteIonFile(sourceFormat, input, output, options, IonUtilities::newCborWriterSupplier);
                     break;
                 case JSON:
                     JacksonUtilities.rewriteJsonToCbor(input, output, options);
