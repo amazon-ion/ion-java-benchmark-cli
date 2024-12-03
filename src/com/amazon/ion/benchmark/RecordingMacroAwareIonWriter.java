@@ -153,6 +153,13 @@ class RecordingMacroAwareIonWriter implements MacroAwareIonWriter {
         // Note: w -> w.writeValue(reader) is not correct because it does not capture the value at which the reader
         // is currently positioned. For now, we use IonValue to achieve this, though it would be more efficient to
         // capture a primitive and store an instruction that writes that primitive to the writer directly.
+        if (reader.isInStruct()) {
+            // The field name must be captured and written manually because the IonValue below is not considered
+            // a child of a container.
+            SymbolToken fieldName = reader.getFieldNameSymbol();
+            instructionsSink.accept(w -> w.setFieldNameSymbol(fieldName));
+        }
+        // Note: the following includes any annotations on the value.
         IonValue value = SYSTEM.newValue(reader);
         instructionsSink.accept(value::writeTo);
     }

@@ -1,12 +1,9 @@
 package com.amazon.ion.benchmark;
 
-import com.amazon.ion.MacroAwareIonReader;
 import com.amazon.ion.MacroAwareIonWriter;
-import com.amazon.ion.impl._Private_IonReaderBuilder;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
@@ -44,16 +41,7 @@ public class IonMeasurableWriteTask_1_1 extends MeasurableWriteTask<MacroAwareIo
 
     @Override
     void generateWriteInstructionsStreaming(Consumer<WriteInstruction<MacroAwareIonWriter>> instructionsSink) throws IOException {
-        if (options.limit != Integer.MAX_VALUE || options.flushPeriod != null) {
-            throw new UnsupportedOperationException("Benchmarking Ion 1.1 write using --limit or --ion-flush-period is not yet supported.");
-        }
-        // TODO support buildMacroAware from InputStream to avoid having to buffer all bytes.
-        try (
-            MacroAwareIonReader reader = ((_Private_IonReaderBuilder) IonUtilities.newReaderBuilderForInput(options))
-                .buildMacroAware(Files.readAllBytes(inputFile.toPath()))
-        ) {
-            reader.transcodeTo(new RecordingMacroAwareIonWriter(instructionsSink));
-        }
+        IonUtilities.rewriteIon11File(inputFile, options, new RecordingMacroAwareIonWriter(instructionsSink));
     }
 
     @Override

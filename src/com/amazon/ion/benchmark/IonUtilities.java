@@ -482,18 +482,28 @@ class IonUtilities {
 
     /**
      * Rewrite the given Ion 1.1+ file to another Ion 1.1+ stream using the given options.
-     * @param input an ion 1.1+ file.
+     * @param inputFile an ion 1.1+ file.
      * @param options the options to use when re-writing.
      * @param writer the writer of the new stream.
      * @throws IOException if thrown when reading or writing.
      */
-    private static void rewriteIon11File(Path input, OptionsCombinationBase options, IonWriter writer) throws IOException{
-        if (options.limit != Integer.MAX_VALUE) {
-            throw new UnsupportedOperationException("Macro-aware transcoding of Ion 1.1 with the --limit option not yet supported.");
-        }
-        // TODO add a method to MacroAwareIonReader to write one value at a time so that 'limit' can be used
-        try (MacroAwareIonReader macroAwareIonReader = ((_Private_IonReaderBuilder) newReaderBuilderForInput(options)).buildMacroAware(Files.readAllBytes(input))) {
-            macroAwareIonReader.transcodeTo((MacroAwareIonWriter) writer);
+    static void rewriteIon11File(File inputFile, OptionsCombinationBase options, IonWriter writer) throws IOException {
+        try (
+            MacroAwareIonReader macroAwareIonReader = ((_Private_IonReaderBuilder) newReaderBuilderForInput(options))
+                .buildMacroAware(options.newInputStream(inputFile))
+        ) {
+            macroAwareIonReader.prepareTranscodeTo((MacroAwareIonWriter) writer);
+            int i = 0;
+            boolean isUnlimited = options.limit == Integer.MAX_VALUE;
+            while (isUnlimited || i < options.limit) {
+                if (!macroAwareIonReader.transcodeNext()) {
+                    break;
+                }
+                if (options.flushPeriod != null && i % options.flushPeriod == 0) {
+                    writer.flush();
+                }
+                i++;
+            }
         }
     }
 
@@ -517,7 +527,7 @@ class IonUtilities {
             int inputMinorVersion = getMinorVersion(inputFormat, input.toFile());
             writer = writerSupplier.get(options.newOutputStream(outputFile));
             if (inputMinorVersion > 0 && options.ionMinorVersion > 0) {
-                rewriteIon11File(input, options, writer);
+                rewriteIon11File(inputFile, options, writer);
             } else {
                 if (
                     options.flushPeriod == null &&
