@@ -34,6 +34,12 @@ enum Format {
                     } else if (options.limit == Integer.MAX_VALUE) {
                         // There are no settings that require mutating the original input.
                         return input;
+                    } else if (options.ionMinorVersion != null && options.ionMinorVersion > 0) {
+                        // TODO this case is eligible for simple truncation (the 'else' below), but currently it does
+                        //  not work because the SpanProvider facet, which is used by our truncation implementation,
+                        //  can't handle macro invocations or delimited containers. If that changes, this branch will
+                        //  no longer be necessary. See https://github.com/amazon-ion/ion-java/issues/1011
+                        IonUtilities.rewriteIonFile(ION_BINARY, input, output, options, IonUtilities::newBinaryWriterSupplier);
                     } else {
                         // This combination of settings requires simple truncation.
                         return IonUtilities.truncateBinaryIonFile(input, output, options.limit);
@@ -86,8 +92,13 @@ enum Format {
             Format sourceFormat = classify(input);
             switch (sourceFormat) {
                 case ION_TEXT:
-                    if (options.limit == Integer.MAX_VALUE && (getMinorVersion(ION_TEXT, input.toFile()) == options.ionMinorVersion)) {
-                        // The input is already text in the requested minor version, and it is not being limited.
+                    if (
+                        options.flushPeriod == null &&
+                        options.limit == Integer.MAX_VALUE &&
+                        (getMinorVersion(ION_TEXT, input.toFile()) == options.ionMinorVersion)
+                    ) {
+                        // The input is already text in the requested minor version, and it is not being limited or
+                        // written with a specific flush period.
                         return input;
                     }
                     IonUtilities.rewriteIonFile(ION_TEXT, input, output, options, IonUtilities::newTextWriterSupplier);
