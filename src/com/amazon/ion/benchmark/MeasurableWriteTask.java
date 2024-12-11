@@ -37,7 +37,7 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
      */
     MeasurableWriteTask(Path inputPath, WriteOptionsCombination options) throws IOException {
         Format inputFormat = Format.classify(inputPath);
-        if (options.format.canParse(inputFormat)) {
+        if (options.format.canParse(inputFormat) && IonUtilities.minorVersionsEqual(inputFormat, options.ionMinorVersion, inputPath.toFile())) {
             this.inputFile = inputPath.toFile();
         } else {
             this.inputFile = options.format.convert(

@@ -429,6 +429,33 @@ public class OptionsTest {
     }
 
     /**
+     * Verifies that the given file in the given format has the expected Ion minor version (if it is Ion data).
+     * @param format the file's format.
+     * @param file the file to test.
+     * @param options the options containing the expected Ion minor version.
+     * @throws IOException if thrown when parsing the file.
+     */
+    private static void verifyIonMinorVersion(Format format, File file, OptionsCombinationBase options) throws IOException {
+        if (format.isIon()) {
+            int expectedMinorVersion = options.ionMinorVersion == null ? 0 : options.ionMinorVersion;
+            assertEquals(expectedMinorVersion, IonUtilities.getMinorVersion(format, file));
+        }
+    }
+
+    /**
+     * Verifies that the given data in the given format has the expected Ion minor version (if it is Ion data).
+     * @param format the data's format.
+     * @param input the data to test.
+     * @param options the options containing the expected Ion minor version.
+     */
+    private static void verifyIonMinorVersion(Format format, byte[] input, OptionsCombinationBase options) {
+        if (format.isIon()) {
+            int expectedMinorVersion = options.ionMinorVersion == null ? 0 : options.ionMinorVersion;
+            assertEquals(expectedMinorVersion, IonUtilities.getMinorVersion(format, input));
+        }
+    }
+
+    /**
      * Asserts that a read task executes as expected. This includes assertions that temporary files are created only
      * when expected and are always cleaned up, that conversions between formats are correct and happen only when
      * expected, and that all phases of the read task complete without errors.
@@ -462,6 +489,7 @@ public class OptionsTest {
             streamBytes = task.buffer;
         }
         assertFormat(streamBytes, expectedFormat);
+        verifyIonMinorVersion(expectedFormat, streamBytes, optionsCombination);
         if (expectedFormat.canParse(Format.classify(inputPath))) {
             // If this is a conversion between two formats with the same data model (e.g. text Ion to binary Ion),
             // then they should compare equivalent.
@@ -513,12 +541,15 @@ public class OptionsTest {
             inputPath
         );
         task.setUpTrial();
-        if (expectedOutputFormat.canParse(Format.classify(inputPath))) {
+        Format inputFormat = Format.classify(inputPath);
+        if (expectedOutputFormat.canParse(inputFormat) && IonUtilities.minorVersionsEqual(inputFormat, optionsCombination.ionMinorVersion, inputPath.toFile())) {
             assertEquals(inputPath.toFile(), task.inputFile);
         } else {
             // If the input file's format cannot be read by parsers of the target format, then the input file must
             // first be converted to the target format.
-            assertEquals(expectedOutputFormat, Format.classify(task.inputFile.toPath()));
+            Format actualFormat =  Format.classify(task.inputFile.toPath());
+            assertEquals(expectedOutputFormat, actualFormat);
+            verifyIonMinorVersion(actualFormat, task.inputFile, optionsCombination);
         }
         // Ensure that the task executes without error.
         MeasurableTask.Task callable = task.getTask();
