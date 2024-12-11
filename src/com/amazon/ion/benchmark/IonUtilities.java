@@ -175,13 +175,11 @@ class IonUtilities {
      * @return true if the file contains binary Ion data of the given minor version; otherwise, false.
      * @throws IOException if thrown while reading the file.
      */
-    static boolean minorVersionsEqual(int minorVersion, File input) throws IOException {
-        if (minorVersion == 1) {
-            return isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_1, input);
-        } else if (minorVersion == 0) {
-            return isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_0, input);
+    static boolean minorVersionsEqual(Format format, int minorVersion, File input) throws IOException {
+        if (!format.isIon()) {
+            return false;
         }
-        throw new IllegalStateException("Unknown Ion minor version: " + minorVersion);
+        return minorVersion == getMinorVersion(format, input);
     }
 
     /**
@@ -208,6 +206,49 @@ class IonUtilities {
             return 0;
         }
         throw new IllegalStateException("File is either not Ion or has unknown minor version: " + input);
+    }
+
+    /**
+     * Determine whether the given data starts with the given format header.
+     * @param formatHeader the format header to match.
+     * @param input the data.
+     * @return true if the first bytes in the data match the given format header; otherwise, false.
+     */
+    private static boolean isFormatHeaderPresent(byte[] formatHeader, byte[] input) {
+        if (input.length < formatHeader.length) {
+            return false;
+        }
+        for (int i = 0; i < formatHeader.length; i++) {
+            if (input[i] != formatHeader[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Get the minor version for the given text or binary Ion data.
+     * @param inputFormat the format of 'input'; must be ION_BINARY, ION_TEXT, or JSON.
+     * @param input the data to examine.
+     * @return the Ion minor version of the data.
+     */
+    static int getMinorVersion(Format inputFormat, byte[] input) {
+        if (inputFormat == Format.ION_BINARY) {
+            if (isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_0, input)) {
+                return 0;
+            }
+            if (isFormatHeaderPresent(_Private_IonConstants.BINARY_VERSION_MARKER_1_1, input)) {
+                return 1;
+            }
+        } else if (inputFormat == Format.ION_TEXT) {
+            if (isFormatHeaderPresent(ION_1_1_TEXT_IVM, input)) {
+                return 1;
+            }
+            return 0;
+        } else if (inputFormat == Format.JSON) {
+            return 0;
+        }
+        throw new IllegalStateException("Input is either not Ion or has unknown minor version.");
     }
 
     /**

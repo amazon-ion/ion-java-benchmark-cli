@@ -24,7 +24,7 @@ enum Format {
                         || options.ionInlineSymbols != null
                         || options.preallocation != null
                         || options.floatWidth != null
-                        || (options.ionMinorVersion != null && !IonUtilities.minorVersionsEqual(options.ionMinorVersion, input.toFile()))
+                        || (options.ionMinorVersion != null && !IonUtilities.minorVersionsEqual(Format.ION_BINARY, options.ionMinorVersion, input.toFile()))
                         || (options.importsForBenchmarkFile != null
                             && !IonUtilities.importsEqual(options.importsForBenchmarkFile, input.toFile()))
                         || !IonUtilities.importsFilesEqual(options.importsForInputFile, options.importsForBenchmarkFile);
