@@ -7,12 +7,12 @@ $ion_1_1
 (:$ion::add_macros
   (
     macro
-    $66
+    $64
     ()
     3.14159
   )
 )
-$66
+$64
 (:Pi)
 (:$ion::set_symbols
   (::
