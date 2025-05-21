@@ -112,7 +112,7 @@ abstract class MeasurableReadTask implements MeasurableTask {
             } else {
                 return (consumer) -> traverseFromFile(options.paths, consumer);
             }
-        } else if (options.api == API.STREAMING) {
+        } else if (options.api == API.STREAMING || options.api == API.VISITOR) {
             if (buffer != null) {
                 return this::fullyTraverseFromBuffer;
             } else {

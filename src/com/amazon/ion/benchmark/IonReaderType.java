@@ -13,5 +13,10 @@ enum IonReaderType {
     /**
      * The opt-in incremental reader (binary only).
      */
-    INCREMENTAL
+    INCREMENTAL,
+
+    /**
+     * Experimental reader
+     */
+    V2,
 }

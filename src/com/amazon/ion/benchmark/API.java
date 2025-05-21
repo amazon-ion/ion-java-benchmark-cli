@@ -13,5 +13,10 @@ enum API {
     /**
      * For Ion: the DOM APIs (IonLoader, IonValue, etc.). For JSON (Jackson): JsonNode via ObjectMapper.
      */
-    DOM
+    DOM,
+
+    /**
+     * Experimental
+     */
+    VISITOR,
 }
