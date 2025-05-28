@@ -4,7 +4,7 @@ import com.amazon.ion.Decimal;
 import com.amazon.ion.IonType;
 import com.amazon.ion.Timestamp;
 import com.amazon.ion.v3.AnnotationIterator;
-import com.amazon.ion.v3.StreamReaderAsIonReader;
+import com.amazon.ion.v3.ion_reader.StreamReaderAsIonReader;
 import com.amazon.ion.v3.impl_1_0.StreamReader_1_0;
 import com.amazon.ion.v3.impl_1_1.StreamReaderImpl;
 import com.amazon.ion.v3.visitor.VisitingReaderCallback;

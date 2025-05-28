@@ -5,7 +5,7 @@ import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
 import com.amazon.ion.system.IonReaderBuilder;
-import com.amazon.ion.v3.StreamReaderAsIonReader;
+import com.amazon.ion.v3.ion_reader.StreamReaderAsIonReader;
 import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
 
