@@ -1,11 +1,14 @@
 package com.amazon.ion.benchmark;
 
 import com.amazon.ion.IonBufferConfiguration;
+import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.v3.ion_reader.StreamReaderAsIonReader;
+import com.amazon.ion.v3.visitor.ApplicationReaderDriver;
+import com.amazon.ion.v3.visitor.IonDatagramHydrator;
 import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
 
@@ -276,14 +279,21 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     @Override
     public void fullyReadDomFromBuffer(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
-        IonReader reader;
         if (useV2Reader) {
-            reader = new StreamReaderAsIonReader(ByteBuffer.wrap(buffer));
+            IonDatagram dg = ionSystem.newDatagram();
+            try {
+                ApplicationReaderDriver driver = new ApplicationReaderDriver(ByteBuffer.wrap(buffer));
+                driver.readAll(new IonDatagramHydrator(dg));
+                driver.close();
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
         } else {
+            IonReader reader;
             reader = readerBuilder.build(buffer);
+            ionSystem.newLoader().load(reader);
+            reader.close();
         }
-        ionSystem.newLoader().load(reader);
-        reader.close();
     }
 
     @Override
@@ -292,9 +302,14 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         if (useV2Reader) {
             try (FileChannel fileChannel = FileChannel.open(inputFile.toPath(), StandardOpenOption.READ)) {
                 ByteBuffer mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-                IonReader reader = new StreamReaderAsIonReader(mappedByteBuffer);
-                ionSystem.newLoader().load(reader);
-                reader.close();
+                IonDatagram dg = ionSystem.newDatagram();
+                try {
+                    ApplicationReaderDriver driver = new ApplicationReaderDriver(mappedByteBuffer);
+                    driver.readAll(new IonDatagramHydrator(dg));
+                    driver.close();
+                } catch (Exception e) {
+                    throw new IOException(e);
+                }
             }
         } else {
             IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
