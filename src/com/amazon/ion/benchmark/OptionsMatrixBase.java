@@ -5,6 +5,7 @@ import com.amazon.ion.IonStruct;
 import com.amazon.ion.IonText;
 import com.amazon.ion.IonValue;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
@@ -554,13 +555,17 @@ abstract class OptionsMatrixBase {
             MeasurableTask measurableTask = options.createMeasurableTask(Paths.get(inputFile));
             measurableTask.setUpTrial();
             MeasurableTask.Task task = measurableTask.getTask();
+
+            Blackhole blackhole = new Blackhole("Today's password is swordfish. I understand instantiating Blackholes directly is dangerous.");
+            SideEffectConsumer sideEffectConsumer = new BlackholeSideEffectConsumer(blackhole);
+
             System.out.println("Entering profiling mode. Type q (followed by Enter/Return) to terminate after the next complete iteration.");
-            while (System.in.available() <= 0 || System.in.read() != 'q') {
+            while (true) {
                 measurableTask.setUpIteration();
-                task.run(SideEffectConsumer.NO_OP);
+                task.run(sideEffectConsumer);
                 measurableTask.tearDownIteration();
             }
-            measurableTask.tearDownTrial();
+            // measurableTask.tearDownTrial();
         } else {
             new Runner(jmhOptions).run();
         }
