@@ -150,4 +150,9 @@ public class CborJacksonMeasurableWriteTask extends MeasurableWriteTask<CBORGene
     void closeWriter(CBORGenerator generator) throws IOException {
         generator.close();
     }
+
+    @Override
+    void generateWriteInstructionsElement(Consumer<WriteInstruction<CBORGenerator>> instructionsSink) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for CBOR format. Use ion_binary or ion_text format instead.");
+    }
 }

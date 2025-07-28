@@ -150,10 +150,19 @@ public class CborJacksonMeasurableReadTask extends MeasurableReadTask {
 
     @Override
     void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
-        CBORMapper mapper = JacksonUtilities.newCborObjectMapper(cborFactory, options);
-        Iterator<JsonNode> iterator = mapper.reader().createParser(options.newInputStream(inputFile)).readValuesAs(JsonNode.class);
-        while (iterator.hasNext()) {
-            consumer.consume(iterator.next());
-        }
+        sideEffectConsumer = consumer;
+        CBORMapper objectMapper = new CBORMapper(cborFactory);
+        JsonNode tree = objectMapper.readTree(options.newInputStream(inputFile));
+        consumer.consume(tree);
+    }
+
+    @Override
+    public void fullyReadElementFromBuffer(SideEffectConsumer consumer) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for CBOR format. Use ion_binary or ion_text format instead.");
+    }
+
+    @Override
+    public void fullyReadElementFromFile(SideEffectConsumer consumer) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for CBOR format. Use ion_binary or ion_text format instead.");
     }
 }

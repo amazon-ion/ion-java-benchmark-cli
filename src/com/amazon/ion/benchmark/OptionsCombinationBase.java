@@ -92,6 +92,11 @@ abstract class OptionsCombinationBase {
         limit = getOrDefault(optionsCombinationStruct, LIMIT_NAME, val -> ((IonInt) val).intValue(), Integer.MAX_VALUE);
         jsonUseBigDecimals = getOrDefault(optionsCombinationStruct, JSON_USE_BIG_DECIMALS_NAME, val -> ((IonBool) val).booleanValue(), true);
         autoFlush = getOrDefault(optionsCombinationStruct, AUTO_FLUSH_ENABLED, val -> ((IonBool) val).booleanValue(), false);
+
+        // Validate that ION_ELEMENT_DOM is only used with Ion formats
+        if (api == API.ION_ELEMENT_DOM && !format.isIon()) {
+            throw new IllegalArgumentException("ION_ELEMENT_DOM API can only be used with Ion formats (ion_binary or ion_text), not with " + format.name().toLowerCase());
+        }
     }
 
     /**

@@ -139,10 +139,19 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
 
     @Override
     void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
-        ObjectMapper mapper = JacksonUtilities.newJsonObjectMapper(jsonFactory, options);
-        Iterator<JsonNode> iterator = mapper.reader().createParser(options.newInputStream(inputFile)).readValuesAs(JsonNode.class);
-        while (iterator.hasNext()) {
-            consumer.consume(iterator.next());
-        }
+        sideEffectConsumer = consumer;
+        ObjectMapper objectMapper = JacksonUtilities.newJsonObjectMapper(jsonFactory, options);
+        JsonNode tree = objectMapper.readTree(options.newInputStream(inputFile));
+        consumer.consume(tree);
+    }
+
+    @Override
+    public void fullyReadElementFromBuffer(SideEffectConsumer consumer) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for JSON format. Use ion_binary or ion_text format instead.");
+    }
+
+    @Override
+    public void fullyReadElementFromFile(SideEffectConsumer consumer) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for JSON format. Use ion_binary or ion_text format instead.");
     }
 }

@@ -54,6 +54,9 @@ abstract class OptionsMatrixBase {
     static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_ION_STREAMING = s -> {
         return OPTION_ONLY_APPLIES_TO_ION.test(s) && API.STREAMING.name().equals(getStringValue(s, API_NAME));
     };
+    static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_ION_ELEMENT_DOM = s -> {
+        return OPTION_ONLY_APPLIES_TO_ION.test(s) && API.ION_ELEMENT_DOM.name().equals(getStringValue(s, API_NAME));
+    };
     static final Predicate<IonStruct> OPTION_ONLY_APPLIES_TO_JSON = s -> {
         return Format.JSON.name().equals(getStringValue(s, FORMAT_NAME));
     };

@@ -84,6 +84,20 @@ abstract class MeasurableReadTask implements MeasurableTask {
      */
     abstract void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException;
 
+    /**
+     * Initialize the element loader and perform a fully-materialized deep read of the data from a buffer using
+     * IonElement API. The "loader" is defined as any context that is tied to a single stream.
+     * @throws IOException if thrown during reading.
+     */
+    abstract void fullyReadElementFromBuffer(SideEffectConsumer consumer) throws IOException;
+
+    /**
+     * Initialize the element loader and perform a fully-materialized deep read of the data from a file using
+     * IonElement API. The "loader" is defined as any context that is tied to a single stream.
+     * @throws IOException if thrown during reading.
+     */
+    abstract void fullyReadElementFromFile(SideEffectConsumer consumer) throws IOException;
+
     @Override
     public void setUpTrial() throws IOException {
         inputFile = options.convertFileIfNecessary(originalFile).toFile();
@@ -123,6 +137,12 @@ abstract class MeasurableReadTask implements MeasurableTask {
                 return this::fullyReadDomFromBuffer;
             } else {
                 return this::fullyReadDomFromFile;
+            }
+        } else if (options.api == API.ION_ELEMENT_DOM) {
+            if (buffer != null) {
+                return this::fullyReadElementFromBuffer;
+            } else {
+                return this::fullyReadElementFromFile;
             }
         } else {
             throw new IllegalStateException("Illegal combination of options.");
