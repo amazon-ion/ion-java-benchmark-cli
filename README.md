@@ -101,17 +101,28 @@ ion-java-benchmark write --ion-imports-for-benchmark tables.ion \
 Benchmark a full-traversal read of data equivalent to exampleWithImports.10n, which declares the shared
 symbol table imports provided by inputTables.ion, re-encoded (if necessary) using the shared symbol
 tables provided by benchmarkTables.ion, inputTables.ion, and no shared symbol tables. Produce
-results from using both the DOM and IonReader APIs.
+results from using the DOM, IonReader and IonElement APIs.
 
 ```
 ion-java-benchmark read --ion-imports-for-input inputTables.ion \
                         --ion-imports-for-benchmark benchmarkTables.ion \
                         --ion-imports-for-benchmark auto \
                         --ion-imports-for-benchmark none \
-                        --ion-api dom \
-                        --ion-api streaming \
+                        --api dom \
+                        --api streaming \
+                        --api ion_element_dom \
                         exampleWithImports.10n
 ```
+
+Benchmark a full-traversal read of `example.10n` using the IonElement API from ion-element-kotlin,
+comparing performance against the traditional DOM API.
+
+```
+ion-java-benchmark read --api dom \
+                        --api ion_element_dom \
+                        example.10n
+```
+
 
 ## Tips
 
