@@ -48,9 +48,7 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
 
         // Initialize IonElement loader for ION_ELEMENT_DOM API
         if (options.api == API.ION_ELEMENT_DOM) {
-            elementLoader = new com.amazon.ionelement.impl.IonElementLoaderImpl(
-                    new IonElementLoaderOptions(false)
-            );
+            elementLoader = ElementLoader.createIonElementLoader();
         }
     }
 
