@@ -216,11 +216,9 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
         } else {
             List<AnyElement> limitedElements = new ArrayList<>();
             try (IonReader reader = IonUtilities.newReaderBuilderForInput(options).build(options.newInputStream(inputFile))) {
-                Iterable<AnyElement> allElements = elementLoader.loadAllElements(reader);
                 int count = 0;
-                for (AnyElement element : allElements) {
-                    limitedElements.add(element);
-                    if (++count >= options.limit) break;
+                while (count++ < options.limit && reader.next() != null) {
+                    limitedElements.add(elementLoader.loadCurrentElement(reader));
                 }
             }
             elements = limitedElements;
