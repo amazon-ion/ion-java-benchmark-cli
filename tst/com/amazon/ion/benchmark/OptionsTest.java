@@ -759,7 +759,7 @@ public class OptionsTest {
     }
 
     @Test
-    public void readBothTextAndIonUsingIonElementDom() throws Exception {
+    public void readBothTextAndBinaryUsingIonElementDom() throws Exception {
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
                 "read",
                 "--format",
