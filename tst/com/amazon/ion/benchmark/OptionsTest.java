@@ -868,7 +868,7 @@ public class OptionsTest {
     }
 
     @Test
-    public void readBinaryWithLimitFromFileUsingIonElementDom() throws Exception {
+    public void readBinaryAndTextWithLimitFromFileUsingIonElementDom() throws Exception {
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
                 "read",
                 "--limit",
