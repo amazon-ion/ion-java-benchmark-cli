@@ -9,7 +9,7 @@ import com.amazon.ion.SymbolToken;
 import com.amazon.ion.Timestamp;
 import com.amazon.ionelement.api.AnyElement;
 import com.amazon.ionelement.api.IonElementLoader;
-import com.amazon.ionelement.api.IonElementLoaderOptions;
+import com.amazon.ionelement.api.ElementLoader;
 
 import java.io.IOException;
 import java.io.OutputStream;

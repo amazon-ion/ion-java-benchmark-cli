@@ -139,10 +139,11 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
 
     @Override
     void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
-        sideEffectConsumer = consumer;
-        ObjectMapper objectMapper = JacksonUtilities.newJsonObjectMapper(jsonFactory, options);
-        JsonNode tree = objectMapper.readTree(options.newInputStream(inputFile));
-        consumer.consume(tree);
+        ObjectMapper mapper = JacksonUtilities.newJsonObjectMapper(jsonFactory, options);
+        Iterator<JsonNode> iterator = mapper.reader().createParser(options.newInputStream(inputFile)).readValuesAs(JsonNode.class);
+        while (iterator.hasNext()) {
+            consumer.consume(iterator.next());
+        }
     }
 
     @Override

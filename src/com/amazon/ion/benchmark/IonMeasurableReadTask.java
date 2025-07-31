@@ -9,7 +9,7 @@ import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
 import com.amazon.ionelement.api.AnyElement;
 import com.amazon.ionelement.api.IonElementLoader;
-import com.amazon.ionelement.api.IonElementLoaderOptions;
+import com.amazon.ionelement.api.ElementLoader;
 
 import java.io.IOException;
 import java.nio.file.Path;

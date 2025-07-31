@@ -150,10 +150,11 @@ public class CborJacksonMeasurableReadTask extends MeasurableReadTask {
 
     @Override
     void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
-        sideEffectConsumer = consumer;
-        CBORMapper objectMapper = new CBORMapper(cborFactory);
-        JsonNode tree = objectMapper.readTree(options.newInputStream(inputFile));
-        consumer.consume(tree);
+        CBORMapper mapper = JacksonUtilities.newCborObjectMapper(cborFactory, options);
+        Iterator<JsonNode> iterator = mapper.reader().createParser(options.newInputStream(inputFile)).readValuesAs(JsonNode.class);
+        while (iterator.hasNext()) {
+            consumer.consume(iterator.next());
+        }
     }
 
     @Override
