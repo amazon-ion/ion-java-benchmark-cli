@@ -249,7 +249,9 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     public void fullyReadDomFromBuffer(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(buffer);
-        ionSystem.newLoader().load(reader);
+        for (com.amazon.ion.IonValue value : ionSystem.newLoader().load(reader)) {
+            consumer.consume(value);
+        }
         reader.close();
     }
 
@@ -257,7 +259,9 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     public void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
-        ionSystem.newLoader().load(reader);
+        for (com.amazon.ion.IonValue value : ionSystem.newLoader().load(reader)) {
+            consumer.consume(value);
+        }
         reader.close();
     }
 
