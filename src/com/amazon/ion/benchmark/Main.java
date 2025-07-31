@@ -135,7 +135,7 @@ public class Main {
 
         + "  -a --api <api>                         The API to exercise (dom, streaming, or ion_element_dom). For the ion-binary or "
             + "ion-text formats, 'streaming' causes IonReader/IonWriter to be used while 'dom' causes IonLoader to be "
-            + "used, and 'ion_element_dom' causes IonElement from ion-element to be used with dedicated code paths. For Jackson JSON, 'streaming' causes JsonParser/JsonGenerator to be used while 'dom' causes "
+            + "used, and 'ion_element_dom' causes IonElement from ion-element-kotlin to be used with dedicated code paths. For Jackson JSON, 'streaming' causes JsonParser/JsonGenerator to be used while 'dom' causes "
             + "ObjectMapper to materialize JsonNode instances. 'ion_element_dom' is not supported for JSON or CBOR formats. May be specified multiple times to compare "
             + "APIs. [default: streaming]\n"
 
