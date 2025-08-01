@@ -13,5 +13,10 @@ enum API {
     /**
      * For Ion: the DOM APIs (IonLoader, IonValue, etc.). For JSON (Jackson): JsonNode via ObjectMapper.
      */
-    DOM
+    DOM,
+
+    /**
+     * For Ion: the IonElement APIs from ion-element-kotlin. For JSON (Jackson): Not supported.
+     */
+    ION_ELEMENT_DOM
 }

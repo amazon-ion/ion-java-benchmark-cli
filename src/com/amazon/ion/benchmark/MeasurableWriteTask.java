@@ -73,6 +73,14 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
     abstract void generateWriteInstructionsStreaming(Consumer<WriteInstruction<T>> instructionsSink) throws IOException;
 
     /**
+     * Generate a sequence of WriteInstructions that re-write the input file with the configured options using the
+     * IonElement API.
+     * @param instructionsSink the sink for the sequence of generated WriteInstructions.
+     * @throws IOException if thrown when generating WriteInstructions.
+     */
+    abstract void generateWriteInstructionsElement(Consumer<WriteInstruction<T>> instructionsSink) throws IOException;
+
+    /**
      * @return a new writer context instance.
      * @param outputStream the OutputStream to which the new writer will write.
      * @throws IOException if thrown during construction of the context.
@@ -95,6 +103,9 @@ abstract class MeasurableWriteTask<T> implements MeasurableTask {
                 break;
             case DOM:
                 generateWriteInstructionsDom(writeInstructions::add);
+                break;
+            case ION_ELEMENT_DOM:
+                generateWriteInstructionsElement(writeInstructions::add);
                 break;
         }
     }

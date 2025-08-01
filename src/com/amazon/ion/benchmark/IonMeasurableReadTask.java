@@ -7,6 +7,9 @@ import com.amazon.ion.IonType;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
+import com.amazon.ionelement.api.AnyElement;
+import com.amazon.ionelement.api.IonElementLoader;
+import com.amazon.ionelement.api.ElementLoader;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -25,6 +28,7 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     private final byte[] reusableLobBuffer;
     private IonReaderBuilder readerBuilder;
     private SideEffectConsumer sideEffectConsumer = null;
+    private IonElementLoader elementLoader;
 
     /**
      * Returns the next power of two greater than or equal to the given value.
@@ -66,6 +70,11 @@ class IonMeasurableReadTask extends MeasurableReadTask {
             reusableLobBuffer = new byte[DEFAULT_REUSABLE_LOB_BUFFER_SIZE];
         } else {
             reusableLobBuffer = null;
+        }
+
+        // Initialize IonElement loader for ION_ELEMENT_DOM API
+        if (options.api == API.ION_ELEMENT_DOM) {
+            elementLoader = ElementLoader.createIonElementLoader();
         }
     }
 
@@ -240,7 +249,9 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     public void fullyReadDomFromBuffer(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(buffer);
-        ionSystem.newLoader().load(reader);
+        for (com.amazon.ion.IonValue value : ionSystem.newLoader().load(reader)) {
+            consumer.consume(value);
+        }
         reader.close();
     }
 
@@ -248,7 +259,31 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     public void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
-        ionSystem.newLoader().load(reader);
+        for (com.amazon.ion.IonValue value : ionSystem.newLoader().load(reader)) {
+            consumer.consume(value);
+        }
+        reader.close();
+    }
+
+    @Override
+    public void fullyReadElementFromBuffer(SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
+        IonReader reader = readerBuilder.build(buffer);
+        Iterable<AnyElement> elements = elementLoader.loadAllElements(reader);
+        for (AnyElement element : elements) {
+            consumer.consume(element);
+        }
+        reader.close();
+    }
+
+    @Override
+    public void fullyReadElementFromFile(SideEffectConsumer consumer) throws IOException {
+        sideEffectConsumer = consumer;
+        IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
+        Iterable<AnyElement> elements = elementLoader.loadAllElements(reader);
+        for (AnyElement element : elements) {
+            consumer.consume(element);
+        }
         reader.close();
     }
 }

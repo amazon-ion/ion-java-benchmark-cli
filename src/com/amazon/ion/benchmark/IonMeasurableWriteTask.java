@@ -7,13 +7,18 @@ import com.amazon.ion.IonValue;
 import com.amazon.ion.IonWriter;
 import com.amazon.ion.SymbolToken;
 import com.amazon.ion.Timestamp;
+import com.amazon.ionelement.api.AnyElement;
+import com.amazon.ionelement.api.IonElementLoader;
+import com.amazon.ionelement.api.ElementLoader;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
@@ -24,6 +29,7 @@ import static com.amazon.ion.benchmark.Constants.ION_SYSTEM;
 class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
 
     private final IonUtilities.IonWriterSupplier writerBuilder;
+    private IonElementLoader elementLoader;
 
     /**
      * @param inputPath path to the data to re-write.
@@ -38,6 +44,11 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
             writerBuilder = IonUtilities.newBinaryWriterSupplier(options);
         } else {
             throw new IllegalStateException("IonFormatWriter is compatible only with ION_TEXT and ION_BINARY");
+        }
+
+        // Initialize IonElement loader for ION_ELEMENT_DOM API
+        if (options.api == API.ION_ELEMENT_DOM) {
+            elementLoader = ElementLoader.createIonElementLoader();
         }
     }
 
@@ -195,4 +206,33 @@ class IonMeasurableWriteTask extends MeasurableWriteTask<IonWriter> {
         writer.close();
     }
 
+    @Override
+    void generateWriteInstructionsElement(Consumer<WriteInstruction<IonWriter>> instructionsSink) throws IOException {
+        Iterable<AnyElement> elements;
+        if (options.limit == Integer.MAX_VALUE) {
+            try (IonReader reader = IonUtilities.newReaderBuilderForInput(options).build(options.newInputStream(inputFile))) {
+                elements = elementLoader.loadAllElements(reader);
+            }
+        } else {
+            List<AnyElement> limitedElements = new ArrayList<>();
+            try (IonReader reader = IonUtilities.newReaderBuilderForInput(options).build(options.newInputStream(inputFile))) {
+                int count = 0;
+                while (count++ < options.limit && reader.next() != null) {
+                    limitedElements.add(elementLoader.loadCurrentElement(reader));
+                }
+            }
+            elements = limitedElements;
+        }
+
+        // Convert IonElements to write instructions
+        int elementCount = 0;
+        for (AnyElement element : elements) {
+            instructionsSink.accept(element::writeTo);
+            elementCount++;
+            if (options.flushPeriod != null && elementCount % options.flushPeriod == 0) {
+                instructionsSink.accept(IonWriter::flush);
+            }
+        }
+        instructionsSink.accept(IonWriter::finish);
+    }
 }

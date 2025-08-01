@@ -145,4 +145,14 @@ public class JsonJacksonMeasurableReadTask extends MeasurableReadTask {
             consumer.consume(iterator.next());
         }
     }
+
+    @Override
+    public void fullyReadElementFromBuffer(SideEffectConsumer consumer) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for JSON format. Use ion_binary or ion_text format instead.");
+    }
+
+    @Override
+    public void fullyReadElementFromFile(SideEffectConsumer consumer) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for JSON format. Use ion_binary or ion_text format instead.");
+    }
 }

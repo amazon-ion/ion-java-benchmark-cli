@@ -133,10 +133,10 @@ public class Main {
         + "  -f --format <type>                     Format to benchmark, from the set (ion_binary | ion_text | json | "
             + "cbor). May be specified multiple times to compare different formats. [default: ion_binary]\n"
 
-        + "  -a --api <api>                         The API to exercise (dom or streaming). For the ion-binary or "
+        + "  -a --api <api>                         The API to exercise (dom, streaming, or ion_element_dom). For the ion-binary or "
             + "ion-text formats, 'streaming' causes IonReader/IonWriter to be used while 'dom' causes IonLoader to be "
-            + "used. For Jackson JSON, 'streaming' causes JsonParser/JsonGenerator to be used while 'dom' causes "
-            + "ObjectMapper to materialize JsonNode instances. May be specified multiple times to compare both "
+            + "used, and 'ion_element_dom' causes IonElement from ion-element-kotlin to be used with dedicated code paths. For Jackson JSON, 'streaming' causes JsonParser/JsonGenerator to be used while 'dom' causes "
+            + "ObjectMapper to materialize JsonNode instances. 'ion_element_dom' is not supported for JSON or CBOR formats. May be specified multiple times to compare "
             + "APIs. [default: streaming]\n"
 
         + "  -I --ion-imports-for-input <file>      A file containing a sequence of Ion symbol tables, or the string "

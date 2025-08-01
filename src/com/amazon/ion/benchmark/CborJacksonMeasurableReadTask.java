@@ -156,4 +156,14 @@ public class CborJacksonMeasurableReadTask extends MeasurableReadTask {
             consumer.consume(iterator.next());
         }
     }
+
+    @Override
+    public void fullyReadElementFromBuffer(SideEffectConsumer consumer) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for CBOR format. Use ion_binary or ion_text format instead.");
+    }
+
+    @Override
+    public void fullyReadElementFromFile(SideEffectConsumer consumer) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for CBOR format. Use ion_binary or ion_text format instead.");
+    }
 }

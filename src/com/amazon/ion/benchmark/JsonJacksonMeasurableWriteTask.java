@@ -142,4 +142,9 @@ class JsonJacksonMeasurableWriteTask extends MeasurableWriteTask<JsonGenerator> 
     void closeWriter(JsonGenerator generator) throws IOException {
         generator.close();
     }
+
+    @Override
+    void generateWriteInstructionsElement(Consumer<WriteInstruction<JsonGenerator>> instructionsSink) throws IOException {
+        throw new UnsupportedOperationException("IonElement API is not supported for JSON format. Use ion_binary or ion_text format instead.");
+    }
 }

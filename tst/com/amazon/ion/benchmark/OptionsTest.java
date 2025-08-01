@@ -661,6 +661,46 @@ public class OptionsTest {
     }
 
     @Test
+    public void writeTextUsingIonElementDom() throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+                "write",
+                "--format",
+                "ion_text",
+                "--api",
+                "ion_element_dom",
+                "--io-type",
+                "buffer",
+                "--io-type",
+                "file",
+                "textStructs.ion"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions()
+                .api(API.ION_ELEMENT_DOM)
+                .format(Format.ION_TEXT)
+                .ioType(IoType.BUFFER)
+        );
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions()
+                .api(API.ION_ELEMENT_DOM)
+                .format(Format.ION_TEXT)
+                .ioType(IoType.FILE)
+        );
+
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> {
+                return candidate.api == API.ION_ELEMENT_DOM
+                        && candidate.format == Format.ION_TEXT
+                        && candidate.ioType == optionsCombination.ioType;
+            });
+
+            assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_TEXT, optionsCombination.ioType);
+            assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_TEXT, optionsCombination.ioType);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
     public void readBothTextAndIonUsingBothDomAndReader() throws Exception {
         List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
             "read",
@@ -713,6 +753,51 @@ public class OptionsTest {
                 optionsCombination,
                 optionsCombination.format,
                 optionsCombination.format != Format.ION_TEXT
+            );
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void readBothTextAndBinaryUsingIonElementDom() throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+                "read",
+                "--format",
+                "ion_text",
+                "--format",
+                "ion_binary",
+                "--io-type",
+                "buffer",
+                "--api",
+                "ion_element_dom",
+                "binaryStructs.10n"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions()
+                .ioType(IoType.BUFFER)
+                .format(Format.ION_TEXT)
+                .api(API.ION_ELEMENT_DOM)
+        );
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions()
+                .ioType(IoType.BUFFER)
+                .format(Format.ION_BINARY)
+                .api(API.ION_ELEMENT_DOM)
+        );
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> candidate.format == optionsCombination.format
+                    && candidate.api == optionsCombination.api);
+            assertReadTaskExecutesCorrectly(
+                    "binaryStructs.10n",
+                    optionsCombination,
+                    optionsCombination.format,
+                    optionsCombination.format != Format.ION_BINARY
+            );
+            assertReadTaskExecutesCorrectly(
+                    "textStructs.ion",
+                    optionsCombination,
+                    optionsCombination.format,
+                    optionsCombination.format != Format.ION_TEXT
             );
         }
         assertTrue(expectedCombinations.isEmpty());
@@ -783,6 +868,37 @@ public class OptionsTest {
     }
 
     @Test
+    public void readBinaryAndTextWithLimitFromFileUsingIonElementDom() throws Exception {
+        List<ReadOptionsCombination> optionsCombinations = parseOptionsCombinations(
+                "read",
+                "--limit",
+                "1",
+                "--io-type",
+                "file",
+                "--format",
+                "ion_text",
+                "--format",
+                "ion_binary",
+                "--api",
+                "ion_element_dom",
+                "binaryStructs.10n"
+        );
+        assertEquals(2, optionsCombinations.size());
+        List<ExpectedReadOptionsCombination> expectedCombinations = new ArrayList<>(2);
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).api(API.ION_ELEMENT_DOM).format(Format.ION_BINARY));
+        expectedCombinations.add(ExpectedReadOptionsCombination.defaultOptions().limit(1).api(API.ION_ELEMENT_DOM).format(Format.ION_TEXT));
+
+        for (ReadOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> candidate.format == optionsCombination.format);
+            assertEquals(1, optionsCombination.limit);
+
+            assertReadTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, optionsCombination.format, true);
+            assertReadTaskExecutesCorrectly("textStructs.ion", optionsCombination, optionsCombination.format, true);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
     public void writeBinaryWithLimitUsingWriterAndDOM() throws Exception {
         List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
             "write",
@@ -798,6 +914,30 @@ public class OptionsTest {
         List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(2);
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().limit(1).api(API.DOM));
         expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().limit(1).api(API.STREAMING));
+
+        for (WriteOptionsCombination optionsCombination : optionsCombinations) {
+            expectedCombinations.removeIf(candidate -> candidate.api == optionsCombination.api);
+            assertEquals(1, optionsCombination.limit);
+
+            assertWriteTaskExecutesCorrectly("binaryStructs.10n", optionsCombination, Format.ION_BINARY, IoType.FILE);
+            assertWriteTaskExecutesCorrectly("textStructs.ion", optionsCombination, Format.ION_BINARY, IoType.FILE);
+        }
+        assertTrue(expectedCombinations.isEmpty());
+    }
+
+    @Test
+    public void writeBinaryWithLimitUsingIonElementDOM() throws Exception {
+        List<WriteOptionsCombination> optionsCombinations = parseOptionsCombinations(
+                "write",
+                "--limit",
+                "1",
+                "--api",
+                "ion_element_dom",
+                "binaryStructs.10n"
+        );
+        assertEquals(1, optionsCombinations.size());
+        List<ExpectedWriteOptionsCombination> expectedCombinations = new ArrayList<>(1);
+        expectedCombinations.add(ExpectedWriteOptionsCombination.defaultOptions().limit(1).api(API.ION_ELEMENT_DOM));
 
         for (WriteOptionsCombination optionsCombination : optionsCombinations) {
             expectedCombinations.removeIf(candidate -> candidate.api == optionsCombination.api);
