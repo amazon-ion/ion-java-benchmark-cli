@@ -5,14 +5,18 @@ import com.amazon.ion.IonDatagram;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
+import com.amazon.ion.IonValue;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.v3.ion_reader.StreamReaderAsIonReader;
 import com.amazon.ion.v3.visitor.ApplicationReaderDriver;
 import com.amazon.ion.v3.visitor.IonDatagramHydrator;
 import com.amazon.ion.v3.visitor2.VisitingIonReader10;
+import com.amazon.ionelement.api.Ion;
 import com.amazon.ionelement.api.IonElement;
 import com.amazon.ionelement.api.IonElementLoaderOptions;
+import com.amazon.ionelement.api.IonUtils;
 import com.amazon.ionelement.impl.loader.FastLoaderBinary10;
+import com.amazon.ionelement.impl.loader.FastLoaderBinary10ByteArray;
 import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
 
@@ -280,20 +284,24 @@ class IonMeasurableReadTask extends MeasurableReadTask {
         }
     }
 
+    private IonElementLoaderOptions opts = IonElementLoaderOptions.builder().build();
+
+    private boolean hasCompared = false;
+
     @Override
     public void fullyReadDomFromBuffer(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
         if (useV2Reader) {
-            IonDatagram dg = ionSystem.newDatagram();
-            try {
-                ApplicationReaderDriver driver = new ApplicationReaderDriver(ByteBuffer.wrap(buffer));
-                driver.readAll(new IonDatagramHydrator(dg));
-                driver.close();
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
+//            IonDatagram dg = ionSystem.newDatagram();
 //            try {
-//                FastLoaderBinary10 loader = new FastLoaderBinary10(ByteBuffer.wrap(buffer), IonElementLoaderOptions.builder().build());
+//                ApplicationReaderDriver driver = new ApplicationReaderDriver(ByteBuffer.wrap(buffer));
+//                driver.readAll(new IonDatagramHydrator(dg));
+//                driver.close();
+//            } catch (Exception e) {
+//                throw new IOException(e);
+//            }
+//            try {
+//                FastLoaderBinary10ByteArray loader = new FastLoaderBinary10ByteArray(buffer, opts);
 //                while (true) {
 //                    IonElement next = loader.loadNextElement();
 //                    if (next == null) break;
@@ -302,6 +310,15 @@ class IonMeasurableReadTask extends MeasurableReadTask {
 //            } catch (Exception e) {
 //                throw new RuntimeException(e);
 //            }
+
+            try {
+                FastLoaderBinary10ByteArray loader = new FastLoaderBinary10ByteArray(buffer, opts);
+                while (loader.hasNext()) {
+                    consumer.consume(loader.next());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
 //            try {
 //
