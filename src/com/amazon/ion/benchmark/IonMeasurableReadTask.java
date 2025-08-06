@@ -9,6 +9,10 @@ import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ion.v3.ion_reader.StreamReaderAsIonReader;
 import com.amazon.ion.v3.visitor.ApplicationReaderDriver;
 import com.amazon.ion.v3.visitor.IonDatagramHydrator;
+import com.amazon.ion.v3.visitor2.VisitingIonReader10;
+import com.amazon.ionelement.api.IonElement;
+import com.amazon.ionelement.api.IonElementLoaderOptions;
+import com.amazon.ionelement.impl.loader.FastLoaderBinary10;
 import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
 
@@ -288,6 +292,27 @@ class IonMeasurableReadTask extends MeasurableReadTask {
             } catch (Exception e) {
                 throw new IOException(e);
             }
+//            try {
+//                FastLoaderBinary10 loader = new FastLoaderBinary10(ByteBuffer.wrap(buffer), IonElementLoaderOptions.builder().build());
+//                while (true) {
+//                    IonElement next = loader.loadNextElement();
+//                    if (next == null) break;
+//                    consumer.consume(next);
+//                }
+//            } catch (Exception e) {
+//                throw new RuntimeException(e);
+//            }
+
+//            try {
+//
+//                VisitingIonReader10 reader = new VisitingIonReader10(ByteBuffer.wrap(buffer));
+//                SingleIonElementBuilder visitor = new SingleIonElementBuilder();
+//                while (reader.next(visitor)) {
+//                    consumer.consume(visitor.element);
+//                }
+//            }  catch (Exception e) {
+//                throw new IOException(e);
+//            }
         } else {
             IonReader reader;
             reader = readerBuilder.build(buffer);
