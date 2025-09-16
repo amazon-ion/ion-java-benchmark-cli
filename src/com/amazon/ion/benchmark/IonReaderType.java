@@ -19,4 +19,6 @@ enum IonReaderType {
      * Experimental reader
      */
     V2,
+
+    V8,
 }

@@ -73,9 +73,6 @@ enum Format {
 
         @Override
         MeasurableReadTask createReadTask(Path inputPath, ReadOptionsCombination options) throws IOException {
-            if (options.api == API.VISITOR) {
-                return new IonVisitorMeasurableReadTask(inputPath, options);
-            }
             return new IonMeasurableReadTask(inputPath, options);
         }
 

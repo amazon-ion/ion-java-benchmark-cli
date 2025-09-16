@@ -7,16 +7,14 @@ import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
 import com.amazon.ion.IonValue;
 import com.amazon.ion.system.IonReaderBuilder;
-import com.amazon.ion.v3.ion_reader.StreamReaderAsIonReader;
-import com.amazon.ion.v3.visitor.ApplicationReaderDriver;
-import com.amazon.ion.v3.visitor.IonDatagramHydrator;
-import com.amazon.ion.v3.visitor2.VisitingIonReader10;
+import com.amazon.ion.v8.BytecodeIonReader;
 import com.amazon.ionelement.api.Ion;
 import com.amazon.ionelement.api.IonElement;
 import com.amazon.ionelement.api.IonElementLoaderOptions;
 import com.amazon.ionelement.api.IonUtils;
 import com.amazon.ionelement.impl.loader.FastLoaderBinary10;
 import com.amazon.ionelement.impl.loader.FastLoaderBinary10ByteArray;
+import com.amazon.ionelement.impl.loader.IonElementReader;
 import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
 
@@ -25,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -41,6 +40,7 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     private IonReaderBuilder readerBuilder;
     private SideEffectConsumer sideEffectConsumer = null;
     private boolean useV2Reader = false;
+    private boolean useV8Reader = false;
 
     /**
      * Returns the next power of two greater than or equal to the given value.
@@ -91,6 +91,11 @@ class IonMeasurableReadTask extends MeasurableReadTask {
 
         if (options.readerType == IonReaderType.V2) {
             useV2Reader = true;
+            return;
+        }
+
+        if (options.readerType == IonReaderType.V8) {
+            useV8Reader = true;
             return;
         }
 
@@ -228,8 +233,8 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     void fullyTraverseFromBuffer(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
         IonReader reader;
-        if (useV2Reader) {
-            reader = new StreamReaderAsIonReader(ByteBuffer.wrap(buffer));
+        if (useV8Reader) {
+            reader = new BytecodeIonReader(buffer);
         } else {
             reader = readerBuilder.build(buffer);
         }
@@ -240,29 +245,21 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     @Override
     public void fullyTraverseFromFile(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
-        if (useV2Reader) {
-            try (FileChannel fileChannel = FileChannel.open(inputFile.toPath(), StandardOpenOption.READ)) {
-                ByteBuffer mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-                IonReader reader = new StreamReaderAsIonReader(mappedByteBuffer);
-                fullyTraverse(reader, false);
-                reader.close();
-            }
-        } else {
-            IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
-            fullyTraverse(reader, false);
-            reader.close();
-        }
+        IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
+        fullyTraverse(reader, false);
+        reader.close();
     }
 
     @Override
     void traverseFromBuffer(List<String> paths, SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
         IonReader reader;
-        if (useV2Reader) {
-            reader = new StreamReaderAsIonReader(ByteBuffer.wrap(buffer));
+        if (useV8Reader) {
+            reader = new BytecodeIonReader(buffer);
         } else {
             reader = readerBuilder.build(buffer);
         }
+
         pathExtractor.match(reader);
         reader.close();
     }
@@ -270,18 +267,9 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     @Override
     public void traverseFromFile(List<String> paths, SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
-        if (useV2Reader) {
-            try (FileChannel fileChannel = FileChannel.open(inputFile.toPath(), StandardOpenOption.READ)) {
-                ByteBuffer mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-                IonReader reader = new StreamReaderAsIonReader(mappedByteBuffer);
-                pathExtractor.match(reader);
-                reader.close();
-            }
-        } else {
-            IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
-            pathExtractor.match(reader);
-            reader.close();
-        }
+        IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
+        pathExtractor.match(reader);
+        reader.close();
     }
 
     private IonElementLoaderOptions opts = IonElementLoaderOptions.builder().build();
@@ -341,22 +329,10 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     @Override
     public void fullyReadDomFromFile(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
-        if (useV2Reader) {
-            try (FileChannel fileChannel = FileChannel.open(inputFile.toPath(), StandardOpenOption.READ)) {
-                ByteBuffer mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_ONLY, 0, fileChannel.size());
-                IonDatagram dg = ionSystem.newDatagram();
-                try {
-                    ApplicationReaderDriver driver = new ApplicationReaderDriver(mappedByteBuffer);
-                    driver.readAll(new IonDatagramHydrator(dg));
-                    driver.close();
-                } catch (Exception e) {
-                    throw new IOException(e);
-                }
-            }
-        } else {
+
             IonReader reader = readerBuilder.build(options.newInputStream(inputFile));
             ionSystem.newLoader().load(reader);
             reader.close();
-        }
+
     }
 }
