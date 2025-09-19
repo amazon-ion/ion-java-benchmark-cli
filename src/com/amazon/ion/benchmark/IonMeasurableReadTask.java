@@ -4,10 +4,13 @@ import com.amazon.ion.IonBufferConfiguration;
 import com.amazon.ion.IonReader;
 import com.amazon.ion.IonSystem;
 import com.amazon.ion.IonType;
+import com.amazon.ion.IonWriter;
+import com.amazon.ion.system.IonBinaryWriterBuilder;
 import com.amazon.ion.system.IonReaderBuilder;
 import com.amazon.ionpathextraction.PathExtractor;
 import com.amazon.ionpathextraction.PathExtractorBuilder;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -22,6 +25,7 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     private static final int DEFAULT_REUSABLE_LOB_BUFFER_SIZE = 1024;
     private final PathExtractor<?> pathExtractor;
     private final IonSystem ionSystem;
+    private final IonBinaryWriterBuilder writer = IonBinaryWriterBuilder.standard();
     private final byte[] reusableLobBuffer;
     private IonReaderBuilder readerBuilder;
     private SideEffectConsumer sideEffectConsumer = null;
@@ -208,8 +212,12 @@ class IonMeasurableReadTask extends MeasurableReadTask {
     void fullyTraverseFromBuffer(SideEffectConsumer consumer) throws IOException {
         sideEffectConsumer = consumer;
         IonReader reader = readerBuilder.build(buffer);
-        fullyTraverse(reader, false);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        IonWriter writer = IonBinaryWriterBuilder.standard().withStreamCopyOptimized(true).build(out);
+        //IonWriter writer = IonBinaryWriterBuilder.standard().build(out);
+        writer.writeValues(reader);
         reader.close();
+        writer.close();
     }
 
     @Override
