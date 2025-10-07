@@ -1,0 +1,208 @@
+/* This is abridged benchmark data containing mostly only what the comparison tool looks at. */
+[
+    {
+        "jmhVersion" : "1.23",
+        "benchmark" : "com.amazon.ion.benchmark.Bench.run",
+        "mode" : "avgt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "/Library/Java/JavaVirtualMachines/amazon-corretto-21.jdk/Contents/Home/bin/java",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "21.0.8",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "21.0.8+9-LTS",
+        "warmupIterations" : 3,
+        "warmupTime" : "10 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "10 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "input" : "/Users/austnwil/testfiles/single_blob.10n",
+            "options" : "read::{f:ION_BINARY,t:FILE,a:DOM,R:INCREMENTAL}"
+        },
+        "primaryMetric" : {
+            "scoreUnit" : "ms/op",
+            "rawData" : [
+                [
+                    2.7229602785529716,
+                    2.7869141434440872,
+                    2.8833532843967626,
+                    2.9102353418640183,
+                    3.0848277396289348
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+            "Heap usage" : {
+                "scoreUnit" : "MB",
+                "rawData" : [
+                    [
+                        7176.031856,
+                        10363.71396,
+                        8132.42224,
+                        12653.937424,
+                        11127.09792
+                    ]
+                ]
+            },
+            "Serialized size" : {
+                "scoreUnit" : "MB",
+                "rawData" : [
+                    [
+                        10.485769,
+                        10.485769,
+                        10.485769,
+                        10.485769,
+                        10.485769
+                    ]
+                ]
+            },
+            "·gc.alloc.rate" : {
+                "scoreUnit" : "MB/sec",
+                "rawData" : [
+                    [
+                        19910.396847742537,
+                        19204.42179663338,
+                        18214.839152185657,
+                        17962.21511594979,
+                        16455.56235208737
+                    ]
+                ]
+            },
+            "·gc.alloc.rate.norm" : {
+                "scoreUnit" : "B/op",
+                "rawData" : [
+                    [
+                        4.779312642342808E7,
+                        4.779312387281172E7,
+                        4.779312205985319E7,
+                        4.779310153399542E7,
+                        4.779307187325412E7
+                    ]
+                ]
+            },
+            "·gc.churn.CodeHeap_'profiled_nmethods'" : {
+                "scoreUnit" : "MB/sec",
+                "rawData" : [
+                    [
+                        0.004669828106274599,
+                        0.0021494990078836235,
+                        4.063972574604714E-4,
+                        6.390287244644159E-4,
+                        0.0023468868723043827
+                    ]
+                ]
+            },
+            "·gc.churn.CodeHeap_'profiled_nmethods'.norm" : {
+                "scoreUnit" : "B/op",
+                "rawData" : [
+                    [
+                        8.8640826873385,
+                        4.230082172204359,
+                        0.8432147562582345,
+                        1.3445378151260505,
+                        5.390035438815927
+                    ]
+                ]
+            },
+            "·gc.churn.G1_Eden_Space" : {
+                "scoreUnit" : "MB/sec",
+                "rawData" : [
+                    [
+                        25.884136970834856,
+                        25.128084920874688,
+                        25.11172776979063,
+                        21.3204149385818,
+                        17.512516314142676
+                    ]
+                ]
+            },
+            "·gc.churn.G1_Eden_Space.norm" : {
+                "scoreUnit" : "B/op",
+                "rawData" : [
+                    [
+                        49132.24323858743,
+                        49450.529474812436,
+                        52103.1552795031,
+                        44858.866310160425,
+                        40220.55117781947
+                    ]
+                ]
+            },
+            "·gc.churn.G1_Old_Gen" : {
+                "scoreUnit" : "MB/sec",
+                "rawData" : [
+                    [
+                        30285.186602151087,
+                        28898.80789628265,
+                        27564.287424069968,
+                        26760.904876329958,
+                        24558.626490962484
+                    ]
+                ]
+            },
+            "·gc.churn.G1_Old_Gen.norm" : {
+                "scoreUnit" : "B/op",
+                "rawData" : [
+                    [
+                        5.748614127407408E7,
+                        5.687108095033941E7,
+                        5.7191857166949E7,
+                        5.630583915202445E7,
+                        5.6403173360016674E7
+                    ]
+                ]
+            },
+            "·gc.churn.G1_Survivor_Space" : {
+                "scoreUnit" : "MB/sec",
+                "rawData" : [
+                    [
+                        0.08314210749660168,
+                        0.08693561595533643,
+                        0.07787587446086283,
+                        0.07113406339896051,
+                        0.059222586488675996
+                    ]
+                ]
+            },
+            "·gc.churn.G1_Survivor_Space.norm" : {
+                "scoreUnit" : "B/op",
+                "rawData" : [
+                    [
+                        157.8170542635659,
+                        171.08395855662738,
+                        161.5810276679842,
+                        149.66844919786095,
+                        136.01500938086303
+                    ]
+                ]
+            },
+            "·gc.count" : {
+                "scoreUnit" : "counts",
+                "rawData" : [
+                    [
+                        91.0,
+                        89.0,
+                        85.0,
+                        79.0,
+                        66.0
+                    ]
+                ]
+            },
+            "·gc.time" : {
+                "scoreUnit" : "ms",
+                "rawData" : [
+                    [
+                        67.0,
+                        66.0,
+                        63.0,
+                        65.0,
+                        63.0
+                    ]
+                ]
+            }
+        }
+    }
+]

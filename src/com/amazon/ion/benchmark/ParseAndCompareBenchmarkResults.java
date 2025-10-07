@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.stream.DoubleStream;
 
 public class ParseAndCompareBenchmarkResults {
-    public static final List<String> BENCHMARK_SCORE_KEYWORDS = Arrays.asList("speed", "Heap usage", "Serialized size", "·gc.alloc.rate");
+    public static final List<String> BENCHMARK_SCORE_KEYWORDS = Arrays.asList("speed", "Heap usage", "Serialized size", "·gc.alloc.rate.norm");
     private static final String PRIMARY_METRIC = "primaryMetric";
     private static final String SECONDARY_METRIC = "secondaryMetrics";
     private static final String SPEED = "speed";
