@@ -16,15 +16,18 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -34,6 +37,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.containsString;
 
 public class OptionsTest {
 
@@ -2241,5 +2246,58 @@ public class OptionsTest {
         double expectResult = -0.22035698907090617;
         double realResult = ParseAndCompareBenchmarkResults.detectRegression(before, after);
         assertEquals(expectResult, realResult, 1e-16);
+    }
+
+    @Test
+    public void testDetectRegressionsInRegressedRun() throws Exception {
+        final Path beforeRun = fileInTestDirectory("benchmark-better.ion");
+        final Path afterRun  = fileInTestDirectory("benchmark-worse.ion");
+
+        final String[] expectedOutputs = new String[] {
+            "regression on speed",
+            "regression on ·gc.alloc.rate.norm",
+        };
+
+        final PrintStream standardOut = System.out;
+        final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
+
+        System.setOut(new PrintStream(outputStreamCaptor));
+
+        ParseAndCompareBenchmarkResults.compareResult(
+            new HashMap<String, Object>() {{
+                put("--benchmark-result-previous", beforeRun);
+                put("--benchmark-result-new", afterRun);
+            }}
+        );
+
+        System.setOut(standardOut);
+
+        final String output = outputStreamCaptor.toString();
+        for(final String expectedOutput : expectedOutputs) {
+            assertThat("Benchmark comparison should show " + expectedOutput, output, containsString(expectedOutput));
+        }
+    }
+
+    @Test
+    public void testDetectNoRegressionsInImprovedRun() throws Exception {
+        final Path beforeRun = fileInTestDirectory("benchmark-worse.ion");
+        final Path afterRun  = fileInTestDirectory("benchmark-better.ion");
+
+        final PrintStream standardOut = System.out;
+        final ByteArrayOutputStream outputStreamCaptor = new ByteArrayOutputStream();
+
+        System.setOut(new PrintStream(outputStreamCaptor));
+
+        ParseAndCompareBenchmarkResults.compareResult(
+            new HashMap<String, Object>() {{
+                put("--benchmark-result-previous", beforeRun);
+                put("--benchmark-result-new", afterRun);
+            }}
+        );
+
+        System.setOut(standardOut);
+
+        final String output = outputStreamCaptor.toString();
+        assertTrue("Comparison with improved run should show no regressions", output.trim().isEmpty());
     }
 }
